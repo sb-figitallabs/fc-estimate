@@ -71,4 +71,25 @@ router.post('/intake', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/** POST /api/estimate/map-items — AI: fuzzy item descriptions → canonical item candidates */
+router.post('/map-items', async (req, res, next) => {
+  try {
+    const { items } = req.body; // [{description, kind: 'service'|'pharmacy', context?}]
+    if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'items[] required' });
+    const { mapItems } = await import('../modules/ai/itemMapper.js');
+    res.json(await mapItems(items));
+  } catch (err) { next(err); }
+});
+
+/** POST /api/estimate/explain — AI: plain-language estimate summary for the FC conversation */
+router.post('/explain', async (req, res, next) => {
+  try {
+    const input = EstimateInput.parse(req.body);
+    const estimate = await buildEstimate(input);
+    const { explainEstimate } = await import('../modules/ai/explain.js');
+    const explanation = await explainEstimate(estimate);
+    res.json({ final_estimate: estimate.final_estimate, bucket_totals: estimate.bucket_totals, explanation });
+  } catch (err) { next(err); }
+});
+
 export default router;

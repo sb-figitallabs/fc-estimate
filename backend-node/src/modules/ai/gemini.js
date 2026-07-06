@@ -1,6 +1,14 @@
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Prefer Vertex AI (service-account auth, same setup as Hospital_OS backend);
+// fall back to API-key mode when VERTEX_AI_PROJECT is not configured.
+const ai = process.env.VERTEX_AI_PROJECT
+  ? new GoogleGenAI({
+    vertexai: true,
+    project: process.env.VERTEX_AI_PROJECT,
+    location: process.env.VERTEX_AI_LOCATION || 'global',
+  })
+  : new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 /** Call Gemini and parse a JSON response. */
