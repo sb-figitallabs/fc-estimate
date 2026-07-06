@@ -26,6 +26,7 @@ export async function fetchCohortRows(whereSql, params) {
             fc_actual_total_excluding_fnb_and_returns_plus_cash_drug_admin::float AS total_plus_drug_admin,
             pharmacy_return_amount::float,
             (cleaned_pharmacy_returns_jsonb->'summary'->>'return_amount_total')::float AS cleaned_returns_total,
+            cleaned_pharmacy_issue_jsonb AS cleaned_pharmacy,
             services_json, pharmacy_json
      FROM mart.main_table
      WHERE ${whereSql}
@@ -165,23 +166,42 @@ export async function buildServiceStats(cohorts, tariffCd = 'TR1') {
   return out;
 }
 
-/** Pharmacy item stats per basis — Reference DG:DR. */
-export function buildPharmacyStats(cohorts) {
+/** Catalog display names: canonical pharmacy item_name per code (matches finalized artifacts). */
+export async function pharmacyCatalogNames() {
+  const { rows } = await query(
+    `SELECT item_code, item_name, mrp::float, sale_rate::float FROM fc.pharmacy_catalog_rate_reference`
+  );
+  return new Map(rows.map((r) => [r.item_code, r]));
+}
+
+/** Pharmacy item stats per basis — Reference DG:DR. Uses CLEANED (deduplicated) issue lines. */
+export function buildPharmacyStats(cohorts, _unused = new Map()) {
+  // display names = raw billed item_desc (matches finalized artifacts)
+  const rawName = new Map();
+  for (const r of cohorts['All Payers']) {
+    for (const it of (r.pharmacy_json?.items || [])) {
+      if (it.item_code && it.item_desc && !rawName.has(it.item_code)) rawName.set(it.item_code, it.item_desc);
+    }
+  }
   const out = [];
   for (const basis of BASIS_LABELS) {
     const rows = cohorts[basis];
     const n = rows.length;
     const perItem = new Map();
     for (const r of rows) {
-      const items = r.pharmacy_json?.items || [];
+      const items = r.cleaned_pharmacy?.items || [];
       const seen = new Map();
       for (const it of items) {
         const code = it.item_code;
         if (!code) continue;
-        const cur = seen.get(code) || { name: it.item_desc, ot_qty: 0, ot_amount: 0, ip_qty: 0, ip_amount: 0, qty: 0, amount: 0 };
-        const qty = Number(it.quantity ?? 0), amt = Number(it.amount ?? 0);
+        const cur = seen.get(code) || {
+          name: rawName.get(code) || it.item_name,
+          ot_qty: 0, ot_amount: 0, ip_qty: 0, ip_amount: 0, qty: 0, amount: 0,
+        };
+        const qty = Number(it.raw_quantity ?? 0);
+        const amt = Number(it.reconstructed_gross_amount ?? (qty * Number(it.sale_rate ?? 0)));
         cur.qty += qty; cur.amount += amt;
-        if (it.pharmacy_section === 'ot_pharmacy') { cur.ot_qty += qty; cur.ot_amount += amt; }
+        if ((it.pharmacy_section || '').toUpperCase() === 'OT') { cur.ot_qty += qty; cur.ot_amount += amt; }
         else { cur.ip_qty += qty; cur.ip_amount += amt; }
         seen.set(code, cur);
       }
