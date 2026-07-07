@@ -240,3 +240,16 @@ curl -s -X POST localhost:4100/api/estimate/build -H 'Content-Type: application/
   | python3 -c "import json,sys; print(json.load(sys.stdin)['final_estimate'])"
 # must print 597612.0654575195 — if it does, everything upstream is intact.
 ```
+
+---
+
+## 9. Deployment (added 2026-07-07)
+
+- **GitHub**: `github.com/sb-figitallabs/fc-estimate` (private; history rewritten — 1.5GB dump excluded, kept on disk + gitignored; a copy of `.git` pre-rewrite exists in the session tmp dir).
+- **AWS** (profile `new-fl-aws`, account 452952376831, ap-south-1):
+  - EC2 `i-01cfde2610362bf3e` (t3.small, Ubuntu 24.04) — public IP **13.233.93.244** (NO Elastic IP: account EIP quota full; IP changes only on stop/start → then update DNS + gh secret EC2_HOST). SG `sg-0444e4a54a20e04c3` (22/80/443). SSH: `ssh -i ~/.ssh/fc-estimate-key.pem ubuntu@13.233.93.244`.
+  - RDS `fc-estimate-db` (db.t4g.micro, PG 16.14) — `fc-estimate-db.cv02w0mscr9b.ap-south-1.rds.amazonaws.com:5432/fc_handoff`, user `fcadmin` (password in `backend-node/.rds-credentials`, gitignored). SG `sg-093821cab0646db49` allows EC2 SG + user IPs (49.36.233.12, 103.59.75.212 — Jio IP changes on reconnect; add new ones with `aws ec2 authorize-security-group-ingress --group-id sg-093821cab0646db49 --protocol tcp --port 5432 --cidr <ip>/32`).
+  - All 7 tables verified in RDS (exact counts); local `.env` ALSO points at RDS now (TLS verify-full via `rds-global-bundle.pem`; note `sslmode` in URL overrides pg Pool `ssl` option — use `sslrootcert=` URL param).
+- **Server layout**: app at `~/fc-estimate/backend-node`, pm2 process `fc-builder-api` (systemd startup), nginx vhost `fc-estimate` → 127.0.0.1:4100, Vertex `service-account.json` at `/home/ubuntu/`.
+- **CI/CD**: `.github/workflows/deploy.yml` — push to main → SSH (secrets EC2_HOST/EC2_USER/EC2_SSH_KEY) → git reset --hard origin/main + npm ci + pm2 restart + health check. Verified working.
+- **Domain**: `fc-estimate.figitallabs.com` → A record → **13.233.93.244**. HTTPS: after DNS propagates run `sudo certbot --nginx -d fc-estimate.figitallabs.com` on the server (certbot preinstalled).
