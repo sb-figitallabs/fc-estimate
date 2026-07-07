@@ -100,11 +100,13 @@ export async function buildEstimate(input) {
   }, otLadder);
 
   // 9. cleaned services / add-ons / robotic
-  const cleaned = cleanServiceRows(svcStatsForBasis);
+  const autoTemplate = cohortDef.coreTemplate === 'auto';
+  const cleaned = cleanServiceRows(svcStatsForBasis, { excludeFixed: !autoTemplate });
   const { auto: autoIncluded, optional: optionalRaw } = splitCleanedRows(cleaned);
   const prioritized = prioritizeOptionalRows(optionalRaw);
-  const { optional, roboticRows } = splitRoboticOptional(prioritized, cohortDef.procedure.code);
-  const roboticPresence = roboticPresenceRate(svcStatsForBasis, cohortDef.procedure.code);
+  const procedureCode = cohortDef.procedure?.code ?? null;
+  const { optional, roboticRows } = splitRoboticOptional(prioritized, procedureCode);
+  const roboticPresence = roboticPresenceRate(svcStatsForBasis, procedureCode);
   const roboticSelection = controls.robotic && controls.robotic !== 'auto'
     ? (controls.robotic === 'yes' ? 'Yes' : 'No')
     : roboticDefaultSelection('auto', roboticPresence);
@@ -121,7 +123,7 @@ export async function buildEstimate(input) {
   const shortlist = buildOtConsumableShortlist(pharmStatsForBasis, pharmMap)
     .map((s) => ({ ...s, selected: (input.selections?.ot_consumables?.[s.item_code]) ?? 'Exclude' }));
   const otApplied = otConsumablesApplied(shortlist, pharmBasisRow);
-  const implantHierarchy = buildImplantHierarchy(cohortRows, pharmMap);
+  const implantHierarchy = buildImplantHierarchy(cohortRows, pharmMap, cohortDef.implantProfile ?? 'knee');
   const implantControls = input.selections?.implants ?? { mode: 'Default P50' };
   const implantResolved = resolveImplantEstimate(implantControls, implantHierarchy, pharmBasisRow);
 
@@ -144,7 +146,14 @@ export async function buildEstimate(input) {
     drivers, basisRow: pharmBasisRow,
     svc: svcByCode, rates, otSlots,
     insuranceExcluded: new Set(), // seeded from insurance policy table when in insurance mode
-    addOns, procedure: cohortDef.procedure, includeProcedure: true,
+    addOns, procedure: cohortDef.procedure,
+    includeProcedure: cohortDef.includeProcedure ?? true,
+    // 'auto' families derive their template rows from the cohort's default-included items
+    templateRows: autoTemplate
+      ? autoIncluded.map((r) => ({
+        name: r.item_name, bucket: r.fc_estimate_bucket, sub: r.grouping, code: r.item_code,
+      }))
+      : undefined,
     advanced: { otConsumablesApplied: otApplied },
     implants: { resolvedTypical: implantResolved },
     grouped,

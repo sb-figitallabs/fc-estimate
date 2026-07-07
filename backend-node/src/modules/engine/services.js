@@ -23,12 +23,19 @@ const isRoboticText = (...texts) => texts.some((t) => /ROBO/i.test(t || ''));
  * Clean service stats rows for one basis into the FC template set:
  * mapped, non-"remove" bucket, not a fixed/logic template code, not an OT slot row.
  */
-export function cleanServiceRows(statsRows) {
+/**
+ * @param {object} opts
+ * @param {boolean} opts.excludeFixed - 'fixed' template families (TKR) pre-bake their
+ *   template rows, so those codes are excluded from the cleaned set. 'auto' families
+ *   (THR…) keep them: their template rows ARE the default-included cleaned rows.
+ */
+export function cleanServiceRows(statsRows, { excludeFixed = true } = {}) {
   return statsRows.filter((r) =>
     r.mapped &&
     !/remove/i.test(r.fc_estimate_bucket || '') &&
     (r.grouping || '').trim() !== '' && // doctor-fee and F&B rows carry no grouping
-    !TEMPLATE_EXCLUDED_SERVICE_CODES.has(r.item_code) &&
+    !LOGIC_DRIVEN_SERVICE_CODES.has(r.item_code) &&
+    !(excludeFixed && FIXED_ESTIMATE_TEMPLATE_SERVICE_CODES.has(r.item_code)) &&
     !isOtSlotName(r.item_name)
   );
 }

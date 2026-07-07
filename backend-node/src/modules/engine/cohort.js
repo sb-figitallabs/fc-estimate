@@ -30,6 +30,19 @@ const FAMILIES = {
     procedure: { code: 'OTI0098', label: 'ROBO (TKR) - BILATERAL' },
     templateName: 'Robotic TKR Bilateral',
   },
+  total_hip_replacement_thr_hemiarthroplasty: {
+    family: 'total_hip_replacement_thr_hemiarthroplasty',
+    familyKind: 'surgical',
+    // THR unilateral/bilateral variants + hemiarthroplasty + cash THR packages (95 cases)
+    whereSql: `package_code IN ('ORT5383','ORT5205','ORT5206','ORT0052','ORT0123','ORT0034','ORT5792','ORT5010')`,
+    params: [],
+    // THR bills the procedure through OT-hour slots — no single package procedure row
+    procedure: null,
+    includeProcedure: false,
+    templateName: 'Total Hip Replacement (THR) / Hemiarthroplasty',
+    coreTemplate: 'auto',   // template rows derived from the cohort's default-included items
+    implantProfile: 'hip',  // hip implant family classifier
+  },
 };
 
 export async function getCohort(procedure) {

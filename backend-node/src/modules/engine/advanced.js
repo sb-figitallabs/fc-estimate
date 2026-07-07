@@ -50,28 +50,57 @@ export function otConsumablesApplied(shortlist, basisRow) {
   return basisRow.ot_consumables_p75 ?? 0;
 }
 
-export const IMPLANT_FAMILY_ORDER = [
-  'Femoral Component', 'Tibial Insert / Bearing', 'Bone Cement', 'Tibial Baseplate',
-  'Stem / Extension', 'Screw', 'Pin',
-];
+export const IMPLANT_PROFILES = {
+  knee: {
+    order: [
+      'Femoral Component', 'Tibial Insert / Bearing', 'Bone Cement', 'Tibial Baseplate',
+      'Stem / Extension', 'Screw', 'Pin',
+    ],
+    brands: ['ATTUNE', 'TRIATHLON', 'RESTORIS MCK', 'SIMPLEX', 'SMARTSET'],
+    classify(s) {
+      if (/BONE CEMENT|SIMPLEX|SMARTSET|CEMENT\b(?!ED)/.test(s) && !/FEMORAL|TIBIA|STEM|SCREW|PIN|INSERT/.test(s)) return 'Bone Cement';
+      if (/FEMORAL|FEM CEMENT|FEMORAL COMPONENT/.test(s)) return 'Femoral Component';
+      if (/TIBIAL INSERT|TIBIAL BEARING|BEARING INSERT|ONLAY TIBIAL INSERT/.test(s)) return 'Tibial Insert / Bearing';
+      if (/TIBIAL BASE|BASEPLATE|TIBIA BP|BEARING TIBIAL BASE|TIB BASE/.test(s)) return 'Tibial Baseplate';
+      if (/STEM/.test(s)) return 'Stem / Extension';
+      if (/SCREW/.test(s)) return 'Screw';
+      if (/\bPIN\b|DRILL PIN|BONE PIN/.test(s)) return 'Pin';
+      return null;
+    },
+  },
+  hip: {
+    order: [
+      'Femoral Stem', 'Acetabular Shell / Cup', 'Acetabular Insert / Liner', 'Femoral Head',
+      'Bone Cement', 'Screw', 'Pin',
+    ],
+    brands: ['TRIDENT', 'PINNACLE', 'V40', 'EXETER', 'ACCOLADE', 'CORAIL', 'SUMMIT', 'SIMPLEX', 'SMARTSET'],
+    classify(s) {
+      if (/CEMENT RESTRICTOR/.test(s)) return 'Bone Cement';
+      if (/BONE CEMENT|SIMPLEX|SMARTSET|CEMENT\b(?!ED)/.test(s) && !/FEMORAL|STEM|SCREW|PIN|INSERT|SHELL|CUP|HEAD/.test(s)) return 'Bone Cement';
+      if (/FEM(ORAL)? HEAD|\bHEAD\b.*(MM|\+)/.test(s)) return 'Femoral Head';
+      if (/SHELL|CUP\b|HEMI HA|BIPOLAR/.test(s)) return 'Acetabular Shell / Cup';
+      if (/INSERT|LINER/.test(s)) return 'Acetabular Insert / Liner';
+      if (/STEM|EXETER|ACCOLADE|CORAIL|SUMMIT/.test(s)) return 'Femoral Stem';
+      if (/SCREW/.test(s)) return 'Screw';
+      if (/\bPIN\b|DRILL PIN|BONE PIN/.test(s)) return 'Pin';
+      return null;
+    },
+  },
+};
 
-/** Classify an implant item name into family (keyword heuristic, validated vs finalized data). */
-export function implantFamilyOf(name) {
-  const s = (name || '').toUpperCase();
-  if (/BONE CEMENT|SIMPLEX|SMARTSET|CEMENT\b(?!ED)/.test(s) && !/FEMORAL|TIBIA|STEM|SCREW|PIN|INSERT/.test(s)) return 'Bone Cement';
-  if (/FEMORAL|FEM CEMENT|FEMORAL COMPONENT/.test(s)) return 'Femoral Component';
-  if (/TIBIAL INSERT|TIBIAL BEARING|BEARING INSERT|ONLAY TIBIAL INSERT/.test(s)) return 'Tibial Insert / Bearing';
-  if (/TIBIAL BASE|BASEPLATE|TIBIA BP|BEARING TIBIAL BASE|TIB BASE/.test(s)) return 'Tibial Baseplate';
-  if (/STEM/.test(s)) return 'Stem / Extension';
-  if (/SCREW/.test(s)) return 'Screw';
-  if (/\bPIN\b|DRILL PIN|BONE PIN/.test(s)) return 'Pin';
-  return null;
+export const IMPLANT_FAMILY_ORDER = IMPLANT_PROFILES.knee.order; // back-compat
+
+/** Classify an implant item name into family (profile-specific keyword heuristic). */
+export function implantFamilyOf(name, profile = 'knee') {
+  const p = IMPLANT_PROFILES[profile] || IMPLANT_PROFILES.knee;
+  return p.classify((name || '').toUpperCase());
 }
 
 /** Extract brand family from an implant item name. */
-export function implantBrandOf(name, family) {
+export function implantBrandOf(name, family, profile = 'knee') {
   const s = (name || '').toUpperCase();
-  for (const b of ['ATTUNE', 'TRIATHLON', 'RESTORIS MCK', 'SIMPLEX', 'SMARTSET']) {
+  const p = IMPLANT_PROFILES[profile] || IMPLANT_PROFILES.knee;
+  for (const b of p.brands) {
     if (s.includes(b)) return b;
   }
   if (family === 'Screw' || family === 'Pin') return 'Accessory Hardware';
@@ -82,7 +111,7 @@ export function implantBrandOf(name, family) {
  * Implant hierarchy (family → brand → item) from cohort pharmacy lines.
  * Quartiles across admissions where the level is present.
  */
-export function buildImplantHierarchy(cohortRows, pharmMappingByCode) {
+export function buildImplantHierarchy(cohortRows, pharmMappingByCode, profile = 'knee') {
   const { quartilesInclusive } = statsRef;
   const famAdm = new Map(); // family -> Map(admission -> {qty, amounts:[rate...]})
   const brandAdm = new Map(); // family|brand
@@ -96,9 +125,9 @@ export function buildImplantHierarchy(cohortRows, pharmMappingByCode) {
       const m = pharmMappingByCode.get(it.item_code);
       if (!m || !/implant/i.test(m.fc_estimate_bucket || '')) continue;
       const name = it.item_name || m.item_name;
-      const family = implantFamilyOf(name);
+      const family = implantFamilyOf(name, profile);
       if (!family) continue;
-      const brand = implantBrandOf(name, family);
+      const brand = implantBrandOf(name, family, profile);
       const qty = Number(it.raw_quantity ?? 0), rate = Number(it.sale_rate ?? 0);
       const upd = (map, key) => {
         if (!map.has(key)) map.set(key, new Map());
@@ -130,9 +159,10 @@ export function buildImplantHierarchy(cohortRows, pharmMappingByCode) {
     };
   });
 
+  const order = (IMPLANT_PROFILES[profile] || IMPLANT_PROFILES.knee).order;
   const familySort = (a, b) => {
-    const ia = IMPLANT_FAMILY_ORDER.indexOf(a.key.split('|')[0]);
-    const ib = IMPLANT_FAMILY_ORDER.indexOf(b.key.split('|')[0]);
+    const ia = order.indexOf(a.key.split('|')[0]);
+    const ib = order.indexOf(b.key.split('|')[0]);
     return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || a.key.localeCompare(b.key);
   };
   return {

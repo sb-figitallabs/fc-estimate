@@ -154,7 +154,94 @@ export function computeLineItems(ctx) {
     return row;
   }
 
-  // ---- core rows (order = finalized workbook) ----
+  // ---- core rows ----
+  if (ctx.templateRows) {
+    // AUTO layout (docs 10/12): template rows are the cohort's default-included
+    // items; the canonical logic rows below are shared across surgical families.
+    for (const t of ctx.templateRows) {
+      template(t.name, t.bucket, t.sub, t.code);
+    }
+    driver('Nursing - Room', 'Room Charges', 'Ward Care', 'ROM5189', drivers.ward, { how: 'Ward days x rate' });
+    driver('Nursing - ICU', 'Room Charges', 'Critical Care', 'ROM5189', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
+    driver('DMO', 'Room Charges', 'Ward Care', 'ROM0093', drivers.ward, { how: 'Ward days x rate' });
+    driver('ICU - Surgical', 'Room Charges', 'Critical Care', 'ROM5009', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
+    {
+      const bedRates = {
+        general: rateOf('ROM0001').general ?? 0,
+        twin: rateOf('ROM0024').general ?? 0,
+        single: rateOf('ROM0036').general ?? 0,
+      };
+      const d = drivers.ward;
+      const mk = (days, rate) => days * rate;
+      push({
+        name: 'Bed Charges - Ward', bucket: 'Room Charges', sub: 'Ward Care', source: 'Logic',
+        how: 'Ward days x room rate', code: 'ROOM_BED',
+        qty: { selected: d.selected, low: d.p25, typ: d.p50, high: d.p75 }, rate: bedRates,
+        cells: {
+          general: [mk(d.p25, bedRates.general), mk(d.p50, bedRates.general), mk(d.p75, bedRates.general)],
+          twin: [mk(d.p25, bedRates.twin), mk(d.p50, bedRates.twin), mk(d.p75, bedRates.twin)],
+          single: [mk(d.p25, bedRates.single), mk(d.p50, bedRates.single), mk(d.p75, bedRates.single)],
+        },
+      });
+    }
+    template('CSSD Charges', 'Procedure / OT Charges', 'OT Charges', 'RNS5005');
+    fixedOne('Medical Records', 'Bedside Services', 'Administrative', 'RNS0120');
+    if (ctx.includeProcedure !== false && procedure) {
+      template(procedure.label, 'Procedure / OT Charges', 'OT Charges', procedure.code, {
+        roboticControlled: /ROBO/i.test(procedure.label),
+      });
+    }
+    fixedOne('Instrument Charges (Major)', 'Procedure / OT Charges', 'OT Charges', 'OTI0018');
+    fixedOne('OT Disinfection Charges', 'Procedure / OT Charges', 'OT Charges', 'OTI0015');
+    fixedOne('Post Surgery Recovery Charges', 'Procedure / OT Charges', 'OT Charges', 'OTC5005');
+    {
+      const otMode = ctx.emergencyOt === 'Yes' ? 'emergency' : 'normal';
+      const slot = otSlots.get(`${otMode}|${drivers.ot.selected}`) || {};
+      const mkCells = (roomKey) => [slot[roomKey] ?? 0, slot[roomKey] ?? 0, slot[roomKey] ?? 0];
+      push({
+        name: 'OT Charges', bucket: 'Procedure / OT Charges', sub: 'OT Charges', source: 'Logic',
+        how: 'Selected OT duration snapped to the nearest supported tariff OT slot using the normal or emergency ladder',
+        code: slot.item_code ?? null,
+        otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal' },
+        qty: { selected: drivers.ot.selected, low: drivers.ot.p25, typ: drivers.ot.p50, high: drivers.ot.p75 },
+        rate: { general: slot.general ?? 0, twin: slot.twin ?? 0, single: slot.single ?? 0 },
+        cells: { general: mkCells('general'), twin: mkCells('twin'), single: mkCells('single') },
+      });
+    }
+    {
+      const c = cathLab || { p25: 0, p50: 0, p75: 0 };
+      const cells = [c.p25 ?? 0, c.p50 ?? 0, c.p75 ?? 0];
+      push({
+        name: 'Cath Lab Charges', bucket: 'Procedure / OT Charges', sub: 'Cath Lab Hours',
+        source: 'Historical Cath Lab Family',
+        how: 'Actual billed cath-lab slot-family P25 / P50 / P75 from the selected historical payer basis.',
+        code: null,
+        qty: { selected: 1, low: 1, typ: 1, high: 1 }, rate: {},
+        cells: { general: cells, twin: [...cells], single: [...cells] },
+      });
+    }
+    driver('Intensivist Per Day', 'Room Charges', 'Critical Care', 'ICC0002', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
+    driver('Assistant Intensivist Per Day', 'Room Charges', 'Critical Care', 'ICC0001', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
+    driver('Ward Consumables', 'Room Charges', 'Ward Care', 'HSP5013', drivers.los, { how: 'LOS days x rate' });
+    driver('Monitor Per Day', 'Room Charges', 'Critical Care', 'EME0019', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
+    {
+      const r = rateOf('HSP0047');
+      const qty = ctx.mlc === 'Yes' ? 1 : 0;
+      const mk = (rate) => guard('HSP0047', qty * (rate ?? 0));
+      push({
+        name: 'MLC Charges', bucket: 'Bedside Services', sub: 'Administrative', source: 'Logic',
+        how: 'Applied only when MLC input is Yes', code: 'HSP0047',
+        qty: { selected: qty, low: qty, typ: qty, high: qty },
+        rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
+        cells: {
+          general: [mk(r.general), mk(r.general), mk(r.general)],
+          twin: [mk(r.twin), mk(r.twin), mk(r.twin)],
+          single: [mk(r.single), mk(r.single), mk(r.single)],
+        },
+      });
+    }
+  } else {
+  // FIXED knee layout (order = finalized robotic-TKR workbook; do not touch — parity-validated)
   template('X-RAY KNEE JOINT AP & LATERAL VIEW (BEDSIDE)', 'Investigations', 'Investigations', 'XRY5090');
   driver('Nursing - Room', 'Room Charges', 'Ward Care', 'ROM5189', drivers.ward, { how: 'Ward days x rate' });
   driver('Nursing - ICU', 'Room Charges', 'Critical Care', 'ROM5189', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
@@ -253,6 +340,7 @@ export function computeLineItems(ctx) {
       },
     });
   }
+  } // end fixed knee layout
 
   // placeholders for drug admin + PF (filled after pharmacy rows)
   const drugAdminIdx = rows.length;
