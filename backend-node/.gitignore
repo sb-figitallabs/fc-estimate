@@ -4,3 +4,4 @@ output/
 *.log
 .rds-credentials
 *.pem
+rds-global-bundle.pem
