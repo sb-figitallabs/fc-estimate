@@ -400,7 +400,8 @@ $('copyJson').addEventListener('click', async () => {
 /* ---------- formatted renderer ---------- */
 function renderFormatted(d) {
   const ctx = d.resolved_context || {};
-  const roomKey = (ctx.room_type || 'Single').toLowerCase();
+  // machine key (daycare families display "Daycare (room N/A)" but compute on general)
+  const roomKey = ctx.room_key || (ctx.room_type || 'Single').toLowerCase();
   const slc = d.service_line_count || {};
   const withinRange = /within/i.test(slc.status || '');
   const basis = ctx.payer_bases?.service_basis || {};

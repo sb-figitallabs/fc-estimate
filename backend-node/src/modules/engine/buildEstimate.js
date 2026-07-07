@@ -197,7 +197,8 @@ export async function buildEstimate(input) {
       cohort_case_count: cohortRows.length,
       payer_bases: bases,
       estimate_mode: mode,
-      room_type: isDaycare ? 'Daycare (room N/A)' : room,
+      room_type: isDaycare ? 'Daycare (room N/A)' : room,  // display label
+      room_key: room.toLowerCase(),                        // machine key into selected{general,twin,single}
       daycare: isDaycare,
       robotic: { selection: roboticSelection, presence_rate: roboticPresence },
       ot_slot: lineItems.rows.find((r) => r.name === 'OT Charges')?.otSlot,
