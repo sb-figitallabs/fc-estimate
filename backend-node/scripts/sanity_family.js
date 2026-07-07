@@ -7,6 +7,7 @@ import 'dotenv/config';
 import { pool } from '../src/db/pool.js';
 import { buildEstimate } from '../src/modules/engine/buildEstimate.js';
 import { generateWorkbook } from '../src/modules/workbook/generateWorkbook.js';
+import { getCohort } from '../src/modules/engine/cohort.js';
 
 const family = process.argv[2] || 'total_hip_replacement_thr_hemiarthroplasty';
 const payor = process.argv[3] || 'Cash';
@@ -56,10 +57,23 @@ check('has template rows', est.line_items.some((r) => r.source === 'Template'),
 check('has pharmacy rows with amounts', est.line_items.filter((r) => r.bucket === 'Pharmacy').every((r) => r.cells.single[1] >= 0)
   && est.bucket_totals['Pharmacy'] > 0, `pharmacy ₹${Math.round(est.bucket_totals['Pharmacy'] || 0)}`);
 check('add-ons present', est.add_ons.length > 0, `${est.add_ons.length} optional add-ons`);
-check('OT slot resolved', !!ctx.ot_slot?.code, `${ctx.ot_slot?.label ?? 'none'}`);
+const famDef = await getCohort(family);
+if (famDef.rows?.ot !== false) {
+  check('OT slot resolved', !!ctx.ot_slot?.code, `${ctx.ot_slot?.label ?? 'none'}`);
+}
+if (famDef.rows?.cathLab === true) {
+  const cath = est.line_items.find((r) => r.name === 'Cath Lab Charges');
+  check('cath-lab row has amounts', (cath?.cells.general[1] ?? 0) > 0,
+    `cath typ ₹${Math.round(cath?.cells.general[1] ?? 0)}`);
+}
 const hier = est.advanced_controls.implants.hierarchy;
-check('implant hierarchy non-empty', hier.families.length > 0,
-  hier.families.map((f) => `${f.key}(${f.presence_rate}%)`).join(', ').slice(0, 140));
+if (famDef.implantProfile) {
+  check('implant hierarchy non-empty', hier.families.length > 0,
+    hier.families.map((f) => `${f.key}(${f.presence_rate}%)`).join(', ').slice(0, 140));
+}
+if (famDef.daycare) {
+  check('daycare: room normalized', ctx.daycare === true && /Daycare/.test(ctx.room_type), ctx.room_type);
+}
 
 // 4. workbook generates
 const t0 = Date.now();

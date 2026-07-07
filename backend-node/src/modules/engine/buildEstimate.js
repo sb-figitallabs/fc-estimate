@@ -101,7 +101,10 @@ export async function buildEstimate(input) {
 
   // 9. cleaned services / add-ons / robotic
   const autoTemplate = cohortDef.coreTemplate === 'auto';
-  const cleaned = cleanServiceRows(svcStatsForBasis, { excludeFixed: !autoTemplate });
+  const cleaned = cleanServiceRows(svcStatsForBasis, {
+    excludeFixed: !autoTemplate,
+    excludeCathLab: cohortDef.excludeCathLabFromTemplate === true,
+  });
   const { auto: autoIncluded, optional: optionalRaw } = splitCleanedRows(cleaned);
   const prioritized = prioritizeOptionalRows(optionalRaw);
   const procedureCode = cohortDef.procedure?.code ?? null;
@@ -135,8 +138,10 @@ export async function buildEstimate(input) {
     selected: (input.selections?.add_ons?.[o.item_code]) ?? 'Exclude',
   }));
 
-  // 13. line items
-  const room = controls.room_type ?? 'Single';
+  // 13. line items — daycare families have no ward stay: room selection is N/A
+  // (normalized to General internally; totals are room-insensitive for daycare rows)
+  const isDaycare = cohortDef.daycare === true;
+  const room = isDaycare ? 'General' : (controls.room_type ?? 'Single');
   const mode = controls.estimate_mode ?? 'Typical';
   const lineItems = computeLineItems({
     mode, room, pricingMode,
@@ -157,7 +162,11 @@ export async function buildEstimate(input) {
     advanced: { otConsumablesApplied: otApplied },
     implants: { resolvedTypical: implantResolved },
     grouped,
-    cathLab: { p25: 0, p50: 0, p75: 0 },
+    familyRows: cohortDef.rows,
+    ipPharmacyMode: cohortDef.ipPharmacyMode,
+    cathLab: cohortDef.rows?.cathLab
+      ? { p25: pharmBasisRow.cath_lab_p25 ?? 0, p50: pharmBasisRow.cath_lab_p50 ?? 0, p75: pharmBasisRow.cath_lab_p75 ?? 0 }
+      : { p25: 0, p50: 0, p75: 0 },
   });
 
   // 14. service line count alert
@@ -188,7 +197,8 @@ export async function buildEstimate(input) {
       cohort_case_count: cohortRows.length,
       payer_bases: bases,
       estimate_mode: mode,
-      room_type: room,
+      room_type: isDaycare ? 'Daycare (room N/A)' : room,
+      daycare: isDaycare,
       robotic: { selection: roboticSelection, presence_rate: roboticPresence },
       ot_slot: lineItems.rows.find((r) => r.name === 'OT Charges')?.otSlot,
     },

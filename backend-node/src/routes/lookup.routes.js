@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
+import { listFamilies } from '../modules/engine/cohort.js';
 
 const router = Router();
+
+/** GET /api/lookup/families — clinical families (drives the UI dropdown; daycare ⇒ no room selection) */
+router.get('/families', (_req, res) => res.json(listFamilies()));
 
 /** GET /api/lookup/organizations — payor organizations with tariff mapping */
 router.get('/organizations', async (_req, res, next) => {

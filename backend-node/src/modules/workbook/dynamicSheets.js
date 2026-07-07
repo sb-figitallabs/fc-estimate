@@ -183,7 +183,7 @@ export function buildServiceAddOns(ws, estimate, L) {
     ws.getCell(r, 12).value = fml(`IF($I${r}="Include",F${r}*G${r},0)`);
     [7, 8, 10, 11, 12].forEach((c) => { ws.getCell(r, c).numFmt = F.money; });
   });
-  listDV(ws, `I7:I${end}`, 'Include,Exclude');
+  if (estimate.add_ons.length) listDV(ws, `I7:I${end}`, 'Include,Exclude');
 
   // service line count alert
   const slc = estimate.service_line_count;
@@ -237,7 +237,7 @@ export function buildGroupedAdjustments(ws, estimate, L) {
     ws.getCell(r, 12).style = { ...F.input, border };
     ws.getCell(r, 13).value = fml(`IF(L${r}="Include",${modePickF(`I${r}`, `J${r}`, `K${r}`)},0)`);
   });
-  listDV(ws, `L7:L${end}`, 'Include,Exclude');
+  if (estimate.grouped_adjustments.length) listDV(ws, `L7:L${end}`, 'Include,Exclude');
 }
 
 /* ------------------------------------------------------------------ */

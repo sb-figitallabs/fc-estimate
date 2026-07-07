@@ -29,13 +29,14 @@ const isRoboticText = (...texts) => texts.some((t) => /ROBO/i.test(t || ''));
  *   template rows, so those codes are excluded from the cleaned set. 'auto' families
  *   (THR…) keep them: their template rows ARE the default-included cleaned rows.
  */
-export function cleanServiceRows(statsRows, { excludeFixed = true } = {}) {
+export function cleanServiceRows(statsRows, { excludeFixed = true, excludeCathLab = false } = {}) {
   return statsRows.filter((r) =>
     r.mapped &&
     !/remove/i.test(r.fc_estimate_bucket || '') &&
     (r.grouping || '').trim() !== '' && // doctor-fee and F&B rows carry no grouping
     !LOGIC_DRIVEN_SERVICE_CODES.has(r.item_code) &&
     !(excludeFixed && FIXED_ESTIMATE_TEMPLATE_SERVICE_CODES.has(r.item_code)) &&
+    !(excludeCathLab && /CATH ?LAB/i.test(r.item_name || '')) && // routed through the cath-lab history row
     !isOtSlotName(r.item_name)
   );
 }

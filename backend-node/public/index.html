@@ -153,13 +153,8 @@
       <fieldset>
         <legend>Clinical</legend>
         <div class="field full"><label for="procedure">Procedure family</label>
-          <select id="procedure">
-            <option value="robotic_tkr_unilateral_right" selected>Robotic TKR — Unilateral Right</option>
-            <option value="robotic_tkr_unilateral_left">Robotic TKR — Unilateral Left</option>
-            <option value="robotic_tkr_bilateral">Robotic TKR — Bilateral</option>
-            <option value="total_hip_replacement_thr_hemiarthroplasty">Total Hip Replacement (THR) / Hemiarthroplasty</option>
-          </select>
-          <span class="hint">Robotic TKR Right is validated to exact workbook parity</span>
+          <select id="procedure"></select>
+          <span class="hint" id="procedureHint">Clinical cohort only — payor &amp; room are chosen below</span>
         </div>
       </fieldset>
 
@@ -258,6 +253,33 @@ const inr2 = (v) => v == null ? '—' : Number(v).toLocaleString('en-IN', {minim
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 let lastEstimate = null;
+let FAMILIES = [];
+
+/* families come from the registry — daycare families disable room selection */
+async function loadFamilies() {
+  try {
+    FAMILIES = await (await fetch('/api/lookup/families')).json();
+    $('procedure').innerHTML = FAMILIES.map((f) =>
+      `<option value="${esc(f.family)}"${f.validated ? ' selected' : ''}>${esc(f.label)}${f.validated ? ' ✓' : ''}</option>`).join('');
+    onFamilyChange();
+  } catch { showError('Could not load procedure families — is the API running?'); }
+}
+function onFamilyChange() {
+  const fam = FAMILIES.find((f) => f.family === $('procedure').value);
+  const daycare = !!fam?.daycare;
+  const room = $('room');
+  room.disabled = daycare;
+  if (daycare) {
+    room.value = 'General';
+    $('procedureHint').textContent = 'Daycare family — no ward stay, room selection not applicable';
+  } else {
+    $('procedureHint').textContent = fam?.validated
+      ? 'Validated to exact workbook parity'
+      : 'Clinical cohort only — payor & room are chosen below';
+  }
+}
+document.addEventListener('DOMContentLoaded', loadFamilies);
+
 
 /* ---------- form helpers ---------- */
 function payload() {
@@ -286,6 +308,8 @@ function clearError() { $('formError').style.display = 'none'; }
 for (const [sel, inp] of [['icuBasis','icuManual'],['wardBasis','wardManual'],['otBasis','otManual']]) {
   $(sel).addEventListener('change', () => { $(inp).disabled = $(sel).value !== 'Manual'; if ($(inp).disabled) $(inp).value = ''; });
 }
+
+$('procedure').addEventListener('change', onFamilyChange);
 
 /* payor → insurer select */
 $('payor').addEventListener('change', async () => {

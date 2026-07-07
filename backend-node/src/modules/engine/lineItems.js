@@ -191,10 +191,13 @@ export function computeLineItems(ctx) {
         roboticControlled: /ROBO/i.test(procedure.label),
       });
     }
-    fixedOne('Instrument Charges (Major)', 'Procedure / OT Charges', 'OT Charges', 'OTI0018');
-    fixedOne('OT Disinfection Charges', 'Procedure / OT Charges', 'OT Charges', 'OTI0015');
-    fixedOne('Post Surgery Recovery Charges', 'Procedure / OT Charges', 'OT Charges', 'OTC5005');
-    {
+    const famRows = ctx.familyRows ?? {}; // { ot: bool, cathLab: bool, surgical: bool }
+    if (famRows.surgical !== false) {
+      fixedOne('Instrument Charges (Major)', 'Procedure / OT Charges', 'OT Charges', 'OTI0018');
+      fixedOne('OT Disinfection Charges', 'Procedure / OT Charges', 'OT Charges', 'OTI0015');
+      fixedOne('Post Surgery Recovery Charges', 'Procedure / OT Charges', 'OT Charges', 'OTC5005');
+    }
+    if (famRows.ot !== false) {
       const otMode = ctx.emergencyOt === 'Yes' ? 'emergency' : 'normal';
       const slot = otSlots.get(`${otMode}|${drivers.ot.selected}`) || {};
       const mkCells = (roomKey) => [slot[roomKey] ?? 0, slot[roomKey] ?? 0, slot[roomKey] ?? 0];
@@ -208,7 +211,7 @@ export function computeLineItems(ctx) {
         cells: { general: mkCells('general'), twin: mkCells('twin'), single: mkCells('single') },
       });
     }
-    {
+    if (famRows.cathLab !== false) {
       const c = cathLab || { p25: 0, p50: 0, p75: 0 };
       const cells = [c.p25 ?? 0, c.p50 ?? 0, c.p75 ?? 0];
       push({
@@ -362,23 +365,30 @@ export function computeLineItems(ctx) {
     const cells = [d * (basisRow[kLow] ?? 0), d * (basisRow[kTyp] ?? 0), d * (basisRow[kHigh] ?? 0)];
     return cells;
   };
+  // Daycare-style families (stay ≈ 0) take IP pharmacy from bucket quartiles directly;
+  // stay-based families scale the per-day baseline by selected LOS (docs 09/12).
+  const ipBucketMode = ctx.ipPharmacyMode === 'bucket';
   {
-    const cells = perDay('ip_drugs_day_p25', 'ip_drugs_day_p50', 'ip_drugs_day_p75');
+    const cells = ipBucketMode
+      ? [basisRow.ip_drugs_p25 ?? 0, basisRow.ip_drugs_p50 ?? 0, basisRow.ip_drugs_p75 ?? 0]
+      : perDay('ip_drugs_day_p25', 'ip_drugs_day_p50', 'ip_drugs_day_p75');
     push({
       name: 'IP Drugs & Medications', bucket: 'Pharmacy', sub: 'IP Pharmacy', source: 'History',
-      how: 'Historic per-LOS-day percentile x selected LOS', code: null,
-      qty: { selected: drivers.los.selected, low: drivers.los.p25, typ: drivers.los.p50, high: drivers.los.p75 },
-      rate: { general: basisRow.ip_drugs_day_p50 ?? 0, twin: basisRow.ip_drugs_day_p50 ?? 0, single: basisRow.ip_drugs_day_p50 ?? 0 },
+      how: ipBucketMode ? 'Bucket quartiles' : 'Historic per-LOS-day percentile x selected LOS', code: null,
+      qty: ipBucketMode ? {} : { selected: drivers.los.selected, low: drivers.los.p25, typ: drivers.los.p50, high: drivers.los.p75 },
+      rate: ipBucketMode ? {} : { general: basisRow.ip_drugs_day_p50 ?? 0, twin: basisRow.ip_drugs_day_p50 ?? 0, single: basisRow.ip_drugs_day_p50 ?? 0 },
       cells: { general: cells, twin: [...cells], single: [...cells] },
     });
   }
   {
-    const cells = perDay('ip_consumables_day_p25', 'ip_consumables_day_p50', 'ip_consumables_day_p75');
+    const cells = ipBucketMode
+      ? [basisRow.ip_consumables_p25 ?? 0, basisRow.ip_consumables_p50 ?? 0, basisRow.ip_consumables_p75 ?? 0]
+      : perDay('ip_consumables_day_p25', 'ip_consumables_day_p50', 'ip_consumables_day_p75');
     push({
       name: 'IP Consumables', bucket: 'Pharmacy', sub: 'IP Pharmacy', source: 'History',
-      how: 'Historic per-LOS-day percentile x selected LOS', code: null,
-      qty: { selected: drivers.los.selected, low: drivers.los.p25, typ: drivers.los.p50, high: drivers.los.p75 },
-      rate: { general: basisRow.ip_consumables_day_p50 ?? 0, twin: basisRow.ip_consumables_day_p50 ?? 0, single: basisRow.ip_consumables_day_p50 ?? 0 },
+      how: ipBucketMode ? 'Bucket quartiles' : 'Historic per-LOS-day percentile x selected LOS', code: null,
+      qty: ipBucketMode ? {} : { selected: drivers.los.selected, low: drivers.los.p25, typ: drivers.los.p50, high: drivers.los.p75 },
+      rate: ipBucketMode ? {} : { general: basisRow.ip_consumables_day_p50 ?? 0, twin: basisRow.ip_consumables_day_p50 ?? 0, single: basisRow.ip_consumables_day_p50 ?? 0 },
       cells: { general: cells, twin: [...cells], single: [...cells] },
     });
   }

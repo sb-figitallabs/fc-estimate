@@ -69,7 +69,14 @@ export function buildBasisSummary(cohorts) {
     const stayOf = (r) => r.normalized_billable_stay_days ?? Math.ceil(r.los_days);
     const perDay = (key) => q(rows.map((r) => (stayOf(r) > 0 ? bucketOf(r, key) / stayOf(r) : 0)));
     const ipDrugsDay = perDay('ip_drugs'), ipConsDay = perDay('ip_consumables');
-    const cath = q(rows.map((r) => Number(r.derived_cath_lab_hours ?? 0) * 0)); // cath amounts: none for this family
+    // cath-lab family amounts: per-admission total of cath-lab service rows
+    const cath = q(rows.map((r) => {
+      let t = 0;
+      for (const s of (Array.isArray(r.services_json) ? r.services_json : [])) {
+        if (/CATH ?LAB/i.test(s.service_name || '')) t += Number(s.amount ?? 0);
+      }
+      return t;
+    }));
     return {
       basis_label: label,
       cohort_size: n,
