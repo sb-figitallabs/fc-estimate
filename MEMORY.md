@@ -255,3 +255,9 @@ curl -s -X POST localhost:4100/api/estimate/build -H 'Content-Type: application/
 - **Domain/TLS (final setup — user built it via ALB)**: `fc-estimate.figitallabs.com` → shared ALB `alb-main-figitallabs` (HTTPS 443 + ACM cert, HTTP 80 → 301 redirect) → target group `tg-fc-estimate` (instance:80, health check `/health`) → nginx → :4100. certbot NOT used.
 - **EC2 SG final**: 22 ← 0.0.0.0/0 (key-only; CI needs it), 80 ← ALB SG `sg-04c8053d905ab4f4d` only (raw-IP access closed). Instance :443 closed (TLS at ALB).
 - Live URLs: frontend https://fc-estimate.figitallabs.com/ · API /api/* · Swagger /docs.
+
+## 10. Ops notes & family expansion (2026-07-07)
+
+- **DNS gotcha**: when the user switched the record A→CNAME(ALB), resolvers that queried in the gap cached NXDOMAIN for 30 min (zone negative TTL 1800s). Zone was always healthy at Cloudflare (tom/gwen). Diagnosis: query authoritative NS directly; fix: wait/flush (macOS `dscacheutil -flushcache`, Chrome `chrome://net-internals/#dns`, Google flush page).
+- **Only 3 procedure families are registered** (robotic TKR right/left/bilateral) — see cohort.js. Reason: the reference workbook existed only for robotic-TKR-right; the others reuse the same surgical-knee line definitions. Big candidate cohorts in the data (≥50 cases/payor): conventional TKR left/right/bilateral (GIPSA + Non-GIPSA heavy), PTCA 1-vessel (131 cash — daycare/cath-lab family: needs cath-lab rows instead of OT), CAG CAT-1 (109 cash), lap cholecystectomy, LSCS. ~2.5k cases have package_name '#N/A' (unusable without another cohort signal).
+- Non-TKR families need family-specific `core_line_definitions` variants (docs 12/15: cath-lab vs OT emphasis, daycare handling) — the current core rows are knee-surgery-shaped (X-ray knee, physio package, OTI0098 procedure row).
