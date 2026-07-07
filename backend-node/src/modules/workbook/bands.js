@@ -189,7 +189,9 @@ export function buildBands(estimate, input, template) {
     // extra rows would need formula cloning by archetype).
     const tplItemRows = Object.keys(tpl).filter((a) => /^A\d+$/.test(a)).length - 3; // header + 2 total rows
     if (items.length !== tplItemRows) {
-      console.warn(`[workbook] line-item count ${items.length} != template ${tplItemRows}; formula addresses may not line up`);
+      // generateWorkbook switches these sheets to the dynamic builders
+      // (dynamicSheets.js) in this case — bands for them go unused.
+      console.info(`[workbook] row counts differ from template (${items.length} vs ${tplItemRows}) — dynamic sheet builders take over`);
     }
     items.forEach((it, i) => {
       const row = 2 + i;

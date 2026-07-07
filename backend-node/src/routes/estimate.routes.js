@@ -37,7 +37,18 @@ export const EstimateInput = z.object({
     ot_hours_basis: z.string().default('P50'),
     ot_hours_manual: z.number().optional(),
     robotic: z.enum(['yes', 'no', 'auto']).default('auto'),
+    emergency_ot: z.enum(['No', 'Yes']).default('No'), // switches OT pricing to the OT-E slot ladder
+    mlc: z.enum(['No', 'Yes']).default('No'),          // applies the MLC charge row (HSP0047)
   }).default({}),
+  selections: z.object({
+    add_ons: z.record(z.string(), z.enum(['Include', 'Exclude'])).optional(),
+    grouped: z.record(z.string(), z.enum(['Include', 'Exclude'])).optional(),
+    ot_consumables: z.record(z.string(), z.enum(['Include', 'Exclude'])).optional(),
+    implants: z.object({
+      mode: z.string().optional(), family: z.string().optional(),
+      brand: z.string().optional(), itemCode: z.string().optional(),
+    }).optional(),
+  }).optional(),
 });
 
 /**

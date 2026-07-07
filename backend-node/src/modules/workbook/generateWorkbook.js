@@ -2,6 +2,11 @@ import fs from 'node:fs';
 import ExcelJS from 'exceljs';
 import { TEXTS } from './texts.js';
 import { buildBands } from './bands.js';
+import {
+  dynamicLayout, buildLineItemDetail, buildServiceAddOns, buildGroupedAdjustments,
+  buildAdvancedControls, buildImplantSelection, buildEstimateSummary,
+  buildEstimateVsActuals, buildEstimateBreakdown,
+} from './dynamicSheets.js';
 
 /**
  * FC Estimate Builder workbook generator — full parity with
@@ -88,6 +93,26 @@ export async function generateWorkbook(estimate, input) {
   wb.calcProperties.fullCalcOnLoad = true;
 
   const styles = template.styles.map(toExcelStyle);
+  // DYNAMIC mode: when this family's row counts differ from the reference
+  // template, the interactive sheets are generated from the estimate itself
+  // (live formulas over correct row ranges) instead of template replay.
+  const dynamicMode =
+    estimate.line_items.length !== 72 ||
+    estimate.add_ons.length !== 27 ||
+    estimate.grouped_adjustments.length !== 3 ||
+    estimate.advanced_controls.ot_consumables.shortlist.length !== 10;
+  const L = dynamicMode ? dynamicLayout(estimate) : null;
+  const DYNAMIC_BUILDERS = {
+    'Line Item Detail': buildLineItemDetail,
+    'Service Add-Ons': buildServiceAddOns,
+    'Grouped Adjustments': buildGroupedAdjustments,
+    'Advanced Controls': buildAdvancedControls,
+    'Implant Selection': buildImplantSelection,
+    'Estimate Summary': buildEstimateSummary,
+    'Estimate vs IP FC Actuals': buildEstimateVsActuals,
+    'Estimate Breakdown': buildEstimateBreakdown,
+  };
+
   const bands = buildBands(estimate, input, template);
 
   for (const name of template.sheetOrder) {
@@ -95,6 +120,10 @@ export async function generateWorkbook(estimate, input) {
     const ws = wb.addWorksheet(name, {
       views: [{ showGridLines: sheet.gridlines, zoomScale: sheet.zoom }],
     });
+    if (dynamicMode && DYNAMIC_BUILDERS[name]) {
+      DYNAMIC_BUILDERS[name](ws, estimate, L);
+      continue;
+    }
 
     // columns
     for (const [letter, col] of Object.entries(sheet.cols)) {
