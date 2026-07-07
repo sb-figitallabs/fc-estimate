@@ -4,9 +4,15 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "validate": "npm run validate:artifacts && npm run validate:estimate && npm run validate:workbook",
+    "validate:artifacts": "node scripts/validate_artifacts.js",
+    "validate:estimate": "node scripts/validate_estimate.js",
+    "validate:workbook": "node scripts/validate_workbook.js",
+    "build:template": "node scripts/build_template.js",
+    "docs": "open http://localhost:4100/docs",
+    "test": "npm run validate"
   },
   "keywords": [],
   "author": "",
