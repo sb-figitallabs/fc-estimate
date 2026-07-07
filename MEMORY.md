@@ -252,4 +252,6 @@ curl -s -X POST localhost:4100/api/estimate/build -H 'Content-Type: application/
   - All 7 tables verified in RDS (exact counts); local `.env` ALSO points at RDS now (TLS verify-full via `rds-global-bundle.pem`; note `sslmode` in URL overrides pg Pool `ssl` option — use `sslrootcert=` URL param).
 - **Server layout**: app at `~/fc-estimate/backend-node`, pm2 process `fc-builder-api` (systemd startup), nginx vhost `fc-estimate` → 127.0.0.1:4100, Vertex `service-account.json` at `/home/ubuntu/`.
 - **CI/CD**: `.github/workflows/deploy.yml` — push to main → SSH (secrets EC2_HOST/EC2_USER/EC2_SSH_KEY) → git reset --hard origin/main + npm ci + pm2 restart + health check. Verified working.
-- **Domain**: `fc-estimate.figitallabs.com` → A record → **13.233.93.244**. HTTPS: after DNS propagates run `sudo certbot --nginx -d fc-estimate.figitallabs.com` on the server (certbot preinstalled).
+- **Domain/TLS (final setup — user built it via ALB)**: `fc-estimate.figitallabs.com` → shared ALB `alb-main-figitallabs` (HTTPS 443 + ACM cert, HTTP 80 → 301 redirect) → target group `tg-fc-estimate` (instance:80, health check `/health`) → nginx → :4100. certbot NOT used.
+- **EC2 SG final**: 22 ← 0.0.0.0/0 (key-only; CI needs it), 80 ← ALB SG `sg-04c8053d905ab4f4d` only (raw-IP access closed). Instance :443 closed (TLS at ALB).
+- Live URLs: frontend https://fc-estimate.figitallabs.com/ · API /api/* · Swagger /docs.
