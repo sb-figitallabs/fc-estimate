@@ -14,6 +14,9 @@ const openapi = JSON.parse(fs.readFileSync(new URL('../openapi.json', import.met
 app.get('/openapi.json', (_req, res) => res.json(openapi));
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi, { customSiteTitle: 'FC Estimate Builder API' }));
 
+// Sample frontend (public/index.html) at /
+app.use(express.static(new URL('../public', import.meta.url).pathname));
+
 app.get('/health', async (_req, res) => {
   try {
     const { rows } = await pool.query('SELECT 1 AS ok');

@@ -40,11 +40,16 @@ export const EstimateInput = z.object({
   }).default({}),
 });
 
-/** POST /api/estimate/build — JSON estimate (resolved context, sections, totals, warnings) */
+/**
+ * POST /api/estimate/build — JSON estimate (resolved context, sections, totals, warnings).
+ * The internal `artifacts` block (raw cohort rows incl. patient identifiers + full
+ * reference tables, ~5 MB) is stripped from HTTP responses — it exists for the
+ * in-process workbook generator only.
+ */
 router.post('/build', async (req, res, next) => {
   try {
     const input = EstimateInput.parse(req.body);
-    const estimate = await buildEstimate(input);
+    const { artifacts, ...estimate } = await buildEstimate(input);
     res.json(estimate);
   } catch (err) { next(err); }
 });

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FC Estimate Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='3' width='20' height='18' rx='3' fill='%230033CC'/%3E%3Cpath d='M7 12h4m-2-2v4M14 9h4M14 13h4M14 17h4M6 17h5' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --brand:#0033CC; --brand-600:#0029a3; --brand-50:#eef2ff;
+    --ink:#0f172a; --ink-2:#475569; --ink-3:#64748b;
+    --surface:#ffffff; --bg:#f4f6f8; --line:#e2e8f0;
+    --ok:#166534; --ok-bg:#dcfce7; --warn:#92400e; --warn-bg:#fef3c7;
+    --err:#b91c1c; --err-bg:#fee2e2;
+    --radius:10px; --shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .num{font-variant-numeric:tabular-nums}
+
+  header{background:var(--brand);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header svg{flex:none}
+  header h1{font-size:18px;font-weight:600;letter-spacing:.2px}
+  header .sub{font-size:13px;opacity:.85}
+  header .links{margin-left:auto;display:flex;gap:14px}
+  header a{color:#fff;opacity:.9;font-size:13px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.4);padding-bottom:1px}
+  header a:hover,header a:focus-visible{opacity:1}
+
+  .wrap{display:grid;grid-template-columns:400px 1fr;gap:20px;padding:20px 24px;max-width:1440px;margin:0 auto;align-items:start}
+  @media (max-width:960px){.wrap{grid-template-columns:1fr}}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3);padding:14px 16px 0}
+
+  form{padding:8px 16px 16px;display:flex;flex-direction:column;gap:14px}
+  fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  legend{font-size:12px;font-weight:600;color:var(--ink-2);padding:0 6px;text-transform:uppercase;letter-spacing:.5px}
+  .field{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .field.full{grid-column:1/-1}
+  label{font-size:13px;font-weight:500;color:var(--ink-2)}
+  input,select,textarea{font:inherit;font-size:14px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:6px;padding:9px 10px;min-height:44px;width:100%}
+  textarea{min-height:64px;resize:vertical}
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand)}
+  .hint{font-size:12px;color:var(--ink-3)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-size:14px;font-weight:600;border-radius:8px;border:1px solid transparent;padding:0 16px;min-height:44px;cursor:pointer;transition:background .15s ease}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-primary:hover:not([disabled]){background:var(--brand-600)}
+  .btn-secondary{background:#fff;color:var(--brand);border-color:var(--brand)}
+  .btn-secondary:hover:not([disabled]){background:var(--brand-50)}
+  .btn-ghost{background:#fff;color:var(--ink-2);border-color:var(--line)}
+  .btn-ghost:hover:not([disabled]){background:var(--bg)}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+  .btn-row .btn-primary{flex:1}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .btn-secondary .spinner,.btn-ghost .spinner{border-color:rgba(0,51,204,.25);border-top-color:var(--brand)}
+  .busy .spinner{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spinner{animation-duration:1.6s}}
+
+  details{border:1px solid var(--line);border-radius:8px;padding:0}
+  details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-2);padding:12px;list-style-position:inside}
+  details[open] summary{border-bottom:1px solid var(--line)}
+  details .inner{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .alert{border-radius:8px;padding:10px 12px;font-size:13px;display:none}
+  .alert.err{display:block;background:var(--err-bg);color:var(--err)}
+
+  /* results */
+  .results-head{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .results-head h2{padding:0}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:auto}
+  .seg button{font:inherit;font-size:13px;font-weight:600;padding:9px 16px;min-height:44px;border:0;background:#fff;color:var(--ink-2);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+  .results-body{padding:16px}
+  .placeholder{padding:48px 16px;text-align:center;color:var(--ink-3);font-size:14px}
+
+  .kpi{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+  .kpi .amount{font-size:34px;font-weight:700;color:var(--brand)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px}
+  .chip{font-size:12px;font-weight:600;background:var(--brand-50);color:var(--brand);border-radius:999px;padding:4px 10px}
+  .chip.neutral{background:var(--bg);color:var(--ink-2)}
+  .badge{font-size:12px;font-weight:600;border-radius:999px;padding:4px 10px}
+  .badge.ok{background:var(--ok-bg);color:var(--ok)}
+  .badge.warn{background:var(--warn-bg);color:var(--warn)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+  @media (max-width:1200px){.grid2{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  caption{caption-side:top;text-align:left;font-size:13px;font-weight:600;color:var(--ink-2);padding-bottom:6px}
+  th{text-align:left;font-weight:600;color:var(--ink-3);border-bottom:1px solid var(--line);padding:7px 8px;white-space:nowrap}
+  td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top}
+  td.r,th.r{text-align:right}
+  tr.section td{background:var(--bg);font-weight:600;color:var(--ink-2)}
+  tr.total td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+  .scroll-x{overflow-x:auto}
+  .muted{color:var(--ink-3)}
+
+  #jsonView{display:none;padding:16px}
+  #jsonView pre{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:16px;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;overflow:auto;max-height:70vh;white-space:pre}
+  .json-tools{display:flex;justify-content:flex-end;margin-bottom:8px}
+
+  footer{padding:12px 24px 28px;color:var(--ink-3);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="2" y="3" width="20" height="18" rx="3" stroke="#fff" stroke-width="1.8"/>
+    <path d="M7 12h4m-2-2v4M14 9h4M14 13h4M14 17h4M6 17h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>
+  <div>
+    <h1>FC Estimate Builder</h1>
+    <div class="sub">Historical-cohort cost estimates &amp; finalized Excel workbook</div>
+  </div>
+  <nav class="links" aria-label="Documentation">
+    <a href="/docs" target="_blank" rel="noopener">API docs</a>
+    <a href="/openapi.json" target="_blank" rel="noopener">OpenAPI</a>
+  </nav>
+</header>
+
+<main class="wrap">
+  <!-- ============ INPUT PANEL ============ -->
+  <section class="card" aria-labelledby="form-title">
+    <h2 id="form-title">Inputs</h2>
+    <form id="estimateForm" novalidate>
+
+      <details>
+        <summary>AI intake — paste a free-text note (optional)</summary>
+        <div class="inner">
+          <div class="field full">
+            <label for="intakeText">Intake note</label>
+            <textarea id="intakeText" placeholder="e.g. Mr Ramesh Kumar, 64 yr male, advised robotic TKR right side, paying cash, wants single room"></textarea>
+            <span class="hint">Gemini parses it and fills the form below. Nothing is submitted yet.</span>
+          </div>
+          <div class="field full">
+            <button type="button" class="btn btn-secondary" id="intakeBtn"><span class="spinner" aria-hidden="true"></span>Parse with AI</button>
+          </div>
+        </div>
+      </details>
+
+      <fieldset>
+        <legend>Patient</legend>
+        <div class="field"><label for="pName">Name</label><input id="pName" value="Ramesh Kumar" autocomplete="name"></div>
+        <div class="field"><label for="pAge">Age</label><input id="pAge" type="number" inputmode="numeric" value="64" min="0" max="120"></div>
+        <div class="field full"><label for="pGender">Gender</label>
+          <select id="pGender"><option>Male</option><option>Female</option><option>Other</option></select>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Clinical</legend>
+        <div class="field full"><label for="procedure">Procedure family</label>
+          <select id="procedure">
+            <option value="robotic_tkr_unilateral_right" selected>Robotic TKR — Unilateral Right</option>
+            <option value="robotic_tkr_unilateral_left">Robotic TKR — Unilateral Left</option>
+            <option value="robotic_tkr_bilateral">Robotic TKR — Bilateral</option>
+          </select>
+          <span class="hint">Right variant is validated to exact workbook parity</span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Payment</legend>
+        <div class="field"><label for="payor">Payor</label>
+          <select id="payor">
+            <option selected>Cash</option>
+            <option>GIPSA Insurance</option>
+            <option>Non-GIPSA Insurance</option>
+            <option>Corporate</option>
+          </select>
+        </div>
+        <div class="field"><label for="org">Insurer <span class="muted">(non-cash)</span></label>
+          <select id="org" disabled><option value="">— Cash / TR1 —</option></select>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Estimate controls</legend>
+        <div class="field"><label for="room">Room type</label>
+          <select id="room"><option>General</option><option>Twin</option><option selected>Single</option></select>
+        </div>
+        <div class="field"><label for="mode">Estimate mode</label>
+          <select id="mode"><option>Low</option><option selected>Typical</option><option>High</option></select>
+        </div>
+        <div class="field"><label for="robotic">Robotic</label>
+          <select id="robotic"><option value="auto" selected>Auto (presence &gt; 90%)</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </div>
+        <div class="field"><label for="emergency">Emergency OT</label>
+          <select id="emergency"><option selected>No</option><option>Yes</option></select>
+        </div>
+      </fieldset>
+
+      <details>
+        <summary>Advanced — driver bases (default P50 / Typical)</summary>
+        <div class="inner">
+          <div class="field"><label for="icuBasis">ICU days basis</label>
+            <select id="icuBasis"><option>P25</option><option selected>P50</option><option>P75</option><option>Manual</option></select>
+          </div>
+          <div class="field"><label for="icuManual">ICU manual value</label><input id="icuManual" type="number" step="1" min="0" placeholder="—" disabled></div>
+          <div class="field"><label for="wardBasis">Ward days basis</label>
+            <select id="wardBasis"><option>P25</option><option selected>P50</option><option>P75</option><option>Manual</option></select>
+          </div>
+          <div class="field"><label for="wardManual">Ward manual value</label><input id="wardManual" type="number" step="1" min="0" placeholder="—" disabled></div>
+          <div class="field"><label for="otBasis">OT hours basis</label>
+            <select id="otBasis"><option>P25</option><option selected>P50</option><option>P75</option><option>Manual</option></select>
+          </div>
+          <div class="field"><label for="otManual">OT manual hours</label><input id="otManual" type="number" step="0.5" min="0" placeholder="—" disabled></div>
+          <div class="field"><label for="mlc">MLC case</label>
+            <select id="mlc"><option selected>No</option><option>Yes</option></select>
+          </div>
+        </div>
+      </details>
+
+      <div class="alert err" id="formError" role="alert"></div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary" id="buildBtn"><span class="spinner" aria-hidden="true"></span>Build estimate</button>
+        <button type="button" class="btn btn-secondary" id="downloadBtn" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="spinner" aria-hidden="true"></span>Excel
+        </button>
+      </div>
+      <span class="hint">Excel = the 16-sheet interactive FC workbook for the same inputs.</span>
+    </form>
+  </section>
+
+  <!-- ============ RESULTS PANEL ============ -->
+  <section class="card" aria-labelledby="results-title">
+    <div class="results-head">
+      <h2 id="results-title">Results</h2>
+      <div class="seg" role="group" aria-label="Result view">
+        <button type="button" id="viewFormatted" aria-pressed="true">Formatted</button>
+        <button type="button" id="viewJson" aria-pressed="false">JSON</button>
+      </div>
+    </div>
+
+    <div id="placeholder" class="placeholder">Fill the inputs and press <strong>Build estimate</strong>.<br>Defaults reproduce the finalized Robotic TKR (cash / TR1) workbook.</div>
+
+    <div id="formattedView" class="results-body" style="display:none"></div>
+
+    <div id="jsonView">
+      <div class="json-tools"><button type="button" class="btn btn-ghost" id="copyJson">Copy JSON</button></div>
+      <pre id="jsonPre" tabindex="0" aria-label="Raw JSON response"></pre>
+    </div>
+  </section>
+</main>
+
+<footer>fc-builder-api · estimates are historical-cohort bands (Low / Typical / High), not quotations</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const inr = (v) => v == null ? '—' : Number(v).toLocaleString('en-IN', {maximumFractionDigits: 0});
+const inr2 = (v) => v == null ? '—' : Number(v).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let lastEstimate = null;
+
+/* ---------- form helpers ---------- */
+function payload() {
+  const payor = $('payor').value;
+  return {
+    patient: { name: $('pName').value || undefined, age: $('pAge').value ? Number($('pAge').value) : undefined, gender: $('pGender').value },
+    clinical: { procedure: $('procedure').value },
+    payment: { payor_bucket: payor, ...(payor !== 'Cash' && $('org').value ? { organization_cd: $('org').value } : {}) },
+    controls: {
+      room_type: $('room').value,
+      estimate_mode: $('mode').value,
+      robotic: $('robotic').value,
+      emergency_ot: $('emergency').value,
+      mlc: $('mlc').value,
+      icu_basis: $('icuBasis').value, ...($('icuBasis').value === 'Manual' && $('icuManual').value ? { icu_manual: +$('icuManual').value } : {}),
+      ward_basis: $('wardBasis').value, ...($('wardBasis').value === 'Manual' && $('wardManual').value ? { ward_manual: +$('wardManual').value } : {}),
+      ot_hours_basis: $('otBasis').value, ...($('otBasis').value === 'Manual' && $('otManual').value ? { ot_hours_manual: +$('otManual').value } : {}),
+    },
+  };
+}
+function setBusy(btn, busy) { btn.classList.toggle('busy', busy); btn.disabled = busy; }
+function showError(msg) { const el = $('formError'); el.textContent = msg; el.classList.add('err'); el.style.display = 'block'; }
+function clearError() { $('formError').style.display = 'none'; }
+
+/* manual inputs enable/disable */
+for (const [sel, inp] of [['icuBasis','icuManual'],['wardBasis','wardManual'],['otBasis','otManual']]) {
+  $(sel).addEventListener('change', () => { $(inp).disabled = $(sel).value !== 'Manual'; if ($(inp).disabled) $(inp).value = ''; });
+}
+
+/* payor → insurer select */
+$('payor').addEventListener('change', async () => {
+  const isCash = $('payor').value === 'Cash';
+  const org = $('org');
+  org.disabled = isCash;
+  if (isCash) { org.innerHTML = '<option value="">— Cash / TR1 —</option>'; return; }
+  if (org.dataset.loaded) return;
+  try {
+    const res = await fetch('/api/lookup/organizations');
+    const orgs = await res.json();
+    org.innerHTML = '<option value="">Select insurer…</option>' +
+      orgs.map((o) => `<option value="${esc(o.organization_cd)}">${esc(o.organization_name)} → ${esc(o.tariff_name)}</option>`).join('');
+    org.dataset.loaded = '1';
+  } catch { showError('Could not load insurers — is the API running?'); }
+});
+
+/* ---------- AI intake ---------- */
+$('intakeBtn').addEventListener('click', async () => {
+  const text = $('intakeText').value.trim();
+  if (!text) return;
+  clearError(); setBusy($('intakeBtn'), true);
+  try {
+    const res = await fetch('/api/estimate/intake', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ text }) });
+    if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+    const s = await res.json();
+    if (s.patient?.name) $('pName').value = s.patient.name;
+    if (s.patient?.age) $('pAge').value = s.patient.age;
+    if (s.patient?.gender) $('pGender').value = /^f/i.test(s.patient.gender) ? 'Female' : /^m/i.test(s.patient.gender) ? 'Male' : 'Other';
+    if (s.clinical?.procedure && [...$('procedure').options].some((o) => o.value === s.clinical.procedure)) $('procedure').value = s.clinical.procedure;
+    if (s.payment?.payor_bucket && [...$('payor').options].some((o) => o.value === s.payment.payor_bucket)) {
+      $('payor').value = s.payment.payor_bucket; $('payor').dispatchEvent(new Event('change'));
+    }
+    if (Array.isArray(s.notes) && s.notes.some((n) => /single/i.test(n))) $('room').value = 'Single';
+  } catch (e) { showError('AI intake failed: ' + e.message); }
+  finally { setBusy($('intakeBtn'), false); }
+});
+
+/* ---------- build ---------- */
+$('estimateForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  clearError(); setBusy($('buildBtn'), true);
+  try {
+    const res = await fetch('/api/estimate/build', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload()) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    lastEstimate = data;
+    $('downloadBtn').disabled = false;
+    renderFormatted(data);
+    $('jsonPre').textContent = JSON.stringify(data, null, 2);
+    $('placeholder').style.display = 'none';
+    setView('formatted');
+  } catch (e) { showError('Build failed: ' + e.message); }
+  finally { setBusy($('buildBtn'), false); }
+});
+
+/* ---------- excel download ---------- */
+$('downloadBtn').addEventListener('click', async () => {
+  clearError(); setBusy($('downloadBtn'), true);
+  try {
+    const res = await fetch('/api/estimate/workbook', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload()) });
+    if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+    const blob = await res.blob();
+    const cd = res.headers.get('Content-Disposition') || '';
+    const name = (cd.match(/filename="([^"]+)"/) || [])[1] || 'fc_estimate.xlsx';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (e) { showError('Excel download failed: ' + e.message); }
+  finally { setBusy($('downloadBtn'), false); lastEstimate && ($('downloadBtn').disabled = false); }
+});
+
+/* ---------- view toggle ---------- */
+function setView(v) {
+  $('viewFormatted').setAttribute('aria-pressed', String(v === 'formatted'));
+  $('viewJson').setAttribute('aria-pressed', String(v === 'json'));
+  $('formattedView').style.display = (v === 'formatted' && lastEstimate) ? 'block' : 'none';
+  $('jsonView').style.display = (v === 'json' && lastEstimate) ? 'block' : 'none';
+}
+$('viewFormatted').addEventListener('click', () => setView('formatted'));
+$('viewJson').addEventListener('click', () => setView('json'));
+$('copyJson').addEventListener('click', async () => {
+  await navigator.clipboard.writeText($('jsonPre').textContent);
+  $('copyJson').textContent = 'Copied ✓';
+  setTimeout(() => { $('copyJson').textContent = 'Copy JSON'; }, 2000);
+});
+
+/* ---------- formatted renderer ---------- */
+function renderFormatted(d) {
+  const ctx = d.resolved_context || {};
+  const roomKey = (ctx.room_type || 'Single').toLowerCase();
+  const slc = d.service_line_count || {};
+  const withinRange = /within/i.test(slc.status || '');
+  const basis = ctx.payer_bases?.service_basis || {};
+
+  const bucketRows = Object.entries(d.bucket_totals || {})
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `<tr><td>${esc(k)}</td><td class="r num">${inr2(v)}</td></tr>`).join('');
+
+  const driverRows = ['los','icu','ward','ot'].map((k) => {
+    const dr = d.drivers?.[k]; if (!dr) return '';
+    const label = { los: 'Length of stay (days)', icu: 'ICU days', ward: 'Ward days', ot: 'OT hours' }[k];
+    return `<tr><td>${label}</td><td class="r num">${dr.p25}</td><td class="r num">${dr.p50}</td><td class="r num">${dr.p75}</td><td class="r num"><strong>${dr.selected}</strong></td></tr>`;
+  }).join('');
+
+  let liRows = '', currentBucket = null;
+  for (const row of d.line_items || []) {
+    if (row.bucket !== currentBucket) {
+      currentBucket = row.bucket;
+      liRows += `<tr class="section"><td colspan="4">${esc(currentBucket)}</td></tr>`;
+    }
+    const amt = row.selected?.[roomKey];
+    liRows += `<tr>
+      <td>${esc(row.name)}${row.code ? ` <span class="muted">· ${esc(row.code)}</span>` : ''}</td>
+      <td class="muted">${esc(row.how || row.source || '')}</td>
+      <td class="r num">${row.qty?.selected ?? ''}</td>
+      <td class="r num">${inr2(amt)}</td>
+    </tr>`;
+  }
+  liRows += `<tr class="total"><td colspan="3">Grand Total (${esc(ctx.estimate_mode)}, ${esc(ctx.room_type)} room)</td><td class="r num">${inr2(d.final_estimate)}</td></tr>`;
+
+  const warnings = (d.warnings || []).length
+    ? `<div class="alert err" style="display:block;margin-bottom:16px">${(d.warnings).map(esc).join('<br>')}</div>` : '';
+
+  const addOnsIncluded = (d.add_ons || []).filter((a) => a.selected === 'Include').length;
+  const groupedIncluded = (d.grouped_adjustments || []).filter((g) => g.selected === 'Include').length;
+
+  $('formattedView').innerHTML = `
+    ${warnings}
+    <div class="kpi">
+      <span class="amount num">₹ ${inr(d.final_estimate)}</span>
+      <span class="muted">estimate band: ₹ ${inr(d.grand_total?.[roomKey]?.[0])} – ₹ ${inr(d.grand_total?.[roomKey]?.[2])}</span>
+    </div>
+    <div class="chips">
+      <span class="chip">${esc(ctx.estimate_mode)} · ${esc(ctx.room_type)} room</span>
+      <span class="chip">${esc(ctx.tariff?.tariff_name || '')} / ${esc(ctx.tariff?.tariff_cd || '')}</span>
+      <span class="chip neutral">${esc(ctx.payor_bucket)} · basis ${esc(basis.selected_basis || '')} (${esc(basis.confidence || '')})</span>
+      <span class="chip neutral">cohort: ${ctx.cohort_case_count ?? '—'} similar cases</span>
+      ${ctx.robotic?.selection === 'Yes' ? '<span class="chip">Robotic</span>' : ''}
+      ${ctx.ot_slot?.label ? `<span class="chip neutral">${esc(ctx.ot_slot.label)}</span>` : ''}
+      <span class="badge ${withinRange ? 'ok' : 'warn'}">Service lines: ${esc(slc.status || 'n/a')} (${slc.current ?? '—'} vs P25 ${slc.p25 ?? '—'}–P75 ${slc.p75 ?? '—'})</span>
+    </div>
+
+    <div class="grid2">
+      <div class="scroll-x"><table>
+        <caption>Cost buckets (selected estimate)</caption>
+        <thead><tr><th scope="col">Bucket</th><th scope="col" class="r">Amount (₹)</th></tr></thead>
+        <tbody>${bucketRows}</tbody>
+      </table></div>
+      <div class="scroll-x"><table>
+        <caption>Stay &amp; procedure drivers</caption>
+        <thead><tr><th scope="col">Driver</th><th scope="col" class="r">P25</th><th scope="col" class="r">P50</th><th scope="col" class="r">P75</th><th scope="col" class="r">Selected</th></tr></thead>
+        <tbody>${driverRows}</tbody>
+      </table></div>
+    </div>
+
+    <details>
+      <summary>Line-item detail — ${(d.line_items || []).length} rows · ${addOnsIncluded}/${(d.add_ons || []).length} add-ons on · ${groupedIncluded} grouped residuals on</summary>
+      <div class="scroll-x" style="padding:12px"><table>
+        <thead><tr><th scope="col">Item</th><th scope="col">How</th><th scope="col" class="r">Qty</th><th scope="col" class="r">Amount (₹)</th></tr></thead>
+        <tbody>${liRows}</tbody>
+      </table></div>
+    </details>
+  `;
+}
+</script>
+</body>
+</html>
