@@ -1,2 +1,7 @@
 .DS_Store
 **/.DS_Store
+
+# never push the 1.5GB dump
+developer_handoff_fc_estimate_builder/database/fc_handover_phase1_clean.sql
+backend-node/.rds-credentials
+backend-node/.aws-resources
