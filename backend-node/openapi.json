@@ -1,0 +1,377 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FC Estimate Builder API",
+    "version": "0.1.0",
+    "description": "Standalone FC (Financial Counselor) Estimate Builder pipeline.\n\nRebuilds the finalized non-package FC Estimate Builder from the clean FC handoff database (Postgres `fc_handoff`): payor→tariff resolution, payer-basis auto-resolution, percentile-driven drivers (Low/Typical/High = P25/P50/P75), the full line-item engine (PF cascade, grouped residuals, advanced pharmacy controls, robotic/implant logic), and generation of the 16-sheet interactive Excel workbook with parity to the finalized builders.\n\n**Validated family**: `robotic_tkr_unilateral_right` — output matches the finalized workbook exactly. Also registered: `robotic_tkr_unilateral_left`, `robotic_tkr_bilateral`.\n\n**AI** (Gemini via Vertex AI): intake parsing, item mapping, estimate explanation. AI proposes, the DB decides."
+  },
+  "servers": [{ "url": "http://localhost:4100" }],
+  "tags": [
+    { "name": "health" },
+    { "name": "lookups", "description": "DB-grounded pickers (read-only)" },
+    { "name": "estimate", "description": "Core estimate pipeline" },
+    { "name": "ai", "description": "Gemini/Vertex AI assist" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Liveness + DB connectivity",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "example": { "ok": true, "db": "fc_handoff" } } }
+          }
+        }
+      }
+    },
+    "/api/lookup/organizations": {
+      "get": {
+        "tags": ["lookups"],
+        "summary": "Insurance organizations with tariff mapping",
+        "description": "All rows from `fc.organization_tariff_mapping` (68). Use `organization_cd` in the estimate payment block for non-cash payors.",
+        "responses": {
+          "200": {
+            "description": "Organizations",
+            "content": {
+              "application/json": {
+                "example": [{ "organization_cd": "ORG1311", "organization_name": "ACKO GENERAL INSURANCE CO LTD", "tariff_cd": "TR1", "tariff_name": "KIMS", "priority_type": "IPPRIORITY1" }]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lookup/service-items": {
+      "get": {
+        "tags": ["lookups"],
+        "summary": "Search canonical service items",
+        "parameters": [{ "name": "q", "in": "query", "schema": { "type": "string" }, "example": "knee", "description": "ILIKE match on item_name / item_code / canonical key" }],
+        "responses": {
+          "200": {
+            "description": "Up to 50 items with FC bucket, grouping, billing head, room-dependency",
+            "content": {
+              "application/json": {
+                "example": [{ "canonical_item_key": "XRY5090", "item_code": "XRY5090", "item_name": "X-RAY KNEE JOINT AP & LATERAL VIEW (BEDSIDE)", "fc_estimate_bucket": "Investigations", "grouping": "X-Ray / Fluoroscopy", "billing_head": "Investigations", "sub_head": "Radiology", "room_category_dependent": "True" }]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lookup/pharmacy-items": {
+      "get": {
+        "tags": ["lookups"],
+        "summary": "Search canonical pharmacy items",
+        "parameters": [{ "name": "q", "in": "query", "schema": { "type": "string" }, "example": "cement" }],
+        "responses": {
+          "200": {
+            "description": "Up to 50 items with classification, FC bucket, MRP/sale rate",
+            "content": {
+              "application/json": {
+                "example": [{ "canonical_item_key": "SMAM01", "item_code": "SMAM01", "item_name": "SMARTSET GHV BONE CEMENT 40G", "classification": "Implants / Stents", "fc_estimate_bucket": "implants", "grouping": "Implants", "mrp": 5730, "sale_rate": 5730 }]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lookup/doctors": {
+      "get": {
+        "tags": ["lookups"],
+        "summary": "Consultation doctors for a tariff",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "example": "reddy" },
+          { "name": "tariff_name", "in": "query", "schema": { "type": "string", "default": "KIMS" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Doctors from fc.consultation_tariff_rate_matrix",
+            "content": { "application/json": { "example": [{ "doctor_cd": "D000218", "doctor_name": "A. V. GURAVA REDDY" }] } }
+          }
+        }
+      }
+    },
+    "/api/estimate/build": {
+      "post": {
+        "tags": ["estimate"],
+        "summary": "Build the full estimate (JSON)",
+        "description": "Pipeline: payor→tariff (Cash → TR1/KIMS; insurance via organization_cd; failures return warnings, never silent fallbacks) → cohort selection → payer-basis auto-resolution (exact ≥15 surgical/daycare, ≥20 other; fallbacks Insurance All → All Payers → Cash at ≥25) → percentile drivers → line-item engine → totals.\n\nFor the default robotic-TKR cash body the `final_estimate` is **597612.0654575195** (matches the finalized workbook to the paisa).",
+        "requestBody": { "$ref": "#/components/requestBodies/EstimateInput" },
+        "responses": {
+          "200": { "description": "Estimate payload", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EstimateResponse" } } } },
+          "400": { "description": "Validation error (zod) or unknown procedure family" }
+        }
+      }
+    },
+    "/api/estimate/workbook": {
+      "post": {
+        "tags": ["estimate"],
+        "summary": "Generate the 16-sheet Excel workbook (.xlsx)",
+        "description": "Same body as /build. Returns the interactive FC Estimate Builder workbook: Builder, Estimate Summary, Estimate vs IP FC Actuals, Advanced Controls, Service Add-Ons, Grouped Adjustments, Grouping Review, Implant Selection, Estimate Breakdown, Line Item Detail, Pharmacy Template, Service Template, Pharmacy Metrics, IP FC Actuals, Professional Fees Review, Reference.\n\nLive formulas + dropdowns — changing Room/Mode/drivers inside Excel recalculates the estimate. 99.77% cell parity with the finalized reference workbook (100% of formulas verbatim).",
+        "requestBody": { "$ref": "#/components/requestBodies/EstimateInput" },
+        "responses": {
+          "200": {
+            "description": "Workbook download (Content-Disposition: attachment)",
+            "content": { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
+    "/api/estimate/intake": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "AI: free-text intake note → structured estimate input",
+        "description": "Parses patient/clinical/payment details from a free-text note. Insurer names are grounded against fc.organization_tariff_mapping and returned as `organization_candidates` (auto-resolved when exactly one matches).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "required": ["text"], "properties": { "text": { "type": "string" } } },
+              "example": { "text": "Mr Ramesh Kumar, 64 yr male, advised robotic total knee replacement right side by Dr Adarsh, paying cash, wants single room" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Structured input",
+            "content": {
+              "application/json": {
+                "example": {
+                  "patient": { "name": "Ramesh Kumar", "age": 64, "gender": "male" },
+                  "clinical": { "procedure": "robotic_tkr_unilateral_right", "doctor_name": "Adarsh" },
+                  "payment": { "payor_bucket": "Cash" },
+                  "notes": ["wants single room"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/estimate/map-items": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "AI: fuzzy item descriptions → canonical items",
+        "description": "Word-wise DB search proposes candidates; Gemini ranks and picks. AI never invents canonical keys — unmatched items return unresolved (doc 05 rule).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["description"],
+                      "properties": {
+                        "description": { "type": "string" },
+                        "kind": { "type": "string", "enum": ["service", "pharmacy"], "default": "service" },
+                        "context": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": { "items": [{ "description": "knee xray bedside", "kind": "service" }] }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per item: resolved canonical item (or null), DB candidates, AI verdict",
+            "content": {
+              "application/json": {
+                "example": [{
+                  "description": "knee xray bedside", "kind": "service",
+                  "resolved": { "canonical_item_key": "XRY5090", "item_code": "XRY5090", "item_name": "X-RAY KNEE JOINT AP & LATERAL VIEW (BEDSIDE)", "fc_estimate_bucket": "Investigations", "grouping": "X-Ray / Fluoroscopy" },
+                  "candidates": ["..."],
+                  "ai": { "best_index": 1, "confidence": "high", "reason": "Exact match for bedside AP & lateral knee X-ray" }
+                }]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/estimate/explain": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "AI: plain-language estimate summary for the FC conversation",
+        "description": "Builds the estimate (same body as /build), then returns a <150-word INR-formatted explanation. The model may not invent numbers not present in the computed data.",
+        "requestBody": { "$ref": "#/components/requestBodies/EstimateInput" },
+        "responses": {
+          "200": {
+            "description": "Summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "final_estimate": { "type": "number" },
+                    "bucket_totals": { "type": "object", "additionalProperties": { "type": "number" } },
+                    "explanation": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "requestBodies": {
+      "EstimateInput": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/EstimateInput" },
+            "example": {
+              "patient": { "name": "Ramesh Kumar", "age": 64, "gender": "M" },
+              "clinical": { "procedure": "robotic_tkr_unilateral_right" },
+              "payment": { "payor_bucket": "Cash" },
+              "controls": { "room_type": "Single", "estimate_mode": "Typical", "robotic": "auto" },
+              "selections": { "implants": { "mode": "Default P50" } }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "EstimateInput": {
+        "type": "object",
+        "required": ["clinical"],
+        "properties": {
+          "patient": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "age": { "oneOf": [{ "type": "string" }, { "type": "number" }] },
+              "gender": { "type": "string" },
+              "umr_no": { "type": "string" },
+              "admission_no": { "type": "string" }
+            }
+          },
+          "clinical": {
+            "type": "object",
+            "properties": {
+              "procedure": {
+                "type": "string",
+                "description": "Clinical family (cohort). Validated: robotic_tkr_unilateral_right.",
+                "enum": ["robotic_tkr_unilateral_right", "robotic_tkr_unilateral_left", "robotic_tkr_bilateral"],
+                "default": "robotic_tkr_unilateral_right"
+              },
+              "department_name": { "type": "string" },
+              "doctor_name": { "type": "string" },
+              "doctor_cd": { "type": "string", "description": "From /api/lookup/doctors — enables consultation pricing" }
+            }
+          },
+          "payment": {
+            "type": "object",
+            "properties": {
+              "payor_bucket": {
+                "type": "string",
+                "enum": ["Cash", "GIPSA Insurance", "Non-GIPSA Insurance", "Corporate"],
+                "default": "Cash",
+                "description": "Cash/General → tariff TR1/KIMS automatically"
+              },
+              "organization_cd": { "type": "string", "description": "Required for non-cash payors; from /api/lookup/organizations" }
+            }
+          },
+          "controls": {
+            "type": "object",
+            "description": "Workbook Builder controls — all optional",
+            "properties": {
+              "room_type": { "type": "string", "enum": ["General", "Twin", "Single"], "default": "Single" },
+              "estimate_mode": { "type": "string", "enum": ["Low", "Typical", "High"], "default": "Typical", "description": "Low=P25, Typical=P50, High=P75" },
+              "payer_basis": { "type": "string", "enum": ["Auto (Recommended)", "Cash", "GIPSA Insurance", "Non-GIPSA Insurance", "Corporate", "Insurance All", "All Payers"], "default": "Auto (Recommended)" },
+              "los_basis": { "type": "string", "enum": ["P25", "P50", "P75", "Manual"], "default": "P50" },
+              "los_manual": { "type": "number", "nullable": true },
+              "icu_basis": { "type": "string", "enum": ["P25", "P50", "P75", "Manual"], "default": "P50" },
+              "icu_manual": { "type": "number", "nullable": true },
+              "ward_basis": { "type": "string", "enum": ["P25", "P50", "P75", "Manual"], "default": "P50" },
+              "ward_manual": { "type": "number", "nullable": true },
+              "ot_hours_basis": { "type": "string", "enum": ["P25", "P50", "P75", "Manual"], "default": "P50" },
+              "ot_hours_manual": { "type": "number", "nullable": true, "description": "Snapped to the nearest supported OT tariff slot" },
+              "emergency_ot": { "type": "string", "enum": ["No", "Yes"], "default": "No", "description": "Yes → emergency OT slot ladder" },
+              "mlc": { "type": "string", "enum": ["No", "Yes"], "default": "No", "description": "Yes → MLC charge row (HSP0047) applies" },
+              "robotic": { "type": "string", "enum": ["yes", "no", "auto"], "default": "auto", "description": "auto = Yes when historical robotic presence > 90%" }
+            }
+          },
+          "selections": {
+            "type": "object",
+            "description": "Include/Exclude overrides mirroring the workbook's interactive controls",
+            "properties": {
+              "add_ons": { "type": "object", "additionalProperties": { "type": "string", "enum": ["Include", "Exclude"] }, "description": "By item_code, e.g. {\"BIO0106\": \"Include\"}" },
+              "grouped": { "type": "object", "additionalProperties": { "type": "string", "enum": ["Include", "Exclude"] }, "description": "By grouping name, e.g. {\"Coagulation Tests\": \"Exclude\"}" },
+              "ot_consumables": { "type": "object", "additionalProperties": { "type": "string", "enum": ["Include", "Exclude"] }, "description": "Shortlist selection by item_code; moves OT-consumables between P25/P50/P75 via share thresholds 0.30/0.50" },
+              "implants": {
+                "type": "object",
+                "properties": {
+                  "mode": { "type": "string", "enum": ["Default P50", "Family Override", "Brand Override", "Exact Item Override"], "default": "Default P50" },
+                  "family": { "type": "string", "default": "All" },
+                  "brand": { "type": "string", "default": "All" },
+                  "itemCode": { "type": "string", "default": "None" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "EstimateResponse": {
+        "type": "object",
+        "description": "Full estimate. Every line item carries per-room Low/Typical/High cells and selected totals; totals remain explainable from the line items (doc 06).",
+        "properties": {
+          "resolved_context": {
+            "type": "object",
+            "properties": {
+              "payor_bucket": { "type": "string" },
+              "pricing_mode": { "type": "string", "enum": ["Cash / TR1", "Insurance / Org Tariff"] },
+              "tariff": { "type": "object", "properties": { "tariff_cd": { "type": "string" }, "tariff_name": { "type": "string" }, "source": { "type": "string" } } },
+              "family": { "type": "string" },
+              "cohort_case_count": { "type": "integer" },
+              "payer_bases": { "type": "object", "description": "service/pharmacy/pf bases each with selected_basis, status, confidence, reason" },
+              "estimate_mode": { "type": "string" },
+              "room_type": { "type": "string" },
+              "robotic": { "type": "object", "properties": { "selection": { "type": "string" }, "presence_rate": { "type": "number" } } },
+              "ot_slot": { "type": "object", "properties": { "hours": { "type": "number" }, "code": { "type": "string" }, "label": { "type": "string" }, "type": { "type": "string" } } }
+            }
+          },
+          "drivers": { "type": "object", "description": "los/icu/ward/ot each {p25,p50,p75,selected}" },
+          "line_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "bucket": { "type": "string" },
+                "sub": { "type": "string" },
+                "source": { "type": "string" },
+                "how": { "type": "string" },
+                "code": { "type": "string", "nullable": true },
+                "qty": { "type": "object" },
+                "rate": { "type": "object" },
+                "cells": { "type": "object", "description": "general/twin/single → [low, typical, high]" },
+                "selected": { "type": "object", "description": "mode-picked total per room" }
+              }
+            }
+          },
+          "subtotal": { "type": "object" },
+          "grand_total": { "type": "object" },
+          "final_estimate": { "type": "number" },
+          "bucket_totals": { "type": "object", "additionalProperties": { "type": "number" } },
+          "add_ons": { "type": "array", "items": { "type": "object" } },
+          "grouped_adjustments": { "type": "array", "items": { "type": "object" } },
+          "advanced_controls": { "type": "object", "description": "ot_consumables {shortlist, applied, p25/50/75} + implants {hierarchy, resolved, controls}" },
+          "service_line_count": { "type": "object", "description": "current vs historical P25/P75 with alert status" },
+          "warnings": { "type": "array", "items": { "type": "string" } },
+          "unresolved_items": { "type": "array", "items": {} }
+        }
+      }
+    }
+  }
+}

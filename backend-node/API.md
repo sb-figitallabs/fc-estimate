@@ -23,6 +23,11 @@ npm run dev        # http://localhost:4100
 | `GEMINI_MODEL` | default `gemini-2.5-flash` |
 | `PORT` | default `4100` |
 
+## Interactive docs & Postman
+
+- **Swagger UI**: `http://localhost:4100/docs` (raw spec at `/openapi.json`, source `openapi.json`)
+- **Postman**: import `postman.json` (collection with all 10 requests, sample bodies, and notes; `baseUrl` variable defaults to `http://localhost:4100`)
+
 ## Endpoints
 
 ### Health

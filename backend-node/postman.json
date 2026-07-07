@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "FC Estimate Builder API (fc-builder-api)",
+    "_postman_id": "fc-builder-api-collection",
+    "description": "Standalone FC (Financial Counselor) Estimate Builder pipeline.\n\nRebuilds the finalized non-package FC Estimate Builder from the clean FC handoff database (local Postgres `fc_handoff`). Computes percentile-driven estimates from historical cohorts and generates the full 16-sheet interactive Excel workbook with parity to the finalized builders.\n\n**Base URL**: `{{baseUrl}}` (default http://localhost:4100)\n\n**Validated family**: `robotic_tkr_unilateral_right` — engine output matches the finalized workbook exactly (final estimate to the paisa). Also registered: `robotic_tkr_unilateral_left`, `robotic_tkr_bilateral`.\n\n**AI**: intake / item-mapping / explanation run on Gemini via Vertex AI (service-account auth). AI proposes, the DB decides — canonical keys are never invented.\n\n**Run order for a demo**: Health → Intake (free text) → Build Estimate → Download Workbook.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4100", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "description": "Liveness + DB connectivity. Returns `{ ok: true, db: \"fc_handoff\" }` when the Postgres pool answers."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lookups",
+      "description": "DB-grounded pickers for UI dropdowns and AI grounding. All read-only.",
+      "item": [
+        {
+          "name": "Organizations (insurers → tariff)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/lookup/organizations", "host": ["{{baseUrl}}"], "path": ["api", "lookup", "organizations"] },
+            "description": "All 68 insurance organizations from `fc.organization_tariff_mapping` with their resolved tariff (`tariff_cd`/`tariff_name`). Use `organization_cd` in the estimate `payment` block for non-cash payors."
+          }
+        },
+        {
+          "name": "Service items search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lookup/service-items?q=knee",
+              "host": ["{{baseUrl}}"], "path": ["api", "lookup", "service-items"],
+              "query": [{ "key": "q", "value": "knee", "description": "matches item_name / item_code / canonical key (ILIKE)" }]
+            },
+            "description": "Search canonical service items (`fc.service_item_mapping`, 1,639 rows). Returns FC bucket, grouping, billing head, room-dependency. Max 50 rows."
+          }
+        },
+        {
+          "name": "Pharmacy items search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lookup/pharmacy-items?q=cement",
+              "host": ["{{baseUrl}}"], "path": ["api", "lookup", "pharmacy-items"],
+              "query": [{ "key": "q", "value": "cement" }]
+            },
+            "description": "Search canonical pharmacy items (`fc.pharmacy_item_mapping`, 8,578 rows) joined with MRP/sale-rate from the catalog reference. Max 50 rows."
+          }
+        },
+        {
+          "name": "Doctors (consultation pricing)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lookup/doctors?q=reddy&tariff_name=KIMS",
+              "host": ["{{baseUrl}}"], "path": ["api", "lookup", "doctors"],
+              "query": [
+                { "key": "q", "value": "reddy" },
+                { "key": "tariff_name", "value": "KIMS", "description": "defaults to KIMS (cash tariff)" }
+              ]
+            },
+            "description": "Doctors present in `fc.consultation_tariff_rate_matrix` for the given tariff. Use `doctor_cd` in the estimate `clinical` block when consultation pricing is needed."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Estimate",
+      "description": "The core pipeline: payor→tariff resolution, payer-basis auto-resolution (doc 14 thresholds), percentile drivers, line-item engine, totals.",
+      "item": [
+        {
+          "name": "Build estimate (JSON)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient\": { \"name\": \"Ramesh Kumar\", \"age\": 64, \"gender\": \"M\" },\n  \"clinical\": { \"procedure\": \"robotic_tkr_unilateral_right\" },\n  \"payment\": { \"payor_bucket\": \"Cash\" },\n  \"controls\": {\n    \"room_type\": \"Single\",\n    \"estimate_mode\": \"Typical\",\n    \"payer_basis\": \"Auto (Recommended)\",\n    \"los_basis\": \"P50\",\n    \"icu_basis\": \"P50\",\n    \"ward_basis\": \"P50\",\n    \"ot_hours_basis\": \"P50\",\n    \"emergency_ot\": \"No\",\n    \"mlc\": \"No\",\n    \"robotic\": \"auto\"\n  },\n  \"selections\": {\n    \"add_ons\": {},\n    \"grouped\": {},\n    \"ot_consumables\": {},\n    \"implants\": { \"mode\": \"Default P50\" }\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/estimate/build", "host": ["{{baseUrl}}"], "path": ["api", "estimate", "build"] },
+            "description": "Full JSON estimate.\n\n**Notes**\n- `payor_bucket: Cash` → tariff TR1/KIMS automatically; for insurance send `payor_bucket` + `organization_cd` (from Organizations lookup). Unresolvable tariffs return warnings, never silent fallbacks.\n- `controls` all optional — defaults shown. Driver bases: `P25|P50|P75|Manual` (+`*_manual` value). `robotic: auto` selects Yes when historical presence > 90%.\n- `selections` toggles: add-ons by item_code, grouped residuals by grouping name, OT-consumables shortlist by item_code (`Include`/`Exclude`), implant override (`Default P50` | `Family Override` | `Brand Override` | `Exact Item Override` + family/brand/itemCode).\n- Response: resolved_context (tariff, payer bases with resolver reason+confidence, robotic, OT slot), drivers (p25/p50/p75+selected), line_items[] (per-room Low/Typ/High cells), subtotal, grand_total, **final_estimate**, bucket_totals, add_ons, grouped_adjustments, advanced_controls (OT shortlist + implant hierarchy), service_line_count alert, warnings, unresolved_items.\n\nFor the default body above the final_estimate is **597612.0654575195** (matches the finalized workbook exactly)."
+          }
+        },
+        {
+          "name": "Download workbook (.xlsx)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient\": { \"name\": \"Ramesh Kumar\", \"age\": 64 },\n  \"clinical\": { \"procedure\": \"robotic_tkr_unilateral_right\" },\n  \"payment\": { \"payor_bucket\": \"Cash\" },\n  \"controls\": { \"room_type\": \"Single\", \"estimate_mode\": \"Typical\" }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/estimate/workbook", "host": ["{{baseUrl}}"], "path": ["api", "estimate", "workbook"] },
+            "description": "Same body as Build estimate; returns the **16-sheet interactive Excel workbook** (`Content-Disposition: attachment`).\n\nSheets: Builder, Estimate Summary, Estimate vs IP FC Actuals, Advanced Controls, Service Add-Ons, Grouped Adjustments, Grouping Review, Implant Selection, Estimate Breakdown, Line Item Detail, Pharmacy Template, Service Template, Pharmacy Metrics, IP FC Actuals, Professional Fees Review, Reference.\n\nLive formulas + dropdowns — changing Room/Mode/driver selections *inside Excel* recalculates the estimate. 99.77% cell parity with the finalized reference workbook (100% of formulas).\n\n**Tip**: in Postman use \"Send and Download\" to save the file."
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Assist (Gemini via Vertex)",
+      "description": "AI proposes, DB decides. All three endpoints ground every AI output against the clean FC database.",
+      "item": [
+        {
+          "name": "Intake — free text → structured input",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Mr Ramesh Kumar, 64 yr male, advised robotic total knee replacement right side by Dr Adarsh, paying cash, wants single room\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/estimate/intake", "host": ["{{baseUrl}}"], "path": ["api", "estimate", "intake"] },
+            "description": "Converts a free-text FC intake note into the structured estimate input: `{ patient, clinical (procedure family), payment (payor bucket), notes }`.\n\nIf an insurer is mentioned, the name is matched against `fc.organization_tariff_mapping` and DB-grounded `organization_candidates` are returned (auto-resolved to `organization_cd` when exactly one matches). Feed the result straight into Build estimate."
+          }
+        },
+        {
+          "name": "Map items — fuzzy descriptions → canonical items",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"description\": \"knee xray bedside\", \"kind\": \"service\" },\n    { \"description\": \"bone cement\", \"kind\": \"pharmacy\", \"context\": \"TKR implant fixation\" }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/estimate/map-items", "host": ["{{baseUrl}}"], "path": ["api", "estimate", "map-items"] },
+            "description": "For each `{description, kind: service|pharmacy, context?}`: word-wise DB search proposes candidates, Gemini ranks and picks (`best_index`, confidence, reason). Returns `resolved` (canonical item or null), full `candidates`, and the AI verdict. Unmatched items come back as unresolved — never silently bucketed (doc 05 rule)."
+          }
+        },
+        {
+          "name": "Explain — FC-facing estimate summary",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clinical\": { \"procedure\": \"robotic_tkr_unilateral_right\" },\n  \"payment\": { \"payor_bucket\": \"Cash\" },\n  \"controls\": { \"room_type\": \"Single\", \"estimate_mode\": \"Typical\" }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/estimate/explain", "host": ["{{baseUrl}}"], "path": ["api", "estimate", "explain"] },
+            "description": "Builds the estimate (same body as Build estimate) then returns `{ final_estimate, bucket_totals, explanation }` — a <150-word INR-formatted plain-language summary for the counselling conversation. The model is instructed to never invent numbers not present in the computed data."
+          }
+        }
+      ]
+    }
+  ]
+}
