@@ -26,6 +26,7 @@ export async function fetchCohortRows(whereSql, params) {
             fc_actual_total_excluding_fnb_and_returns_plus_cash_drug_admin::float AS total_plus_drug_admin,
             pharmacy_return_amount::float,
             (cleaned_pharmacy_returns_jsonb->'summary'->>'return_amount_total')::float AS cleaned_returns_total,
+            cleaned_pharmacy_returns_jsonb AS cleaned_returns,
             cleaned_pharmacy_issue_jsonb AS cleaned_pharmacy,
             services_json, pharmacy_json
      FROM mart.main_table
