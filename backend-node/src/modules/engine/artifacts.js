@@ -17,6 +17,7 @@ const FNB_KEYWORDS = ['FOOD', 'BEVERAGE', 'FOOD AND BEVERAGES', 'TEA', 'COFFEE',
 export async function fetchCohortRows(whereSql, params) {
   const { rows } = await query(
     `SELECT admission_no, patient_name, payor_bucket, patient_type, organization_name,
+            package_code, package_name,
             surgical_medical, los_days::float, icu_days::float, ward_days::float,
             derived_ot_hours::float AS ot_hours, service_line_count::int,
             normalized_billable_stay_days::float, room_category, icu_unit_name,

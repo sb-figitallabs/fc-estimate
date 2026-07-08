@@ -20,6 +20,7 @@ import {
 } from './advanced.js';
 import { resolveDrivers, computeLineItems } from './lineItems.js';
 import { serviceLineCountAlert } from './rules.js';
+import { packageOfferForEstimate } from '../packages/packages.service.js';
 
 async function pharmacyMapping() {
   const { rows } = await query(
@@ -180,7 +181,20 @@ export async function buildEstimate(input) {
     status: serviceLineCountAlert({ current: currentCount, p25: svcBasisRow.service_line_p25, p75: svcBasisRow.service_line_p75 }),
   };
 
-  // 15. sections/totals for API consumers
+  // 15. side-by-side package offer (never replaces the itemized estimate)
+  let packageOffer;
+  try {
+    packageOffer = await packageOfferForEstimate({
+      cohortRows,
+      tariff_cd: tariff.tariff_cd,
+      organization_cd: input.payment.organization_cd,
+      inputPackage: input.package,
+    });
+  } catch (err) {
+    packageOffer = { status: 'lookup_error', error: err.message, package: null };
+  }
+
+  // 16. sections/totals for API consumers
   const bucketTotals = {};
   for (const row of lineItems.rows) {
     const v = row.selected[room.toLowerCase()] ?? row.selected.single;
@@ -209,6 +223,7 @@ export async function buildEstimate(input) {
     grand_total: lineItems.grandTotal,
     final_estimate: lineItems.finalEstimate,
     bucket_totals: bucketTotals,
+    package_offer: packageOffer,
     add_ons: addOns,
     grouped_adjustments: grouped,
     advanced_controls: {

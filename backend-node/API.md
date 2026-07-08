@@ -90,6 +90,19 @@ Implant Selection, Estimate Breakdown, Line Item Detail, Pharmacy Template, Serv
 Template, Pharmacy Metrics, IP FC Actuals, Professional Fees Review, Reference — with
 live formulas, dropdowns, and formatting, so the workbook stays interactive.
 
+### Packages (side-by-side layer — package add-on overlay)
+```
+GET  /api/packages/lookup?tariff_code&package_code|package_name&organization_cd
+GET  /api/packages/search?tariff_code&q          → alias candidates (no AI)
+POST /api/packages/resolve { text, tariff_code } → alias + Gemini-ranked resolution
+GET  /api/packages/history?tariff_code&package_code
+```
+`POST /api/estimate/build` responses now include `package_offer` (side-by-side):
+auto-detected from the cohort's dominant package, overridable via input
+`package: { package_code | package_name | text }`. Statuses: `resolved` /
+`not_ready` (readiness blocker) / `no_package_exists` (never a silent guess).
+Documentation fields come only from curated package data (manager rule, i4.md).
+
 ### AI assist (Gemini via Vertex)
 ```
 POST /api/estimate/intake     { "text": "<free-text intake note>" }

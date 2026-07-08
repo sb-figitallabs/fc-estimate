@@ -171,6 +171,10 @@
         <div class="field"><label for="org">Insurer <span class="muted">(non-cash)</span></label>
           <select id="org" disabled><option value="">— Cash / TR1 —</option></select>
         </div>
+        <div class="field full"><label for="pkgText">Package <span class="muted">(optional — code or free text)</span></label>
+          <input id="pkgText" placeholder="auto-detected from cohort if left blank">
+          <span class="hint">Overrides the auto-detected package for the side-by-side comparison</span>
+        </div>
       </fieldset>
 
       <fieldset>
@@ -284,7 +288,9 @@ document.addEventListener('DOMContentLoaded', loadFamilies);
 /* ---------- form helpers ---------- */
 function payload() {
   const payor = $('payor').value;
+  const pkgRaw = $('pkgText').value.trim();
   return {
+    ...(pkgRaw ? { package: /^[A-Z]{2,4}\d{2,6}$/i.test(pkgRaw) ? { package_code: pkgRaw.toUpperCase() } : { text: pkgRaw } } : {}),
     patient: { name: $('pName').value || undefined, age: $('pAge').value ? Number($('pAge').value) : undefined, gender: $('pGender').value },
     clinical: { procedure: $('procedure').value },
     payment: { payor_bucket: payor, ...(payor !== 'Cash' && $('org').value ? { organization_cd: $('org').value } : {}) },
@@ -435,11 +441,43 @@ function renderFormatted(d) {
   const warnings = (d.warnings || []).length
     ? `<div class="alert err" style="display:block;margin-bottom:16px">${(d.warnings).map(esc).join('<br>')}</div>` : '';
 
+  // ---- side-by-side package offer ----
+  const po = d.package_offer || {};
+  const p = po.package;
+  let pkgHtml = '';
+  if (po.status === 'resolved' || po.status === 'not_ready') {
+    const delta = d.final_estimate - Number(p.package_amount ?? 0);
+    const hist = po.history;
+    const ready = po.status === 'resolved';
+    pkgHtml = `
+    <div style="border:1px solid ${ready ? 'var(--ok)' : 'var(--warn)'};border-radius:10px;padding:12px 14px;margin-bottom:18px;background:${ready ? 'var(--ok-bg)' : 'var(--warn-bg)'}">
+      <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap">
+        <strong>Hospital package:</strong> <span>${esc(p.package_name)} <span class="muted">· ${esc(p.package_code)} · ${esc(p.tariff_code)}</span></span>
+        <span class="num" style="font-size:20px;font-weight:700">₹ ${inr(p.package_amount)}</span>
+        <span class="chip neutral num">itemized ${delta >= 0 ? '+' : '−'}₹ ${inr(Math.abs(delta))} vs package</span>
+        <span class="badge ${ready ? 'ok' : 'warn'}">${esc(p.readiness.runtime_status)}${p.readiness.primary_blocker ? ' — ' + esc(p.readiness.primary_blocker) : ''}</span>
+        <span class="chip neutral">${esc(po.source === 'cohort_dominant' ? 'auto-detected' : 'user-selected')}</span>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:4px">
+        ${p.matched_room_category ? 'Room: ' + esc(p.matched_room_category) + ' · ' : ''}
+        ${p.package_duration ? 'Duration: ' + p.package_duration + 'd · ' : ''}
+        ${hist ? `History: ${hist.admission_count} admissions, observed ₹${inr(hist.min_observed_package_amount)}–₹${inr(hist.max_observed_package_amount)}` : ''}
+      </div>
+      ${(p.inclusions_text || p.exclusions_text) ? `
+      <details style="margin-top:8px;border:0"><summary style="padding:4px 0">Inclusions / Exclusions (curated)</summary>
+        <div style="font-size:12.5px;white-space:pre-wrap;padding:6px 0">${p.inclusions_text ? '<strong>Included:</strong>\n' + esc(p.inclusions_text) : ''}${p.exclusions_text ? '\n<strong>Excluded:</strong>\n' + esc(p.exclusions_text) : ''}</div>
+      </details>` : `<div class="muted" style="font-size:12px;margin-top:4px">No curated inclusion/exclusion documentation${p.documentation_confidence ? ' (confidence: ' + esc(p.documentation_confidence) + ')' : ''}</div>`}
+    </div>`;
+  } else if (po.status === 'no_package_exists') {
+    pkgHtml = `<div class="muted" style="font-size:13px;margin-bottom:16px">No hospital package exists for this cohort / payor — itemized estimate only.</div>`;
+  }
+
   const addOnsIncluded = (d.add_ons || []).filter((a) => a.selected === 'Include').length;
   const groupedIncluded = (d.grouped_adjustments || []).filter((g) => g.selected === 'Include').length;
 
   $('formattedView').innerHTML = `
     ${warnings}
+    ${pkgHtml}
     <div class="kpi">
       <span class="amount num">₹ ${inr(d.final_estimate)}</span>
       <span class="muted">estimate band: ₹ ${inr(d.grand_total?.[roomKey]?.[0])} – ₹ ${inr(d.grand_total?.[roomKey]?.[2])}</span>

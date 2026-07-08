@@ -5,6 +5,7 @@ import swaggerUi from 'swagger-ui-express';
 import { pool } from './db/pool.js';
 import estimateRoutes from './routes/estimate.routes.js';
 import lookupRoutes from './routes/lookup.routes.js';
+import packagesRoutes from './routes/packages.routes.js';
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
@@ -28,6 +29,7 @@ app.get('/health', async (_req, res) => {
 
 app.use('/api/lookup', lookupRoutes);
 app.use('/api/estimate', estimateRoutes);
+app.use('/api/packages', packagesRoutes);
 
 // central error handler
 app.use((err, _req, res, _next) => {
