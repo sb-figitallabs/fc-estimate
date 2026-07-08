@@ -374,20 +374,41 @@ function insurancePayload() {
   } };
 }
 
-/* payor → insurer select */
+/* payor → insurer select (filtered to insurers with data for that bucket) */
+let allOrgs = null;
+function orgBuckets(o) {
+  // buckets = {"GIPSA Insurance": 3396, ...} from historical admissions;
+  // orgs with packages but no admission history are classified by tariff name.
+  const b = Object.keys(o.buckets || {});
+  if (!b.length && o.packages > 0) b.push(/GIPS/i.test(o.tariff_name || '') ? 'GIPSA Insurance' : 'Non-GIPSA Insurance');
+  return b;
+}
+function renderOrgOptions(payor) {
+  const org = $('org');
+  const prev = org.value;
+  const list = allOrgs
+    .filter((o) => orgBuckets(o).includes(payor))
+    .sort((a, b) => (b.packages_priced - a.packages_priced)
+      || ((b.buckets?.[payor] || 0) - (a.buckets?.[payor] || 0))
+      || a.organization_name.localeCompare(b.organization_name));
+  org.innerHTML = `<option value="">Select insurer… (${list.length} with ${payor} data)</option>` +
+    list.map((o) => {
+      const cases = o.buckets?.[payor] || 0;
+      const bits = [o.tariff_name, o.packages_priced ? `${o.packages_priced} pkgs` : 'no packages', cases ? `${cases} cases` : null].filter(Boolean);
+      return `<option value="${esc(o.organization_cd)}">${esc(o.organization_name)} — ${esc(bits.join(' · '))}</option>`;
+    }).join('');
+  if ([...org.options].some((x) => x.value === prev)) org.value = prev;
+}
 $('payor').addEventListener('change', async () => {
-  const isCash = $('payor').value === 'Cash';
+  const payor = $('payor').value;
+  const isCash = payor === 'Cash';
   const org = $('org');
   org.disabled = isCash;
   $('insuranceFs').style.display = isCash ? 'none' : '';
   if (isCash) { org.innerHTML = '<option value="">— Cash / TR1 —</option>'; return; }
-  if (org.dataset.loaded) return;
   try {
-    const res = await fetch('/api/lookup/organizations');
-    const orgs = await res.json();
-    org.innerHTML = '<option value="">Select insurer…</option>' +
-      orgs.map((o) => `<option value="${esc(o.organization_cd)}">${esc(o.organization_name)} → ${esc(o.tariff_name)}</option>`).join('');
-    org.dataset.loaded = '1';
+    if (!allOrgs) allOrgs = await (await fetch('/api/lookup/organizations')).json();
+    renderOrgOptions(payor);
   } catch { showError('Could not load insurers — is the API running?'); }
 });
 
