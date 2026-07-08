@@ -158,6 +158,7 @@ export function computeLineItems(ctx) {
   if (ctx.templateRows) {
     // AUTO layout (docs 10/12): template rows are the cohort's default-included
     // items; the canonical logic rows below are shared across surgical families.
+    const famRows = ctx.familyRows ?? {}; // { ot, cathLab, surgical, medicalRecords }
     for (const t of ctx.templateRows) {
       template(t.name, t.bucket, t.sub, t.code);
     }
@@ -185,13 +186,18 @@ export function computeLineItems(ctx) {
       });
     }
     template('CSSD Charges', 'Procedure / OT Charges', 'OT Charges', 'RNS5005');
-    fixedOne('Medical Records', 'Bedside Services', 'Administrative', 'RNS0120');
+    // Medical Records: daycare bills MSC10 ("-1 DAY"), non-daycare RNS0120 ("> 1 DAY").
+    // Historical data confirms: RNS0120 never appears in daycare admissions.
+    if (famRows.medicalRecords === 'MSC10') {
+      fixedOne('Medical Records - 1 Day', 'Bedside Services', 'Administrative', 'MSC10');
+    } else {
+      fixedOne('Medical Records', 'Bedside Services', 'Administrative', 'RNS0120');
+    }
     if (ctx.includeProcedure !== false && procedure) {
       template(procedure.label, 'Procedure / OT Charges', 'OT Charges', procedure.code, {
         roboticControlled: /ROBO/i.test(procedure.label),
       });
     }
-    const famRows = ctx.familyRows ?? {}; // { ot: bool, cathLab: bool, surgical: bool }
     if (famRows.surgical !== false) {
       fixedOne('Instrument Charges (Major)', 'Procedure / OT Charges', 'OT Charges', 'OTI0018');
       fixedOne('OT Disinfection Charges', 'Procedure / OT Charges', 'OT Charges', 'OTI0015');

@@ -69,7 +69,7 @@ const FAMILIES = {
     includeProcedure: false,
     templateName: 'Chemotherapy / Systemic Therapy Infusion — Daycare',
     coreTemplate: 'auto',
-    rows: { ot: false, cathLab: false, surgical: false },
+    rows: { ot: false, cathLab: false, surgical: false, medicalRecords: 'MSC10' },
     ipPharmacyMode: 'bucket', // daycare: IP pharmacy from bucket quartiles (per-day × 0-stay would zero out)
   },
   coronary_angio_cag_cat_1_daycare: {
@@ -83,7 +83,7 @@ const FAMILIES = {
     includeProcedure: false,
     templateName: 'Coronary Angiogram (CAG) CAT-1 — Daycare',
     coreTemplate: 'auto',
-    rows: { ot: false, cathLab: true, surgical: false }, // cath-lab family
+    rows: { ot: false, cathLab: true, surgical: false, medicalRecords: 'MSC10' }, // cath-lab family
     excludeCathLabFromTemplate: true, // cath rows priced via the cath-lab history row
     ipPharmacyMode: 'bucket',
   },
