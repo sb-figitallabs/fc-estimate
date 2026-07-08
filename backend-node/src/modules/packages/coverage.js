@@ -10,16 +10,26 @@
 
 const U = (s) => (s || '').toUpperCase();
 
+/** Split curated text that concatenates multiple source variants into blocks. */
+export function splitVariants(text) {
+  if (!text || !text.trim()) return [];
+  const out = [];
+  let rest = text;
+  for (;;) {
+    const first = rest.indexOf('Hospital Stay');
+    const next = first >= 0 ? rest.indexOf('Hospital Stay', first + 1) : -1;
+    if (next < 0) { out.push(rest.trim()); break; }
+    const cut = rest.lastIndexOf('-', next);
+    out.push(rest.slice(0, cut > 0 ? cut : next).trim());
+    rest = rest.slice(cut > 0 ? cut : next);
+  }
+  return out.filter(Boolean);
+}
+
 /** The curated text sometimes concatenates 2 source variants — keep the first. */
 export function dedupeVariants(text) {
-  if (!text) return { text: '', variants: 0 };
-  const marker = text.match(/-\s*Hospital Stay/gi);
-  const variants = marker ? marker.length : (text.trim() ? 1 : 0);
-  if (variants <= 1) return { text: text.trim(), variants };
-  const idx = text.indexOf('Hospital Stay', text.indexOf('Hospital Stay') + 1);
-  // cut at the start of the second variant's line
-  const cut = text.lastIndexOf('-', idx);
-  return { text: text.slice(0, cut > 0 ? cut : idx).trim(), variants };
+  const parts = splitVariants(text);
+  return { text: parts[0] ?? '', variants: parts.length };
 }
 
 /** Parse curated inclusions/exclusions into a coverage model. */

@@ -21,7 +21,7 @@ import {
 import { resolveDrivers, computeLineItems } from './lineItems.js';
 import { serviceLineCountAlert } from './rules.js';
 import { packageOfferForEstimate } from '../packages/packages.service.js';
-import { parseCoverage, applyCoverage, dedupeVariants } from '../packages/coverage.js';
+import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
 
 async function pharmacyMapping() {
   const { rows } = await query(
@@ -255,7 +255,9 @@ export async function buildEstimate(input) {
       coverage.totals.with_package = Math.round((pkgAmt + coverage.totals.payable_extras) * 100) / 100;
       packageOffer.coverage = coverage;
       // deduped display text (curated text may contain 2 source variants)
-      packageOffer.package.inclusions_display = dedupeVariants(packageOffer.package.inclusions_text).text;
+      const variants = splitVariants(packageOffer.package.inclusions_text);
+      packageOffer.package.inclusions_display = variants[0] ?? packageOffer.package.inclusions_text;
+      if (variants.length > 1) packageOffer.package.inclusions_variants = variants;
     } catch (err) {
       packageOffer.coverage = { error: err.message };
     }

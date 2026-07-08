@@ -484,8 +484,11 @@ function renderFormatted(d) {
       </div>
       ${covTotals}
       ${(p.inclusions_display || p.inclusions_text || p.exclusions_text) ? `
-      <details style="margin-top:8px;border:0"><summary style="padding:4px 0">Inclusions / Exclusions (curated)${cov && cov.parse.variants > 1 ? ' <span class="muted">· curated text has ' + cov.parse.variants + ' source variants, showing first</span>' : ''}</summary>
+      <details style="margin-top:8px;border:0"><summary style="padding:4px 0">Inclusions / Exclusions (curated)${(p.inclusions_variants || []).length > 1 ? ' <span class="muted">· curated text has ' + p.inclusions_variants.length + ' source variants, showing first</span>' : ''}</summary>
         <div style="font-size:12.5px;white-space:pre-wrap;padding:6px 0">${(p.inclusions_display || p.inclusions_text) ? '<strong>Included:</strong>\n' + esc(p.inclusions_display || p.inclusions_text) : ''}${p.exclusions_text ? '\n<strong>Excluded:</strong>\n' + esc(p.exclusions_text) : ''}</div>
+        ${(p.inclusions_variants || []).length > 1 ? `
+        <button type="button" class="btn btn-ghost" id="variantBtn" style="min-height:32px;font-size:12px;padding:0 10px">View 2nd source variant</button>
+        <div id="variantBlock" style="display:none;font-size:12.5px;white-space:pre-wrap;padding:6px 0;border-top:1px dashed var(--line);margin-top:6px"><strong>2nd source variant (differs — flag for curation):</strong>\n${esc(p.inclusions_variants.slice(1).join('\n\n'))}</div>` : ''}
       </details>` : `<div class="muted" style="font-size:12px;margin-top:4px">No curated inclusion/exclusion documentation${p.documentation_confidence ? ' (confidence: ' + esc(p.documentation_confidence) + ')' : ''}</div>`}
     </div>`;
   } else if (po.status === 'no_package_exists') {
@@ -539,6 +542,13 @@ function renderFormatted(d) {
     for (const tr of $('formattedView').querySelectorAll('#liTable tbody tr')) {
       tr.style.display = (toggle.checked && tr.dataset.payable === '0') ? 'none' : '';
     }
+  });
+  const vBtn = $('formattedView').querySelector('#variantBtn');
+  if (vBtn) vBtn.addEventListener('click', () => {
+    const blk = $('formattedView').querySelector('#variantBlock');
+    const show = blk.style.display === 'none';
+    blk.style.display = show ? 'block' : 'none';
+    vBtn.textContent = show ? 'Hide 2nd source variant' : 'View 2nd source variant';
   });
 }
 </script>
