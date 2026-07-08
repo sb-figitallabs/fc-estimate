@@ -12,6 +12,10 @@ const est = await buildEstimate({
   clinical: { procedure: 'robotic_tkr_unilateral_right' },
   payment: { payor_bucket: 'Cash' },
   controls: { room_type: 'Single', estimate_mode: 'Typical' },
+  // parity pin: the finalized workbook auto-included these two <90%-presence
+  // residuals (its promotion bug, manager note i5.md). Engine default is now
+  // Exclude; the sample's state is reproduced via explicit user selections.
+  selections: { grouped: { 'Coagulation Tests': 'Include', 'Inflammatory Marker Tests': 'Include' } },
 });
 
 let pass = 0, fail = 0;

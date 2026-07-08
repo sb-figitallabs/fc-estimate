@@ -178,17 +178,24 @@ export function buildGroupedResidualCandidates(gaps) {
   for (const g of gaps) {
     if (!(g.residualP50 > 0 && g.leftOut > 0)) continue;
     let band = null;
-    if (g.presence > 90) band = 'auto';
-    else if (g.presence >= 75 && g.presence <= 90) band = 'optional';
+    let why = null;
+    if (g.presence > 90) { band = 'auto'; why = 'Auto common-case residual'; }
+    else if (g.presence >= 75 && g.presence <= 90) { band = 'optional'; why = 'Optional common-case residual'; }
     else if (
       /investigation/i.test(g.bucket) && g.presence >= 50 && g.residualP50 >= 1000 &&
       g.leftOut > 0 && g.optionalChildCount >= 1
-    ) band = 'auto'; // investigation promotion
+    ) {
+      // Investigation promotion: SURFACED for visibility but NOT auto-included —
+      // auto requires presence > 90% (manager correction i5.md; the reference
+      // script wrongly promoted these to auto and the finalized Excel inherited it).
+      band = 'optional';
+      why = `Investigation residual (presence ${g.presence.toFixed(0)}% < 90% — review before including)`;
+    }
     if (!band) continue;
     out.push({
       ...g, band,
       selected: band === 'auto' ? 'Include' : 'Exclude',
-      why: band === 'auto' ? 'Auto common-case residual' : 'Optional common-case residual',
+      why,
     });
   }
   out.sort((a, b) => b.residualP50 - a.residualP50 || b.presence - a.presence ||

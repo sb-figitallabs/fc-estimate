@@ -23,6 +23,9 @@ const input = {
   clinical: { procedure: 'robotic_tkr_unilateral_right' },
   payment: { payor_bucket: 'Cash' },
   controls: { room_type: 'Single', estimate_mode: 'Typical' },
+  // parity pin: reproduce the finalized workbook's (buggy) auto-inclusion of
+  // these two <90% residuals via explicit selections (manager note i5.md)
+  selections: { grouped: { 'Coagulation Tests': 'Include', 'Inflammatory Marker Tests': 'Include' } },
 };
 const estimate = await buildEstimate(input);
 const { buffer } = await generateWorkbook(estimate, input);
