@@ -1,0 +1,579 @@
+{
+  "results": [
+    {
+      "label": "robotic_tkr_unilateral_right · Cash · General",
+      "status": 200,
+      "final": 570012.7842075195,
+      "package": {
+        "without_package": 570012.78,
+        "package_amount": 355000,
+        "payable_extras": 60784.23,
+        "with_package": 415784.23
+      },
+      "errs": []
+    },
+    {
+      "label": "robotic_tkr_unilateral_right · Cash · Twin",
+      "status": 200,
+      "final": 578329.4404575195,
+      "package": {
+        "without_package": 578329.44,
+        "package_amount": 355000,
+        "payable_extras": 61254.24,
+        "with_package": 416254.24
+      },
+      "errs": []
+    },
+    {
+      "label": "robotic_tkr_unilateral_right · Cash · Single",
+      "status": 200,
+      "final": 588175.5967075195,
+      "package": {
+        "without_package": 588175.6,
+        "package_amount": 355000,
+        "payable_extras": 61474.23,
+        "with_package": 416474.23
+      },
+      "errs": []
+    },
+    {
+      "label": "robotic_tkr_unilateral_left · Cash · General",
+      "status": 200,
+      "final": 588954.7000664063,
+      "package": {
+        "without_package": 588954.7,
+        "package_amount": 355000,
+        "payable_extras": 106744.76,
+        "with_package": 461744.76
+      },
+      "errs": []
+    },
+    {
+      "label": "robotic_tkr_unilateral_left · Cash · Twin",
+      "status": 200,
+      "final": 596656.8250664063,
+      "package": {
+        "without_package": 596656.83,
+        "package_amount": 355000,
+        "payable_extras": 110114.77,
+        "with_package": 465114.77
+      },
+      "errs": []
+    },
+    {
+      "label": "robotic_tkr_unilateral_left · Cash · Single",
+      "status": 200,
+      "final": 605943.0750664063,
+      "package": {
+        "without_package": 605943.08,
+        "package_amount": 355000,
+        "payable_extras": 112794.76,
+        "with_package": 467794.76
+      },
+      "errs": []
+    },
+    {
+      "label": "robotic_tkr_bilateral · Cash · General",
+      "status": 200,
+      "final": 782869.8277460937,
+      "package": {
+        "without_package": 782869.83,
+        "package_amount": 690000,
+        "payable_extras": 200918.96,
+        "with_package": 890918.96
+      },
+      "errs": []
+    },
+    {
+      "label": "robotic_tkr_bilateral · Cash · Twin",
+      "status": 200,
+      "final": 795187.7652460937,
+      "package": {
+        "without_package": 795187.77,
+        "package_amount": 690000,
+        "payable_extras": 205928.96,
+        "with_package": 895928.96
+      },
+      "errs": []
+    },
+    {
+      "label": "robotic_tkr_bilateral · Cash · Single",
+      "status": 200,
+      "final": 811138.2652460937,
+      "package": {
+        "without_package": 811138.27,
+        "package_amount": 690000,
+        "payable_extras": 210218.96,
+        "with_package": 900218.96
+      },
+      "errs": []
+    },
+    {
+      "label": "total_hip_replacement_thr_hemiarthroplasty · Cash · General",
+      "status": 200,
+      "final": 578788.0854003907,
+      "package": null,
+      "errs": []
+    },
+    {
+      "label": "total_hip_replacement_thr_hemiarthroplasty · Cash · Twin",
+      "status": 200,
+      "final": 591597.6479003907,
+      "package": null,
+      "errs": []
+    },
+    {
+      "label": "total_hip_replacement_thr_hemiarthroplasty · Cash · Single",
+      "status": 200,
+      "final": 610593.4916503907,
+      "package": null,
+      "errs": []
+    },
+    {
+      "label": "total_hip_replacement_thr_hemiarthroplasty · GIPSA Insurance/ORG55 · Single",
+      "status": 200,
+      "final": 380393.1647619048,
+      "package": {
+        "without_package": 380393.16,
+        "package_amount": 149900,
+        "payable_extras": 196239.88,
+        "with_package": 346139.88
+      },
+      "errs": []
+    },
+    {
+      "label": "total_hip_replacement_thr_hemiarthroplasty · Non-GIPSA Insurance/ORG59 · Single",
+      "status": 200,
+      "final": 326067.7833333333,
+      "package": {
+        "without_package": 326067.78,
+        "package_amount": 130000,
+        "payable_extras": 196241,
+        "with_package": 326241
+      },
+      "errs": []
+    },
+    {
+      "label": "total_hip_replacement_thr_hemiarthroplasty · Non-GIPSA Insurance/ORG61 · Single",
+      "status": 200,
+      "final": 270322.7833333333,
+      "package": {
+        "without_package": 270322.78,
+        "package_amount": 168698,
+        "payable_extras": 196241,
+        "with_package": 364939
+      },
+      "errs": []
+    },
+    {
+      "label": "general_medical_management · Cash · General",
+      "status": 200,
+      "final": 40948.2485546875,
+      "package": null,
+      "errs": []
+    },
+    {
+      "label": "general_medical_management · Cash · Twin",
+      "status": 200,
+      "final": 45536.7485546875,
+      "package": null,
+      "errs": []
+    },
+    {
+      "label": "general_medical_management · Cash · Single",
+      "status": 200,
+      "final": 54822.9985546875,
+      "package": null,
+      "errs": []
+    },
+    {
+      "label": "chemotherapy_systemic_therapy_infusion_daycare · Cash · daycare",
+      "status": 200,
+      "final": 27988.58167578125,
+      "package": null,
+      "errs": []
+    },
+    {
+      "label": "chemotherapy_systemic_therapy_infusion_daycare · Non-GIPSA Insurance/ORG61 · daycare",
+      "status": 200,
+      "final": 24643.66,
+      "package": null,
+      "errs": []
+    },
+    {
+      "label": "coronary_angio_cag_cat_1_daycare · Cash · daycare",
+      "status": 200,
+      "final": 30117.464730468746,
+      "package": {
+        "without_package": 30117.46,
+        "package_amount": 17500,
+        "payable_extras": 0,
+        "with_package": 17500
+      },
+      "errs": []
+    },
+    {
+      "label": "coronary_angio_cag_cat_1_daycare · Non-GIPSA Insurance/ORG61 · daycare",
+      "status": 200,
+      "final": 19109.45,
+      "package": {
+        "without_package": 19109.45,
+        "package_amount": 28875,
+        "payable_extras": 0,
+        "with_package": 28875
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_unilateral · Cash · General",
+      "status": 200,
+      "final": 375407.55905859376,
+      "package": {
+        "without_package": 375407.56,
+        "package_amount": 255000,
+        "payable_extras": 84617.99,
+        "with_package": 339617.99
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_unilateral · Cash · Twin",
+      "status": 200,
+      "final": 385677.05905859376,
+      "package": {
+        "without_package": 385677.06,
+        "package_amount": 255000,
+        "payable_extras": 88777.99,
+        "with_package": 343777.99
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_unilateral · Cash · Single",
+      "status": 200,
+      "final": 399865.90280859376,
+      "package": {
+        "without_package": 399865.9,
+        "package_amount": 255000,
+        "payable_extras": 92367.99,
+        "with_package": 347367.99
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_unilateral · GIPSA Insurance/ORG55 · Single",
+      "status": 200,
+      "final": 249506.325,
+      "package": {
+        "without_package": 249506.33,
+        "package_amount": 149900,
+        "payable_extras": 89130.07,
+        "with_package": 239030.07
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_unilateral · Non-GIPSA Insurance/ORG59 · Single",
+      "status": 200,
+      "final": 246410.255,
+      "package": {
+        "without_package": 246410.26,
+        "package_amount": 125000,
+        "payable_extras": 98838,
+        "with_package": 223838
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_unilateral · Non-GIPSA Insurance/ORG61 · Single",
+      "status": 200,
+      "final": 196740.255,
+      "package": {
+        "without_package": 196740.26,
+        "package_amount": 168698,
+        "payable_extras": 98838,
+        "with_package": 267536
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_bilateral · Cash · General",
+      "status": 200,
+      "final": 561723.8396894531,
+      "package": {
+        "without_package": 561723.84,
+        "package_amount": 490000,
+        "payable_extras": 84603.75,
+        "with_package": 574603.75
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_bilateral · Cash · Twin",
+      "status": 200,
+      "final": 574205.6521894531,
+      "package": {
+        "without_package": 574205.65,
+        "package_amount": 490000,
+        "payable_extras": 89533.75,
+        "with_package": 579533.75
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_bilateral · Cash · Single",
+      "status": 200,
+      "final": 590306.3709394531,
+      "package": {
+        "without_package": 590306.37,
+        "package_amount": 490000,
+        "payable_extras": 93763.75,
+        "with_package": 583763.75
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_bilateral · GIPSA Insurance/ORG55 · Single",
+      "status": 200,
+      "final": 409012.28,
+      "package": {
+        "without_package": 409012.28,
+        "package_amount": 224600,
+        "payable_extras": 178260.19,
+        "with_package": 402860.19
+      },
+      "errs": []
+    },
+    {
+      "label": "total_knee_replacement_bilateral · Non-GIPSA Insurance/ORG61 · Single",
+      "status": 200,
+      "final": 303583.13416666666,
+      "package": {
+        "without_package": 303583.13,
+        "package_amount": 253047,
+        "payable_extras": 177547.09,
+        "with_package": 430594.09
+      },
+      "errs": []
+    },
+    {
+      "label": "ptca_single_vessel · Cash · General",
+      "status": 200,
+      "final": 174283.50731015624,
+      "package": {
+        "without_package": 174283.51,
+        "package_amount": 150000,
+        "payable_extras": 40879.8,
+        "with_package": 190879.8
+      },
+      "errs": []
+    },
+    {
+      "label": "ptca_single_vessel · Cash · Twin",
+      "status": 200,
+      "final": 177001.10106015624,
+      "package": {
+        "without_package": 177001.1,
+        "package_amount": 150000,
+        "payable_extras": 40879.8,
+        "with_package": 190879.8
+      },
+      "errs": []
+    },
+    {
+      "label": "ptca_single_vessel · Cash · Single",
+      "status": 200,
+      "final": 182026.60106015624,
+      "package": {
+        "without_package": 182026.6,
+        "package_amount": 150000,
+        "payable_extras": 40879.8,
+        "with_package": 190879.8
+      },
+      "errs": []
+    },
+    {
+      "label": "ptca_single_vessel · GIPSA Insurance/ORG55 · Single",
+      "status": 200,
+      "final": 130113.4715,
+      "package": {
+        "without_package": 130113.47,
+        "package_amount": 130200,
+        "payable_extras": 40879.8,
+        "with_package": 171079.8
+      },
+      "errs": []
+    },
+    {
+      "label": "ptca_single_vessel · Non-GIPSA Insurance/ORG59 · Single",
+      "status": 200,
+      "final": 118226.50483333334,
+      "package": {
+        "without_package": 118226.5,
+        "package_amount": 85000,
+        "payable_extras": 40879.8,
+        "with_package": 125879.8
+      },
+      "errs": []
+    },
+    {
+      "label": "ptca_single_vessel · Non-GIPSA Insurance/ORG1197 · Single",
+      "status": 200,
+      "final": 134736.50483333334,
+      "package": {
+        "without_package": 134736.5,
+        "package_amount": 193100,
+        "payable_extras": 40879.8,
+        "with_package": 233979.8
+      },
+      "errs": []
+    },
+    {
+      "label": "lap_cholecystectomy · Cash · General",
+      "status": 200,
+      "final": 154181.82618359374,
+      "package": {
+        "without_package": 154181.83,
+        "package_amount": 96000,
+        "payable_extras": 87704.08,
+        "with_package": 183704.08
+      },
+      "errs": []
+    },
+    {
+      "label": "lap_cholecystectomy · Cash · Twin",
+      "status": 200,
+      "final": 162498.48243359374,
+      "package": {
+        "without_package": 162498.48,
+        "package_amount": 96000,
+        "payable_extras": 90434.08,
+        "with_package": 186434.08
+      },
+      "errs": []
+    },
+    {
+      "label": "lap_cholecystectomy · Cash · Single",
+      "status": 200,
+      "final": 174925.66993359374,
+      "package": {
+        "without_package": 174925.67,
+        "package_amount": 96000,
+        "payable_extras": 92734.08,
+        "with_package": 188734.08
+      },
+      "errs": []
+    },
+    {
+      "label": "lap_cholecystectomy · GIPSA Insurance/ORG55 · Single",
+      "status": 200,
+      "final": 99175.83,
+      "package": {
+        "without_package": 99175.83,
+        "package_amount": 93000,
+        "payable_extras": 3890,
+        "with_package": 96890
+      },
+      "errs": []
+    },
+    {
+      "label": "lap_cholecystectomy · Non-GIPSA Insurance/ORG61 · Single",
+      "status": 200,
+      "final": 48307.295,
+      "package": {
+        "without_package": 48307.3,
+        "package_amount": 114909,
+        "payable_extras": 3890,
+        "with_package": 118799
+      },
+      "errs": []
+    },
+    {
+      "label": "lscs_caesarean · Cash · General",
+      "status": 200,
+      "final": 91283.3561171875,
+      "package": {
+        "without_package": 91283.36,
+        "package_amount": 90000,
+        "payable_extras": 35941.02,
+        "with_package": 125941.02
+      },
+      "errs": []
+    },
+    {
+      "label": "lscs_caesarean · Cash · Twin",
+      "status": 200,
+      "final": 98248.0436171875,
+      "package": {
+        "without_package": 98248.04,
+        "package_amount": 90000,
+        "payable_extras": 35941.02,
+        "with_package": 125941.02
+      },
+      "errs": []
+    },
+    {
+      "label": "lscs_caesarean · Cash · Single",
+      "status": 200,
+      "final": 112259.35611718753,
+      "package": {
+        "without_package": 112259.36,
+        "package_amount": 90000,
+        "payable_extras": 35941.02,
+        "with_package": 125941.02
+      },
+      "errs": []
+    },
+    {
+      "label": "lscs_caesarean · GIPSA Insurance/ORG55 · Single",
+      "status": 200,
+      "final": 54229.9075,
+      "package": {
+        "without_package": 54229.91,
+        "package_amount": 77000,
+        "payable_extras": 0,
+        "with_package": 77000
+      },
+      "errs": []
+    },
+    {
+      "label": "lscs_caesarean · Non-GIPSA Insurance/ORG59 · Single",
+      "status": 200,
+      "final": 41470.21375,
+      "package": {
+        "without_package": 41470.21,
+        "package_amount": 70000,
+        "payable_extras": 0,
+        "with_package": 70000
+      },
+      "errs": []
+    }
+  ],
+  "failures": [],
+  "flags": [
+    "robotic_tkr_bilateral · Cash · General: with-package ₹890919 > itemized ₹782870 (pkg ₹690000 — negotiated rate above cohort estimate or extras heavy)",
+    "robotic_tkr_bilateral · Cash · Twin: with-package ₹895929 > itemized ₹795188 (pkg ₹690000 — negotiated rate above cohort estimate or extras heavy)",
+    "robotic_tkr_bilateral · Cash · Single: with-package ₹900219 > itemized ₹811138 (pkg ₹690000 — negotiated rate above cohort estimate or extras heavy)",
+    "total_hip_replacement_thr_hemiarthroplasty · Non-GIPSA Insurance/ORG61 · Single: with-package ₹364939 > itemized ₹270323 (pkg ₹168698 — negotiated rate above cohort estimate or extras heavy)",
+    "coronary_angio_cag_cat_1_daycare · Non-GIPSA Insurance/ORG61 · daycare: with-package ₹28875 > itemized ₹19109 (pkg ₹28875 — negotiated rate above cohort estimate)",
+    "total_knee_replacement_unilateral · Non-GIPSA Insurance/ORG61 · Single: with-package ₹267536 > itemized ₹196740 (pkg ₹168698 — negotiated rate above cohort estimate or extras heavy)",
+    "total_knee_replacement_bilateral · Cash · General: with-package ₹574604 > itemized ₹561724 (pkg ₹490000 — negotiated rate above cohort estimate or extras heavy)",
+    "total_knee_replacement_bilateral · Cash · Twin: with-package ₹579534 > itemized ₹574206 (pkg ₹490000 — negotiated rate above cohort estimate or extras heavy)",
+    "total_knee_replacement_bilateral · Non-GIPSA Insurance/ORG61 · Single: with-package ₹430594 > itemized ₹303583 (pkg ₹253047 — negotiated rate above cohort estimate or extras heavy)",
+    "ptca_single_vessel · Cash · General: with-package ₹190880 > itemized ₹174284 (pkg ₹150000 — negotiated rate above cohort estimate or extras heavy)",
+    "ptca_single_vessel · Cash · Twin: with-package ₹190880 > itemized ₹177001 (pkg ₹150000 — negotiated rate above cohort estimate or extras heavy)",
+    "ptca_single_vessel · Cash · Single: with-package ₹190880 > itemized ₹182027 (pkg ₹150000 — negotiated rate above cohort estimate or extras heavy)",
+    "ptca_single_vessel · GIPSA Insurance/ORG55 · Single: with-package ₹171080 > itemized ₹130113 (pkg ₹130200 — negotiated rate above cohort estimate)",
+    "ptca_single_vessel · Non-GIPSA Insurance/ORG59 · Single: with-package ₹125880 > itemized ₹118227 (pkg ₹85000 — negotiated rate above cohort estimate or extras heavy)",
+    "ptca_single_vessel · Non-GIPSA Insurance/ORG1197 · Single: with-package ₹233980 > itemized ₹134737 (pkg ₹193100 — negotiated rate above cohort estimate)",
+    "lap_cholecystectomy · Cash · General: with-package ₹183704 > itemized ₹154182 (pkg ₹96000 — negotiated rate above cohort estimate or extras heavy)",
+    "lap_cholecystectomy · Cash · Twin: with-package ₹186434 > itemized ₹162498 (pkg ₹96000 — negotiated rate above cohort estimate or extras heavy)",
+    "lap_cholecystectomy · Cash · Single: with-package ₹188734 > itemized ₹174926 (pkg ₹96000 — negotiated rate above cohort estimate or extras heavy)",
+    "lap_cholecystectomy · Non-GIPSA Insurance/ORG61 · Single: with-package ₹118799 > itemized ₹48307 (pkg ₹114909 — negotiated rate above cohort estimate)",
+    "lscs_caesarean · Cash · General: with-package ₹125941 > itemized ₹91283 (pkg ₹90000 — negotiated rate above cohort estimate or extras heavy)",
+    "lscs_caesarean · Cash · Twin: with-package ₹125941 > itemized ₹98248 (pkg ₹90000 — negotiated rate above cohort estimate or extras heavy)",
+    "lscs_caesarean · Cash · Single: with-package ₹125941 > itemized ₹112259 (pkg ₹90000 — negotiated rate above cohort estimate or extras heavy)",
+    "lscs_caesarean · GIPSA Insurance/ORG55 · Single: with-package ₹77000 > itemized ₹54230 (pkg ₹77000 — negotiated rate above cohort estimate)",
+    "lscs_caesarean · Non-GIPSA Insurance/ORG59 · Single: with-package ₹70000 > itemized ₹41470 (pkg ₹70000 — negotiated rate above cohort estimate)"
+  ]
+}

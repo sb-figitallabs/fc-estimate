@@ -38,7 +38,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 324,
+    "ms": 340,
     "bugs": [],
     "warns": []
   },
@@ -81,7 +81,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 185,
+    "ms": 193,
     "bugs": [],
     "warns": []
   },
@@ -128,7 +128,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 177,
+    "ms": 176,
     "bugs": [],
     "warns": []
   },
@@ -175,7 +175,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 202,
+    "ms": 174,
     "bugs": [],
     "warns": []
   },
@@ -221,7 +221,7 @@
       "patient_total": 46139.88,
       "package_admissible": 149900
     },
-    "ms": 171,
+    "ms": 177,
     "bugs": [],
     "warns": []
   },
@@ -267,7 +267,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 165,
+    "ms": 183,
     "bugs": [],
     "warns": []
   },
@@ -314,7 +314,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 164,
+    "ms": 173,
     "bugs": [],
     "warns": []
   },
@@ -358,7 +358,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 167,
+    "ms": 169,
     "bugs": [],
     "warns": []
   },
@@ -405,7 +405,7 @@
       "patient_total": 34613.99,
       "package_admissible": 149900
     },
-    "ms": 168,
+    "ms": 167,
     "bugs": [],
     "warns": []
   },
@@ -456,7 +456,7 @@
       "patient_total": 69227.98,
       "package_admissible": 149900
     },
-    "ms": 169,
+    "ms": 166,
     "bugs": [],
     "warns": []
   },
@@ -503,7 +503,7 @@
       "patient_total": 50000,
       "package_admissible": 149900
     },
-    "ms": 167,
+    "ms": 169,
     "bugs": [],
     "warns": []
   },
@@ -600,7 +600,7 @@
       "patient_total": 146239.88,
       "package_admissible": 149900
     },
-    "ms": 168,
+    "ms": 186,
     "bugs": [],
     "warns": []
   },
@@ -653,7 +653,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 165,
+    "ms": 174,
     "bugs": [],
     "warns": []
   },
@@ -702,7 +702,7 @@
       "patient_total": 109900,
       "package_admissible": 40000
     },
-    "ms": 168,
+    "ms": 164,
     "bugs": [],
     "warns": []
   },
@@ -751,7 +751,7 @@
       "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 182,
+    "ms": 163,
     "bugs": [],
     "warns": []
   },
@@ -812,7 +812,7 @@
       "patient_total": 121229.88,
       "package_admissible": 149900
     },
-    "ms": 166,
+    "ms": 167,
     "bugs": [],
     "warns": []
   },
@@ -855,7 +855,7 @@
       "patient_total": 246139.88,
       "package_admissible": 149900
     },
-    "ms": 166,
+    "ms": 163,
     "bugs": [],
     "warns": []
   },
@@ -900,7 +900,7 @@
       "patient_total": 246139.88,
       "package_admissible": 149900
     },
-    "ms": 161,
+    "ms": 164,
     "bugs": [],
     "warns": []
   },
@@ -944,7 +944,7 @@
       "patient_total": 346139.88,
       "package_admissible": 149900
     },
-    "ms": 166,
+    "ms": 165,
     "bugs": [],
     "warns": []
   },
@@ -987,7 +987,7 @@
       "patient_total": 346139.88,
       "package_admissible": 149900
     },
-    "ms": 165,
+    "ms": 167,
     "bugs": [],
     "warns": []
   },
@@ -1036,7 +1036,7 @@
       "patient_total": 296139.88,
       "package_admissible": 149900
     },
-    "ms": 166,
+    "ms": 178,
     "bugs": [],
     "warns": []
   },
@@ -1085,7 +1085,7 @@
       "patient_total": 296139.88,
       "package_admissible": 149900
     },
-    "ms": 164,
+    "ms": 168,
     "bugs": [],
     "warns": []
   },
@@ -1133,7 +1133,7 @@
       "patient_total": 246139.88,
       "package_admissible": 149900
     },
-    "ms": 172,
+    "ms": 166,
     "bugs": [],
     "warns": []
   },
@@ -1180,7 +1180,7 @@
       "patient_total": 22383.8,
       "package_admissible": 125000
     },
-    "ms": 754,
+    "ms": 750,
     "bugs": [],
     "warns": []
   },
@@ -1270,7 +1270,7 @@
       }
     },
     "pkg_settlement": null,
-    "ms": 180,
+    "ms": 188,
     "bugs": [],
     "warns": []
   },
@@ -1309,7 +1309,7 @@
       }
     },
     "pkg_settlement": null,
-    "ms": 175,
+    "ms": 181,
     "bugs": [],
     "warns": []
   },
@@ -1323,7 +1323,7 @@
     "expectError": true,
     "bugs": [],
     "warns": [],
-    "ms": 2
+    "ms": 1
   },
   {
     "id": "T30",
@@ -1341,7 +1341,7 @@
     "expectError": true,
     "bugs": [],
     "warns": [],
-    "ms": 0
+    "ms": 1
   },
   {
     "id": "T31",
@@ -1382,7 +1382,7 @@
       "patient_total": 0,
       "package_admissible": 125000
     },
-    "ms": 939,
+    "ms": 753,
     "bugs": [],
     "warns": []
   },
@@ -1425,7 +1425,7 @@
       "patient_total": 0,
       "package_admissible": 125000
     },
-    "ms": 811,
+    "ms": 827,
     "bugs": [],
     "warns": []
   }
