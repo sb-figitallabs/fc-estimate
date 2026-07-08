@@ -33,6 +33,42 @@ export function dedupeVariants(text) {
 }
 
 /** Parse curated inclusions/exclusions into a coverage model. */
+/**
+ * Category-level inclusion clauses — the format every insurance tariff uses
+ * (GIPSA "L1: Standard inclusions - Doctor's fee, OT charges, …",
+ *  TR201 "A: Inclusions - Room rents, Nursing charges, …",
+ *  TR285 pipe-lists, TR287 prose). Instead of per-item caps/allowances these
+ * declare whole categories as included in the package price; implants and the
+ * like live in the exclusion text. Only used when the itemized curated parse
+ * yields no signal, and only when the text clearly names several categories.
+ */
+const CATEGORY_PATTERNS = [
+  ['room', /ROOM RENT|BED CHARGES|WARD/],
+  ['nursing', /NURSING/],
+  ['pf', /DOCTOR|SURGEON|PROFESSIONAL CHARGES|CONSULT|ANAESTH|ANESTH|GYNECOLOGIST|P(?:A?)EDIATRICIAN|PHYSICIAN/],
+  ['ot', /OT CHARGES|OPERATION THEATRE|THEATRE CHARGES|OT GAS|OT CONSUMABLE/],
+  ['pharmacy', /DRUGS|MEDICINES|CONSUMABLES/],
+  ['investigations', /INVESTIGATION/],
+  ['bedside', /MONITOR|OXYGEN|VENTILATOR|NEBULIS|ADMINISTRATIVE CHARGES|BLOOD/],
+];
+
+function extractCategories(text) {
+  const up = U(text);
+  const set = CATEGORY_PATTERNS.filter(([, re]) => re.test(up)).map(([k]) => k);
+  const source = text.length > 160 ? text.slice(0, 157) + '…' : text;
+  // stay-based package ("3 days hospital stay | Four ECGs | Cardiology
+  // consultations…") = an end-to-end per-case rate; the listed items are
+  // ancillary clarifications, so treat it as comprehensive — implants are
+  // never category-included and still ride the exclusion text
+  if (/\d+\s*DAYS?\s*HOSPITAL\s*STAY|HOSPITAL\s*STAY/.test(up) && set.length >= 1) {
+    return { set: CATEGORY_PATTERNS.map(([k]) => k), source, comprehensive: true };
+  }
+  // otherwise require a clear multi-category clause — a stray keyword must
+  // not flip the whole estimate into "everything included" mode
+  if (set.length < 3) return null;
+  return { set, source };
+}
+
 export function parseCoverage(inclusionsText, exclusionsText) {
   const { text, variants } = dedupeVariants(inclusionsText);
   const model = {
@@ -80,10 +116,16 @@ export function parseCoverage(inclusionsText, exclusionsText) {
       model.unparsed.push(line);
     }
   }
-  for (const line of (exclusionsText || '').split(/\n|(?=- )/)) {
+  for (const line of (exclusionsText || '').split(/\n|\||(?=- )/)) {
     const t = line.replace(/^[-•]\s*/, '').replace(/\.$/, '').trim();
     if (t && !/^excluded/i.test(t)) model.exclusions.push({ text: t });
   }
+
+  // clause-format fallback: no itemized signal → try category-level inclusions
+  const hasSignal = model.stay.ward_days != null || Object.keys(model.caps).length ||
+    model.allowances.length || model.pf.length;
+  if (!hasSignal) model.categories = extractCategories(text);
+
   return model;
 }
 
@@ -129,11 +171,14 @@ export function applyCoverage(estimate, coverage) {
     const ex = isExcluded(name);
     if (ex) return set(i, 'excluded', amt, ex.text, 'excluded by package');
 
-    // PF rows: included in the package price (curated PF lines are the package's own fees)
+    // PF rows: included in the package price (curated PF lines are the package's own fees;
+    // clause-format packages include them via the 'pf' category)
     if (r.bucket === 'Professional Fees') {
-      const src = coverage.pf[0]?.source ?? null;
-      return set(i, coverage.pf.length ? 'fully_included' : 'review', coverage.pf.length ? 0 : amt, src,
-        coverage.pf.length ? 'professional fees included in package' : 'no curated PF line');
+      const catPf = coverage.categories?.set.includes('pf');
+      const inc = coverage.pf.length > 0 || catPf;
+      const src = coverage.pf[0]?.source ?? (catPf ? coverage.categories.source : null);
+      return set(i, inc ? 'fully_included' : 'review', inc ? 0 : amt, src,
+        inc ? 'professional fees included in package' : 'no curated PF line');
     }
     // stay-driven rows
     if (coveredIcu != null && ICU_ROWS.test(name)) {
@@ -192,6 +237,29 @@ export function applyCoverage(estimate, coverage) {
     set(i, 'recomputed', isCash ? 0.125 * payablePharm : 0, null, 'recomputed on payable pharmacy only');
   });
 
+  // ---- clause-format packages: whole categories included in the package price ----
+  // (implants are deliberately never category-matched — they ride the exclusion
+  // text, or stay payable when the text is silent)
+  if (coverage.categories) {
+    const catOf = (r) => {
+      if (/^Implants$/i.test(r.name)) return null;
+      if (r.bucket === 'Room Charges') return 'room';
+      if (r.bucket === 'Pharmacy') return 'pharmacy';
+      if (r.bucket === 'Investigations') return 'investigations';
+      if (r.bucket === 'Professional Fees') return 'pf';
+      if (r.bucket === 'Procedure / OT Charges') return 'ot';
+      if (r.bucket === 'Bedside Services') return 'bedside';
+      return null;
+    };
+    items.forEach((r, i) => {
+      if (out.has(i) || r.addOn) return;
+      const cat = catOf(r);
+      if (cat && coverage.categories.set.includes(cat)) {
+        set(i, 'fully_included', 0, coverage.categories.source, `${cat} covered by package inclusion clause`);
+      }
+    });
+  }
+
   // ---- everything else ----
   items.forEach((r, i) => {
     if (out.has(i)) return;
@@ -212,6 +280,8 @@ export function applyCoverage(estimate, coverage) {
       with_package: null,   // filled by caller
     },
     parse: {
+      mode: coverage.categories ? 'category-clause' : 'itemized-curated',
+      categories: coverage.categories?.set ?? null,
       variants: coverage.variants,
       stay: coverage.stay,
       caps: Object.fromEntries(Object.entries(coverage.caps).map(([k, v]) => [k, v.amount ?? v.rooms])),

@@ -6,6 +6,19 @@ import { interpretIntake } from '../modules/ai/intake.js';
 
 const router = Router();
 
+/**
+ * Canonicalize room names — line-item amounts are keyed general/twin/single,
+ * so "TWIN SHARING", "General Ward", "Deluxe" etc. must resolve to one of
+ * those or the settlement/coverage layers would silently read ₹0 everywhere.
+ */
+const normalizeRoom = (v) => {
+  const s = String(v).toLowerCase();
+  if (/twin/.test(s)) return 'Twin';
+  if (/general|ward/.test(s)) return 'General';
+  if (/single|deluxe|suite/.test(s)) return 'Single';
+  return null;
+};
+
 export const EstimateInput = z.object({
   patient: z.object({
     name: z.string().optional(),
@@ -25,7 +38,9 @@ export const EstimateInput = z.object({
     organization_cd: z.string().optional(),
   }),
   controls: z.object({
-    room_type: z.string().optional(),           // GENERAL WARD | TWIN SHARING | SINGLE | DELUXE
+    room_type: z.string().optional()            // General | Twin | Single (accepts "General Ward", "Twin Sharing", "Deluxe"→Single)
+      .transform((v) => (v == null ? v : normalizeRoom(v)))
+      .refine((v) => v !== null, 'room_type must resolve to General / Twin / Single (aliases: "General Ward", "Twin Sharing", "Deluxe")'),
     estimate_mode: z.enum(['Low', 'Typical', 'High']).default('Typical'),
     payer_basis: z.string().default('Auto (Recommended)'),
     los_basis: z.string().default('P50'),

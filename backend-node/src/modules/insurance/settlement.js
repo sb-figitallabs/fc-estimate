@@ -56,6 +56,12 @@ export function settle({ lineItems, roomKey, drivers, insurance, grossTotal }) {
   const notes = [];
   const sel = (r) => Number(r.selected?.[roomKey] ?? 0);
 
+  // guard: an unknown room key would read ₹0 from every row and produce a
+  // silent all-zero settlement — fail loudly instead
+  if (grossTotal > 0 && !lineItems.some((r) => sel(r) > 0)) {
+    return { error: `no per-room amounts resolved for room key "${roomKey}" — expected one of ${ROOM_KEYS.join('/')}` };
+  }
+
   // ---- coverage balances ----
   const baseSI = Number(ins.base_sum_insured ?? 0);
   const baseAvailable = Math.max(0, baseSI - Number(ins.consumed ?? 0) + Number(ins.ncb ?? 0));

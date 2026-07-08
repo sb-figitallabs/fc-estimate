@@ -17,7 +17,7 @@ tr.rbad td { background: #fdeaea; }
 .legend { margin-top: 8px; color: #556; font-size: 8px; }
 </style></head><body>
 <h1>Insurance settlement — edge-case test report</h1>
-<div class="meta">fc-builder-api · 32 cases · 5 failed (bugs logged in INSURANCE_EDGE_BUGS.md) · 24 passed with warnings · generated 2026-07-08</div>
+<div class="meta">fc-builder-api · 32 cases · 0 failed (bugs logged in INSURANCE_EDGE_BUGS.md) · 0 passed with warnings · generated 2026-07-08</div>
 <table>
 <tr><th>ID</th><th style="width:34%">Scenario &amp; policy inputs</th><th>Total w/o package</th><th>Total w/ package</th><th>Insurance covers</th><th>Patient pays</th><th>Patient-side breakdown</th><th>Pkg-route ins/pat</th><th>Result</th></tr>
 <tr class="">
@@ -26,12 +26,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹20,00,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,77,423</td>
     <td class="num red">₹2,970</td>
     <td class="bd">NME ₹2,970</td>
-    <td class="num">₹5,27,323 / ₹2,970</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T02</b></td>
@@ -39,12 +39,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,77,423</td>
     <td class="num red">₹2,970</td>
     <td class="bd">NME ₹2,970</td>
-    <td class="num">₹5,00,000 / ₹30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T03</b></td>
@@ -52,12 +52,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · cap absolute ₹2,000/d</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,25,355</td>
     <td class="num red">₹55,038</td>
     <td class="bd">room-cap deduction ₹52,068<br>NME ₹2,970</td>
-    <td class="num">₹4,75,255 / ₹55,038</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T04</b></td>
@@ -65,12 +65,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · cap absolute ₹20,000/d</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,77,423</td>
     <td class="num red">₹2,970</td>
     <td class="bd">NME ₹2,970</td>
-    <td class="num">₹5,00,000 / ₹30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T05</b></td>
@@ -78,12 +78,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹3,00,000 · cap pct_of_si</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,00,000</td>
     <td class="num red">₹80,393</td>
     <td class="bd">room-cap deduction ₹61,830<br>NME ₹2,970<br>beyond cover ₹15,593</td>
-    <td class="num">₹3,00,000 / ₹2,30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,00,000 / ₹46,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T06</b></td>
@@ -91,12 +91,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹10,00,000 · cap pct_of_si</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,77,423</td>
     <td class="num red">₹2,970</td>
     <td class="bd">NME ₹2,970</td>
-    <td class="num">₹5,27,323 / ₹2,970</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T07</b></td>
@@ -104,12 +104,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · cap room_category · eligible General</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,33,366</td>
     <td class="num red">₹63,528</td>
     <td class="bd">room-cap deduction ₹44,058<br>NME ₹2,970<br>upgrade excess ₹16,500</td>
-    <td class="num">₹4,83,266 / ₹47,028</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T08</b></td>
@@ -117,12 +117,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · eligible Twin</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,77,423</td>
     <td class="num red">₹10,470</td>
     <td class="bd">NME ₹2,970<br>upgrade excess ₹7,500</td>
-    <td class="num">₹5,00,000 / ₹30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T09</b></td>
@@ -130,12 +130,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · copay 10%</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,39,681</td>
     <td class="num red">₹40,712</td>
     <td class="bd">NME ₹2,970<br>copay ₹37,742</td>
-    <td class="num">₹4,74,591 / ₹55,702</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,11,526 / ₹34,614</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T10</b></td>
@@ -143,12 +143,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · cap absolute ₹2,000/d · copay 20%</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹2,60,284</td>
     <td class="num red">₹1,20,109</td>
     <td class="bd">room-cap deduction ₹52,068<br>NME ₹2,970<br>copay ₹65,071</td>
-    <td class="num">₹3,80,204 / ₹1,50,089</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹2,76,912 / ₹69,228</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T11</b></td>
@@ -156,12 +156,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · copay ₹50,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,27,423</td>
     <td class="num red">₹52,970</td>
     <td class="bd">NME ₹2,970<br>copay ₹50,000</td>
-    <td class="num">₹4,77,323 / ₹52,970</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹2,96,140 / ₹50,000</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T12</b></td>
@@ -169,12 +169,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · copay 100%</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹0</td>
     <td class="num red">₹3,80,393</td>
     <td class="bd">NME ₹2,970<br>copay ₹3,77,423</td>
-    <td class="num">₹0 / ₹5,30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹0 / ₹3,46,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T13</b></td>
@@ -182,12 +182,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹10,00,000 · sub-limits: implants ₹50,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹2,31,183</td>
     <td class="num red">₹1,49,210</td>
     <td class="bd">NME ₹2,970<br>sub-limit overflow ₹1,46,240</td>
-    <td class="num">₹3,81,083 / ₹1,49,210</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹1,99,900 / ₹1,46,240</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T14</b></td>
@@ -195,12 +195,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹10,00,000 · sub-limits: pharmacy ₹25,000, investigations ₹500</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,22,835</td>
     <td class="num red">₹57,558</td>
     <td class="bd">NME ₹2,970<br>sub-limit overflow ₹54,588</td>
-    <td class="num">₹4,72,735 / ₹57,558</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T15</b></td>
@@ -208,12 +208,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹10,00,000 · sub-limits: procedure ₹40,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,75,700</td>
     <td class="num red">₹4,693</td>
     <td class="bd">NME ₹2,970<br>sub-limit overflow ₹1,723</td>
-    <td class="num">₹4,15,700 / ₹1,14,593</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹2,36,240 / ₹1,09,900</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T16</b></td>
@@ -221,12 +221,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹10,00,000 · sub-limits: total ₹2,00,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹2,00,000</td>
     <td class="num red">₹1,80,393</td>
     <td class="bd">NME ₹2,970<br>sub-limit overflow ₹1,77,423</td>
-    <td class="num">₹3,49,900 / ₹1,80,393</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹3,46,140 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T17</b></td>
@@ -234,12 +234,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · cap absolute ₹3,000/d · copay 10% · sub-limits: implants ₹1,00,000, pharmacy ₹50,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹1,87,675</td>
     <td class="num red">₹1,92,719</td>
     <td class="bd">room-cap deduction ₹44,058<br>NME ₹2,970<br>copay ₹20,853<br>sub-limit overflow ₹1,24,838</td>
-    <td class="num">₹3,22,585 / ₹2,07,709</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹2,24,910 / ₹1,21,230</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T18</b></td>
@@ -247,12 +247,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹1,00,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹1,00,000</td>
     <td class="num red">₹2,80,393</td>
     <td class="bd">NME ₹2,970<br>beyond cover ₹2,77,423</td>
-    <td class="num">₹1,00,000 / ₹4,30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹1,00,000 / ₹2,46,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T19</b></td>
@@ -260,12 +260,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · consumed ₹4,50,000 · NCB ₹50,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹1,00,000</td>
     <td class="num red">₹2,80,393</td>
     <td class="bd">NME ₹2,970<br>beyond cover ₹2,77,423</td>
-    <td class="num">₹1,00,000 / ₹4,30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹1,00,000 / ₹2,46,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T20</b></td>
@@ -273,12 +273,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹5,00,000 · consumed ₹5,00,000</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹0</td>
     <td class="num red">₹3,80,393</td>
     <td class="bd">NME ₹2,970<br>beyond cover ₹3,77,423</td>
-    <td class="num">₹0 / ₹5,30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹0 / ₹3,46,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T21</b></td>
@@ -286,12 +286,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹0</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹0</td>
     <td class="num red">₹3,80,393</td>
     <td class="bd">NME ₹2,970<br>beyond cover ₹3,77,423</td>
-    <td class="num">₹0 / ₹5,30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹0 / ₹3,46,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T22</b></td>
@@ -299,12 +299,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹2,00,000 · consumed ₹1,50,000 · top-up ₹5,00,000 standard (ded ₹2,00,000)</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹2,27,423<div class="sub">incl top-up ₹1,77,423</div></td>
     <td class="num red">₹1,52,970</td>
     <td class="bd">NME ₹2,970<br>beyond cover ₹1,50,000</td>
-    <td class="num">₹50,000 / ₹4,80,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹50,000 / ₹2,96,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T23</b></td>
@@ -312,12 +312,12 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹2,00,000 · consumed ₹1,50,000 · top-up ₹5,00,000 super (ded ₹2,00,000)</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹3,77,423<div class="sub">incl top-up ₹3,27,423</div></td>
     <td class="num red">₹2,970</td>
     <td class="bd">NME ₹2,970</td>
-    <td class="num">₹50,000 / ₹4,80,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹50,000 / ₹2,96,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T24</b></td>
@@ -325,25 +325,25 @@ tr.rbad td { background: #fdeaea; }
         <div class="sub inp">SI ₹1,00,000 · top-up ₹10,00,000 standard (ded ₹50,00,000)</div>
         </td>
     <td class="num">₹3,80,393</td>
-    <td class="num">₹5,30,293<div class="sub">pkg ₹1,49,900</div></td>
+    <td class="num">₹3,46,140<div class="sub">pkg ₹1,49,900</div></td>
     <td class="num green">₹1,00,000</td>
     <td class="num red">₹2,80,393</td>
     <td class="bd">NME ₹2,970<br>beyond cover ₹2,77,423</td>
-    <td class="num">₹1,00,000 / ₹4,30,293</td>
-    <td><span class="warn">⚠ pass*</span></td>
+    <td class="num">₹1,00,000 / ₹2,46,140</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
-<tr class="rbad">
+<tr class="">
     <td><b>T25</b></td>
     <td><b>TKR + ICICI (Non-GIPSA package) + 10% copay + Twin room</b><div class="sub">TKR uni · ORG59 · Twin Sharing</div>
         <div class="sub inp">SI ₹7,00,000 · copay 10%</div>
-        <div class="bugnote">settlement gross ₹0 while estimate is ₹246410 — room key 'Twin Sharing' not resolved, silent all-zero settlement</div></td>
-    <td class="num">₹2,46,410</td>
-    <td class="num">₹1,25,000<div class="sub">pkg ₹1,25,000</div></td>
-    <td class="num green">₹0</td>
-    <td class="num red">₹0</td>
-    <td class="bd">nothing — fully covered</td>
-    <td class="num">₹1,12,500 / ₹12,500</td>
-    <td><span class="bad">✗ BUG</span></td>
+        </td>
+    <td class="num">₹2,44,410</td>
+    <td class="num">₹2,23,838<div class="sub">pkg ₹1,25,000</div></td>
+    <td class="num green">₹2,18,061</td>
+    <td class="num red">₹26,349</td>
+    <td class="bd">NME ₹2,120<br>copay ₹24,229</td>
+    <td class="num">₹2,01,454 / ₹22,384</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 <tr class="">
     <td><b>T26</b></td>
@@ -384,83 +384,57 @@ tr.rbad td { background: #fdeaea; }
     <td class="num">—</td>
     <td><span class="ok">✓ pass</span></td>
   </tr>
-<tr class="rbad">
+<tr class="">
     <td><b>T29</b></td>
     <td><b>Negative SI (must 400)</b><div class="sub"> ·  · </div>
         <div class="sub inp">SI ₹-100</div>
-        <div class="bugnote">expected HTTP 400 validation error, got 500 ([
-  {
-    "origin": "number",
-    "code": "too_small",
-    "minimum": 0,
-    "inclusive": true,
-    "path": [
-      "insurance",
-      "base_sum_insured"
-    ],
-    "message": "Too small: expected number to be >=0"
-  }
-])</div></td>
+        </td>
     <td class="num">—</td>
     <td class="num"><span class="sub">no pkg</span><div class="sub"></div></td>
     <td class="num green">—</td>
     <td class="num red">—</td>
     <td class="bd">—</td>
     <td class="num">—</td>
-    <td><span class="bad">✗ got 500</span></td>
+    <td><span class="ok">✓ rejected</span></td>
   </tr>
-<tr class="rbad">
+<tr class="">
     <td><b>T30</b></td>
     <td><b>Sub-limit cap 0 (must 400 — zod positive())</b><div class="sub"> ·  · </div>
         <div class="sub inp">SI ₹5,00,000 · sub-limits: implants ₹0</div>
-        <div class="bugnote">expected HTTP 400 validation error, got 500 ([
-  {
-    "origin": "number",
-    "code": "too_small",
-    "minimum": 0,
-    "inclusive": false,
-    "path": [
-      "insurance",
-      "sub_limits",
-      0,
-      "cap"
-    ],
-    "message": "Too small: expected number to be >0"
-  }
-])</div></td>
+        </td>
     <td class="num">—</td>
     <td class="num"><span class="sub">no pkg</span><div class="sub"></div></td>
     <td class="num green">—</td>
     <td class="num red">—</td>
     <td class="bd">—</td>
     <td class="num">—</td>
-    <td><span class="bad">✗ got 500</span></td>
+    <td><span class="ok">✓ rejected</span></td>
   </tr>
-<tr class="rbad">
+<tr class="">
     <td><b>T31</b></td>
     <td><b>room_type "TWIN SHARING" (documented full name)</b><div class="sub">TKR uni · ORG59 · TWIN SHARING</div>
         <div class="sub inp">SI ₹7,00,000</div>
-        <div class="bugnote">settlement gross ₹0 while estimate is ₹246410 — room key 'TWIN SHARING' not resolved, silent all-zero settlement</div></td>
-    <td class="num">₹2,46,410</td>
-    <td class="num">₹1,25,000<div class="sub">pkg ₹1,25,000</div></td>
-    <td class="num green">₹0</td>
-    <td class="num red">₹0</td>
-    <td class="bd">nothing — fully covered</td>
-    <td class="num">₹1,25,000 / ₹0</td>
-    <td><span class="bad">✗ BUG</span></td>
+        </td>
+    <td class="num">₹2,44,410</td>
+    <td class="num">₹2,23,838<div class="sub">pkg ₹1,25,000</div></td>
+    <td class="num green">₹2,42,290</td>
+    <td class="num red">₹2,120</td>
+    <td class="bd">NME ₹2,120</td>
+    <td class="num">₹2,23,838 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
-<tr class="rbad">
+<tr class="">
     <td><b>T32</b></td>
     <td><b>room_type "General Ward" (documented full name)</b><div class="sub">TKR uni · ORG59 · General Ward</div>
         <div class="sub inp">SI ₹7,00,000</div>
-        <div class="bugnote">settlement gross ₹0 while estimate is ₹246410 — room key 'General Ward' not resolved, silent all-zero settlement</div></td>
-    <td class="num">₹2,46,410</td>
-    <td class="num">₹1,25,000<div class="sub">pkg ₹1,25,000</div></td>
-    <td class="num green">₹0</td>
-    <td class="num red">₹0</td>
-    <td class="bd">nothing — fully covered</td>
-    <td class="num">₹1,25,000 / ₹0</td>
-    <td><span class="bad">✗ BUG</span></td>
+        </td>
+    <td class="num">₹2,40,505</td>
+    <td class="num">₹2,23,838<div class="sub">pkg ₹1,25,000</div></td>
+    <td class="num green">₹2,38,385</td>
+    <td class="num red">₹2,120</td>
+    <td class="bd">NME ₹2,120</td>
+    <td class="num">₹2,23,838 / ₹0</td>
+    <td><span class="ok">✓ pass</span></td>
   </tr>
 </table>
 <div class="legend">

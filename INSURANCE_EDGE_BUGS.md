@@ -1,70 +1,52 @@
-# Insurance edge-case suite — bugs found (2026-07-08)
+# Insurance edge-case suite — bugs found & fixed (2026-07-08)
 
 Source: `backend-node/scripts/edge_insurance_suite.mjs` (32 cases) against `POST /api/estimate/build`.
 Full numbers per case: `INSURANCE_EDGE_TESTS.pdf` · raw JSON: `backend-node/test_results/insurance_edge_results.json`.
 
-**Verdict: settlement mathematics is sound** — the conservation invariant (insurer + patient = gross + upgrade-excess), cover ceilings, copay, sub-limit, top-up and proportionate-deduction math held on every case that produced a settlement (T01–T24, T26–T28). The 3 bugs below are all in the *edges around* the engine, not in the settlement arithmetic itself.
+**Verdict: settlement mathematics was sound from the start** — conservation invariant (insurer + patient = gross + upgrade-excess), cover ceilings, copay, sub-limit, top-up and proportionate-deduction math held on every settleable case. The 3 bugs found were all at the *edges around* the engine. **All 3 are now fixed** — final run: 32/32 pass, 0 warnings; regression: cash parity 1042/0, insurance sanity 24/24, family sanity 12/12.
 
 ---
 
-## BUG-1 · HIGH — full room names silently zero the settlement (and mis-price the estimate)
+## BUG-1 · HIGH — full room names silently zeroed the settlement ✅ FIXED
 
-**Failing cases:** T25, T31, T32.
+**Was:** `room_type` was used raw as the key into the per-room amount maps `selected{general,twin,single}`. `"Twin Sharing"` / `"General Ward"` / `"DELUXE"` (values the schema comment itself documented!) made the estimate silently price at **Single** rates and the settlement return **insurer ₹0 / patient ₹0** with no warning; coverage extras also read ₹0, faking a perfect package total. Failing cases T25/T31/T32.
 
-`room_type` is used directly as `room.toLowerCase()` to index the per-room amount maps `selected{general, twin, single}`. The schema comment itself documents the values as `GENERAL WARD | TWIN SHARING | SINGLE | DELUXE`, but any value other than exactly `General`/`Twin`/`Single` produces an unknown key, and every consumer degrades differently — **all silently**:
+**Fix (two layers):**
+- `estimate.routes.js` — `room_type` is normalized in the zod schema (`/twin/→Twin`, `/general|ward/→General`, `/single|deluxe|suite/→Single`); anything unrecognizable is rejected with a 400.
+- `settlement.js` — defense-in-depth guard: if the estimate total is > 0 but no line item resolves an amount for the room key, `settle()` returns an explicit error instead of an all-zero settlement.
 
-| Consumer | Behaviour on unknown key (e.g. `"Twin Sharing"`) |
-|---|---|
-| `buildEstimate` bucket totals (`buildEstimate.js:202`) | falls back to `selected.single` → estimate is quietly priced at **Single** rates |
-| `settle()` (`settlement.js:57`) | every row reads ₹0 → gross ₹0 → **insurer ₹0 / patient ₹0**, no warning note |
-| `applyCoverage()` (`coverage.js:100`) | every row reads ₹0 → all rows `not_included / zero` → `payable_extras` ₹0 → **with-package total = bare package amount** (looks deceptively perfect) |
-| `settleWithPackage()` | inherits both problems above |
+## BUG-2 · HIGH — insurance package inclusion texts unparseable → inflated "with package" totals ✅ FIXED
 
-**Repro:** `{"controls":{"room_type":"Twin Sharing"}, "insurance":{"base_sum_insured":700000}}` → `final_estimate` ₹2,46,410 (Single price, not Twin) but `insurance_settlement.gross = 0`.
+**Was:** `parseCoverage()` only understood the curated `new2` bullet format. **100% of GIPSA (108) and non-GIPSA (199) inclusion texts** yielded zero coverage signal, so every line item stayed payable at full price and *with package* (₹5,30,293) exceeded *without package* (₹3,80,393) on GIPSA THR — 24 of 32 cases warned.
 
-**Not user-visible today** (the web UI sends `General`/`Twin`/`Single`) — but any direct API consumer following the schema comment hits it.
+**Fix:** added a **category-clause mode** to `coverage.js`, used only when the itemized curated parse finds no signal:
+- Extracts included categories (room / nursing / pf / ot / pharmacy / investigations / bedside) from clause texts — GIPSA `L1: Standard inclusions - …`, TR201 `A: Inclusions - …`, TR285 pipe-lists, TR287 prose. Requires ≥3 category keywords so a stray word can't flip everything to "included".
+- Stay-based texts (`"3 days hospital stay | Four ECGs | Cardiology consultations"`) are treated as **comprehensive** end-to-end rates (all categories included) — standard TPA package semantics.
+- **Implants are never category-included**: they ride the exclusion text (`L2: Implants…`, `Implants Extra`, …) or stay payable when the text is silent. Exclusion splitting now also handles pipe-separated lists.
+- Optional add-ons stay payable; the parse block now reports `mode: 'category-clause' | 'itemized-curated'` + the matched categories.
 
-**Proposed fix:** normalize once at input (`/twin/i → twin`, `/general/i → general`, `/single|deluxe/i → single`), reject anything unmatched with a 400, and add a guard in `settle()`: if `gross === 0` while `final_estimate > 0`, return an explicit error instead of an all-zero settlement.
+**Result:** GIPSA THR now reads *with package* **₹3,46,140** = package ₹1,49,900 + implants ₹1,96,240 payable extra < without ₹3,80,393 ✓. Parse coverage: GIPSA **108/108**, non-GIPSA **199/199**, cash unchanged where curated docs exist (76 itemized; parity suite still 1042/0).
 
----
+**Known-honest oddity, not a bug:** TR285 PTCA shows with-package ₹2.34L > itemized ₹1.35L because Aditya Birla's *negotiated package rate itself* (₹1,93,100) exceeds our cohort estimate — the comparison faithfully reports it.
 
-## BUG-2 · HIGH — no insurance package's inclusion text is parseable → "with package" total is inflated / meaningless
+## BUG-3 · MEDIUM — zod validation errors returned HTTP 500 ✅ FIXED
 
-**Symptom (24 of 32 cases, flagged ⚠):** for GIPSA THR, *with package* = ₹5,30,293 > *without package* = ₹3,80,393. The package route should almost never cost more than itemized.
+**Was:** `EstimateInput.parse()` failures fell through the generic error middleware as `500` with a raw zod issue dump (T29/T30).
 
-**Root cause:** `parseCoverage()` understands only the curated `new2` bullet format (`HOSPITAL STAY | 4 day-ward…`, `PHARMACY IP | 25,000`, `NAME - QTY` allowances). Measured against the whole catalog:
-
-| payor bucket | packages with inclusion text | parse yields **zero** coverage signal |
-|---|---|---|
-| cash | 90 | 14 |
-| gipsa_insurance | 108 | **108 (100%)** |
-| non_gipsa_insurance | 199 | **199 (100%)** |
-
-GIPSA texts are in the PPN clause format (`L1: Standard inclusions - Doctor's fee, OT charges, … | L3: Special Investigations - … | L4: …`, pipe-separated); non-GIPSA texts use other layouts. With zero signal, every line item falls to `review → payable at full price`, so the package price is **added on top of** the full itemized total instead of absorbing it.
-
-Note the semantics of the GIPSA `L1` clause: "standard inclusions" covers doctor fees, OT, anaesthesia, drugs, investigations, room rent, nursing — i.e. nearly the whole itemized estimate should be netted off, with typically only implants + NME as extras.
-
-**Proposed fix (evaluate):**
-1. Teach `parseCoverage()` the GIPSA clause grammar (`L1/L2/L3/L4` sections; map "standard inclusions" to the associated + PF + room + investigation row classes), or
-2. Ask the manager for curated per-package inclusion structures for the insurance tariffs (same curation as the cash `new2` docs), or
-3. Interim: when parse yields zero signal, show "package inclusions not machine-readable — with-package total unavailable" instead of an inflated number.
+**Fix:** `src/index.js` error middleware maps `ZodError → 400` with compact `field: message` details. T29/T30 now get `400 {"error":"Invalid input","details":["insurance.base_sum_insured: Too small…"]}`.
 
 ---
 
-## BUG-3 · MEDIUM — zod validation errors return HTTP 500 instead of 400
+## Residual data gaps (manager to fix — not engine issues)
 
-**Failing cases:** T29 (negative `base_sum_insured`), T30 (sub-limit cap 0).
+- **4 cash packages** have junk inclusion text (bare number lists): TR1 `ENT5103`, `ENT5145`, `ENT5147`, `PHY5137` — need curation.
+- 38 placeholder package amounts (₹1/₹10) previously flagged in `PACKAGE_AMOUNT_FLAGS.csv` still stand.
 
-The route does `EstimateInput.parse(req.body)` inside try/catch → `next(err)`, and the error middleware (`src/index.js:37`) defaults to `err.status || 500`. A `ZodError` has no `status`, so client input errors surface as **server faults** with a raw zod issue array as the message.
+## Observations (for awareness)
 
-**Proposed fix:** in the error middleware, map `err instanceof ZodError → 400` with a compact `field: message` list.
-
----
-
-## Observations (not bugs — for awareness)
-
-- **O-1 · Paise drift:** `check.insurer_plus_patient` vs `gross_plus_upgrade` differ by ₹0.01–0.02 on some cases (display rounding of row-level `round2`). Within tolerance; workbook should still use the exact fields.
-- **O-2 · T12 copay 100%** behaves sanely (insurer ₹0, patient = everything) — no divide-by-zero.
-- **O-3 · T21 SI ₹0** yields insurer ₹0 / patient = full bill with `beyond cover` labelled — reasonable, but the UI could warn "policy has no available cover".
-- **O-4 · Daycare + room cap (T27):** cap logic runs against the daycare General-ward basis; no ward days → no deduction, copay only. Verify with manager that daycare claims should be cap-exempt (IRDAI daycare treatment usually has no room-rent component).
-- **O-5 · Top-up cases (T22/T23)** matched hand-computed IRDAI expectations exactly (standard: pays above deductible threshold on the claim; super: prior consumed counts toward deductible).
+- **O-1 · Paise drift:** `check.insurer_plus_patient` vs `gross_plus_upgrade` can differ by ₹0.01–0.02 (row-level display rounding). Within tolerance.
+- **O-2 · T12 copay 100%** behaves sanely (insurer ₹0, patient everything).
+- **O-3 · T21 SI ₹0** yields insurer ₹0 / patient full bill labelled `beyond cover` — UI could add a "policy has no available cover" warning.
+- **O-4 · Daycare + room cap (T27):** no ward days → no deduction, copay only. Confirm with manager that daycare claims should be cap-exempt (IRDAI daycare has no room-rent component).
+- **O-5 · Top-up cases (T22/T23)** matched hand-computed IRDAI expectations exactly.
+- **O-6 · Category-clause granularity:** clause packages don't encode stay-day limits, so beyond-package-days extras aren't computed for them (curated `new2`-style docs would enable that). Acceptable v1.

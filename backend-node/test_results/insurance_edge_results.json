@@ -11,7 +11,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -34,15 +34,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 527323.18,
-      "patient_total": 2970,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 377,
+    "ms": 324,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T02",
@@ -56,7 +54,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -79,15 +77,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 500000,
-      "patient_total": 30293.18,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 224,
+    "ms": 185,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T03",
@@ -105,7 +101,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -128,15 +124,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 475255.12,
-      "patient_total": 55038.06,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 188,
+    "ms": 177,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T04",
@@ -154,7 +148,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -177,15 +171,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 500000,
-      "patient_total": 30293.18,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 171,
+    "ms": 202,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T05",
@@ -202,7 +194,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -226,14 +218,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 300000,
-      "patient_total": 230293.18,
+      "patient_total": 46139.88,
       "package_admissible": 149900
     },
-    "ms": 173,
+    "ms": 171,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T06",
@@ -250,7 +240,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -273,15 +263,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 527323.18,
-      "patient_total": 2970,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 172,
+    "ms": 165,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T07",
@@ -299,7 +287,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -322,15 +310,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 483265.59,
-      "patient_total": 47027.59,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 168,
+    "ms": 164,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T08",
@@ -345,7 +331,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -368,15 +354,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 500000,
-      "patient_total": 30293.18,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 165,
+    "ms": 167,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T09",
@@ -394,7 +378,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -417,15 +401,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 474590.86,
-      "patient_total": 55702.32,
+      "insurer_total": 311525.89,
+      "patient_total": 34613.99,
       "package_admissible": 149900
     },
-    "ms": 169,
+    "ms": 168,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T10",
@@ -447,7 +429,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -470,15 +452,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 380204.1,
-      "patient_total": 150089.08,
+      "insurer_total": 276911.9,
+      "patient_total": 69227.98,
       "package_admissible": 149900
     },
-    "ms": 179,
+    "ms": 169,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T11",
@@ -496,7 +476,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -519,15 +499,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 477323.18,
-      "patient_total": 52970,
+      "insurer_total": 296139.88,
+      "patient_total": 50000,
       "package_admissible": 149900
     },
-    "ms": 170,
+    "ms": 167,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T12",
@@ -545,7 +523,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -569,14 +547,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 0,
-      "patient_total": 530293.18,
+      "patient_total": 346139.88,
       "package_admissible": 149900
     },
-    "ms": 177,
+    "ms": 164,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T13",
@@ -597,7 +573,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -620,15 +596,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 381083.3,
-      "patient_total": 149209.88,
+      "insurer_total": 199900,
+      "patient_total": 146239.88,
       "package_admissible": 149900
     },
-    "ms": 167,
+    "ms": 168,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T14",
@@ -652,7 +626,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -675,15 +649,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 472734.88,
-      "patient_total": 57558.3,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 177,
+    "ms": 165,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T15",
@@ -703,7 +675,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -726,15 +698,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 415700.18,
-      "patient_total": 114593,
+      "insurer_total": 236239.88,
+      "patient_total": 109900,
       "package_admissible": 40000
     },
-    "ms": 169,
+    "ms": 168,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T16",
@@ -754,7 +724,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -777,15 +747,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 349900,
-      "patient_total": 180393.18,
+      "insurer_total": 346139.88,
+      "patient_total": 0,
       "package_admissible": 149900
     },
-    "ms": 168,
+    "ms": 182,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T17",
@@ -817,7 +785,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -840,15 +808,13 @@
       }
     },
     "pkg_settlement": {
-      "insurer_total": 322584.67,
-      "patient_total": 207708.51,
+      "insurer_total": 224910,
+      "patient_total": 121229.88,
       "package_admissible": 149900
     },
     "ms": 166,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T18",
@@ -862,7 +828,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -886,14 +852,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 100000,
-      "patient_total": 430293.18,
+      "patient_total": 246139.88,
       "package_admissible": 149900
     },
-    "ms": 164,
+    "ms": 166,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T19",
@@ -909,7 +873,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -933,14 +897,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 100000,
-      "patient_total": 430293.18,
+      "patient_total": 246139.88,
       "package_admissible": 149900
     },
-    "ms": 189,
+    "ms": 161,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T20",
@@ -955,7 +917,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -979,14 +941,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 0,
-      "patient_total": 530293.18,
+      "patient_total": 346139.88,
       "package_admissible": 149900
     },
-    "ms": 164,
+    "ms": 166,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T21",
@@ -1000,7 +960,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -1024,14 +984,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 0,
-      "patient_total": 530293.18,
+      "patient_total": 346139.88,
       "package_admissible": 149900
     },
-    "ms": 164,
+    "ms": 165,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T22",
@@ -1051,7 +1009,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -1075,14 +1033,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 50000,
-      "patient_total": 480293.18,
+      "patient_total": 296139.88,
       "package_admissible": 149900
     },
     "ms": 166,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T23",
@@ -1102,7 +1058,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -1126,14 +1082,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 50000,
-      "patient_total": 480293.18,
+      "patient_total": 296139.88,
       "package_admissible": 149900
     },
-    "ms": 190,
+    "ms": 164,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T24",
@@ -1152,7 +1106,7 @@
     "bucket": "GIPSA Insurance",
     "room": "Single",
     "without_package": 380393.1647619048,
-    "with_package": 530293.18,
+    "with_package": 346139.88,
     "package_amount": 149900,
     "settlement": {
       "gross": 380393.16,
@@ -1176,14 +1130,12 @@
     },
     "pkg_settlement": {
       "insurer_total": 100000,
-      "patient_total": 430293.18,
+      "patient_total": 246139.88,
       "package_admissible": 149900
     },
-    "ms": 170,
+    "ms": 172,
     "bugs": [],
-    "warns": [
-      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
-    ]
+    "warns": []
   },
   {
     "id": "T25",
@@ -1200,38 +1152,36 @@
     "org": "ORG59",
     "bucket": "Non-GIPSA Insurance",
     "room": "Twin Sharing",
-    "without_package": 246410.255,
-    "with_package": 125000,
+    "without_package": 244410.255,
+    "with_package": 223838,
     "package_amount": 125000,
     "settlement": {
-      "gross": 0,
-      "gross_admissible": 0,
-      "insurer_total": 0,
-      "patient_total": 0,
-      "tpa_approval": 0,
+      "gross": 244410.26,
+      "gross_admissible": 242290.26,
+      "insurer_total": 218061.23,
+      "patient_total": 26349.03,
+      "tpa_approval": 218061.23,
       "top_up_claim": 0,
       "base_available": 700000,
       "ward_ratio": 1,
-      "copay": 0,
+      "copay": 24229.03,
       "patient": {
-        "nme": 0,
-        "copay": 0,
+        "nme": 2120,
+        "copay": 24229.03,
         "proportionate_deduction": 0,
         "sub_limit_overflow": 0,
         "room_upgrade_excess": 0,
         "beyond_cover": 0,
-        "total": 0
+        "total": 26349.03
       }
     },
     "pkg_settlement": {
-      "insurer_total": 112500,
-      "patient_total": 12500,
+      "insurer_total": 201454.2,
+      "patient_total": 22383.8,
       "package_admissible": 125000
     },
-    "ms": 795,
-    "bugs": [
-      "settlement gross ₹0 while estimate is ₹246410 — room key 'Twin Sharing' not resolved, silent all-zero settlement"
-    ],
+    "ms": 754,
+    "bugs": [],
     "warns": []
   },
   {
@@ -1273,7 +1223,7 @@
       }
     },
     "pkg_settlement": null,
-    "ms": 82,
+    "ms": 86,
     "bugs": [],
     "warns": []
   },
@@ -1320,7 +1270,7 @@
       }
     },
     "pkg_settlement": null,
-    "ms": 167,
+    "ms": 180,
     "bugs": [],
     "warns": []
   },
@@ -1359,7 +1309,7 @@
       }
     },
     "pkg_settlement": null,
-    "ms": 165,
+    "ms": 175,
     "bugs": [],
     "warns": []
   },
@@ -1369,13 +1319,11 @@
     "input": {
       "base_sum_insured": -100
     },
-    "status": 500,
+    "status": 400,
     "expectError": true,
-    "bugs": [
-      "expected HTTP 400 validation error, got 500 ([\n  {\n    \"origin\": \"number\",\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"inclusive\": true,\n    \"path\": [\n      \"insurance\",\n      \"base_sum_insured\"\n    ],\n    \"message\": \"Too small: expected number to be >=0\"\n  }\n])"
-    ],
+    "bugs": [],
     "warns": [],
-    "ms": 4
+    "ms": 2
   },
   {
     "id": "T30",
@@ -1389,13 +1337,11 @@
         }
       ]
     },
-    "status": 500,
+    "status": 400,
     "expectError": true,
-    "bugs": [
-      "expected HTTP 400 validation error, got 500 ([\n  {\n    \"origin\": \"number\",\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"inclusive\": false,\n    \"path\": [\n      \"insurance\",\n      \"sub_limits\",\n      0,\n      \"cap\"\n    ],\n    \"message\": \"Too small: expected number to be >0\"\n  }\n])"
-    ],
+    "bugs": [],
     "warns": [],
-    "ms": 1
+    "ms": 0
   },
   {
     "id": "T31",
@@ -1408,38 +1354,36 @@
     "org": "ORG59",
     "bucket": "Non-GIPSA Insurance",
     "room": "TWIN SHARING",
-    "without_package": 246410.255,
-    "with_package": 125000,
+    "without_package": 244410.255,
+    "with_package": 223838,
     "package_amount": 125000,
     "settlement": {
-      "gross": 0,
-      "gross_admissible": 0,
-      "insurer_total": 0,
-      "patient_total": 0,
-      "tpa_approval": 0,
+      "gross": 244410.26,
+      "gross_admissible": 242290.26,
+      "insurer_total": 242290.26,
+      "patient_total": 2120,
+      "tpa_approval": 242290.26,
       "top_up_claim": 0,
       "base_available": 700000,
       "ward_ratio": 1,
       "copay": 0,
       "patient": {
-        "nme": 0,
+        "nme": 2120,
         "copay": 0,
         "proportionate_deduction": 0,
         "sub_limit_overflow": 0,
         "room_upgrade_excess": 0,
         "beyond_cover": 0,
-        "total": 0
+        "total": 2120
       }
     },
     "pkg_settlement": {
-      "insurer_total": 125000,
+      "insurer_total": 223838,
       "patient_total": 0,
       "package_admissible": 125000
     },
-    "ms": 791,
-    "bugs": [
-      "settlement gross ₹0 while estimate is ₹246410 — room key 'TWIN SHARING' not resolved, silent all-zero settlement"
-    ],
+    "ms": 939,
+    "bugs": [],
     "warns": []
   },
   {
@@ -1453,38 +1397,36 @@
     "org": "ORG59",
     "bucket": "Non-GIPSA Insurance",
     "room": "General Ward",
-    "without_package": 246410.255,
-    "with_package": 125000,
+    "without_package": 240505.255,
+    "with_package": 223838,
     "package_amount": 125000,
     "settlement": {
-      "gross": 0,
-      "gross_admissible": 0,
-      "insurer_total": 0,
-      "patient_total": 0,
-      "tpa_approval": 0,
+      "gross": 240505.26,
+      "gross_admissible": 238385.26,
+      "insurer_total": 238385.26,
+      "patient_total": 2120,
+      "tpa_approval": 238385.26,
       "top_up_claim": 0,
       "base_available": 700000,
       "ward_ratio": 1,
       "copay": 0,
       "patient": {
-        "nme": 0,
+        "nme": 2120,
         "copay": 0,
         "proportionate_deduction": 0,
         "sub_limit_overflow": 0,
         "room_upgrade_excess": 0,
         "beyond_cover": 0,
-        "total": 0
+        "total": 2120
       }
     },
     "pkg_settlement": {
-      "insurer_total": 125000,
+      "insurer_total": 223838,
       "patient_total": 0,
       "package_admissible": 125000
     },
-    "ms": 773,
-    "bugs": [
-      "settlement gross ₹0 while estimate is ₹246410 — room key 'General Ward' not resolved, silent all-zero settlement"
-    ],
+    "ms": 811,
+    "bugs": [],
     "warns": []
   }
 ]

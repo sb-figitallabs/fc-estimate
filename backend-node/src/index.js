@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import fs from 'node:fs';
 import express from 'express';
+import { ZodError } from 'zod';
 import swaggerUi from 'swagger-ui-express';
 import { pool } from './db/pool.js';
 import estimateRoutes from './routes/estimate.routes.js';
@@ -31,8 +32,14 @@ app.use('/api/lookup', lookupRoutes);
 app.use('/api/estimate', estimateRoutes);
 app.use('/api/packages', packagesRoutes);
 
-// central error handler
+// central error handler — client input errors are 400, everything else 500
 app.use((err, _req, res, _next) => {
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      error: 'Invalid input',
+      details: err.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`),
+    });
+  }
   console.error(err);
   res.status(err.status || 500).json({ error: err.message, details: err.details });
 });
