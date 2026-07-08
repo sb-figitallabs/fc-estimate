@@ -1,0 +1,1490 @@
+[
+  {
+    "id": "T01",
+    "name": "Corporate-style: big SI, no cap, no copay",
+    "input": {
+      "base_sum_insured": 2000000
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 377423.16,
+      "patient_total": 2970,
+      "tpa_approval": 377423.16,
+      "top_up_claim": 0,
+      "base_available": 2000000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 2970
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 527323.18,
+      "patient_total": 2970,
+      "package_admissible": 149900
+    },
+    "ms": 377,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T02",
+    "name": "Retail plain: SI 5L only",
+    "input": {
+      "base_sum_insured": 500000
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 377423.16,
+      "patient_total": 2970,
+      "tpa_approval": 377423.16,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 2970
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 500000,
+      "patient_total": 30293.18,
+      "package_admissible": 149900
+    },
+    "ms": 224,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T03",
+    "name": "Absolute cap ₹2,000/day (breached)",
+    "input": {
+      "base_sum_insured": 500000,
+      "room_rent_cap": {
+        "type": "absolute",
+        "value": 2000
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 325355.11,
+      "insurer_total": 325355.11,
+      "patient_total": 55038.06,
+      "tpa_approval": 325355.11,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 0.24,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 52068.06,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 55038.06
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 475255.12,
+      "patient_total": 55038.06,
+      "package_admissible": 149900
+    },
+    "ms": 188,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T04",
+    "name": "Absolute cap ₹20,000/day (not breached)",
+    "input": {
+      "base_sum_insured": 500000,
+      "room_rent_cap": {
+        "type": "absolute",
+        "value": 20000
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 377423.16,
+      "patient_total": 2970,
+      "tpa_approval": 377423.16,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 2970
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 500000,
+      "patient_total": 30293.18,
+      "package_admissible": 149900
+    },
+    "ms": 171,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T05",
+    "name": "1%/2% of SI cap, SI 3L (breached)",
+    "input": {
+      "base_sum_insured": 300000,
+      "room_rent_cap": {
+        "type": "pct_of_si"
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 315593.11,
+      "insurer_total": 300000,
+      "patient_total": 80393.16,
+      "tpa_approval": 300000,
+      "top_up_claim": 0,
+      "base_available": 300000,
+      "ward_ratio": 0.35,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 61830.05,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 15593.11,
+        "total": 80393.16
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 300000,
+      "patient_total": 230293.18,
+      "package_admissible": 149900
+    },
+    "ms": 173,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T06",
+    "name": "1%/2% of SI cap, SI 10L (ward ok)",
+    "input": {
+      "base_sum_insured": 1000000,
+      "room_rent_cap": {
+        "type": "pct_of_si"
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 377423.16,
+      "patient_total": 2970,
+      "tpa_approval": 377423.16,
+      "top_up_claim": 0,
+      "base_available": 1000000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 2970
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 527323.18,
+      "patient_total": 2970,
+      "package_admissible": 149900
+    },
+    "ms": 172,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T07",
+    "name": "Room-category tier cap, eligible General, in Single",
+    "input": {
+      "base_sum_insured": 500000,
+      "room_rent_cap": {
+        "type": "room_category"
+      },
+      "room_eligibility": "General"
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 333365.58,
+      "insurer_total": 333365.58,
+      "patient_total": 63527.59,
+      "tpa_approval": 333365.58,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 0.35,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 44057.59,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 16500,
+        "beyond_cover": 0,
+        "total": 63527.59
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 483265.59,
+      "patient_total": 47027.59,
+      "package_admissible": 149900
+    },
+    "ms": 168,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T08",
+    "name": "Eligibility Twin, staying Single (upgrade, no cap)",
+    "input": {
+      "base_sum_insured": 500000,
+      "room_eligibility": "Twin"
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 377423.16,
+      "patient_total": 10470,
+      "tpa_approval": 377423.16,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 7500,
+        "beyond_cover": 0,
+        "total": 10470
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 500000,
+      "patient_total": 30293.18,
+      "package_admissible": 149900
+    },
+    "ms": 165,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T09",
+    "name": "Copay 10%",
+    "input": {
+      "base_sum_insured": 500000,
+      "copay": {
+        "type": "percentage",
+        "value": 10
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 339680.85,
+      "patient_total": 40712.32,
+      "tpa_approval": 339680.85,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 1,
+      "copay": 37742.32,
+      "patient": {
+        "nme": 2970,
+        "copay": 37742.32,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 40712.32
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 474590.86,
+      "patient_total": 55702.32,
+      "package_admissible": 149900
+    },
+    "ms": 169,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T10",
+    "name": "Copay 20% + cap ₹2,000/day (senior-citizen style)",
+    "input": {
+      "base_sum_insured": 500000,
+      "room_rent_cap": {
+        "type": "absolute",
+        "value": 2000
+      },
+      "copay": {
+        "type": "percentage",
+        "value": 20
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 325355.11,
+      "insurer_total": 260284.08,
+      "patient_total": 120109.08,
+      "tpa_approval": 260284.08,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 0.24,
+      "copay": 65071.02,
+      "patient": {
+        "nme": 2970,
+        "copay": 65071.02,
+        "proportionate_deduction": 52068.06,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 120109.08
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 380204.1,
+      "patient_total": 150089.08,
+      "package_admissible": 149900
+    },
+    "ms": 179,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T11",
+    "name": "Absolute copay ₹50,000",
+    "input": {
+      "base_sum_insured": 500000,
+      "copay": {
+        "type": "absolute",
+        "value": 50000
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 327423.16,
+      "patient_total": 52970,
+      "tpa_approval": 327423.16,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 1,
+      "copay": 50000,
+      "patient": {
+        "nme": 2970,
+        "copay": 50000,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 52970
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 477323.18,
+      "patient_total": 52970,
+      "package_admissible": 149900
+    },
+    "ms": 170,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T12",
+    "name": "Copay 100% (degenerate)",
+    "input": {
+      "base_sum_insured": 500000,
+      "copay": {
+        "type": "percentage",
+        "value": 100
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 0,
+      "patient_total": 380393.16,
+      "tpa_approval": 0,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 1,
+      "copay": 377423.16,
+      "patient": {
+        "nme": 2970,
+        "copay": 377423.16,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 380393.16
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 0,
+      "patient_total": 530293.18,
+      "package_admissible": 149900
+    },
+    "ms": 177,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T13",
+    "name": "Implant sub-limit ₹50k",
+    "input": {
+      "base_sum_insured": 1000000,
+      "sub_limits": [
+        {
+          "label": "Implant cap",
+          "applies_to": "implants",
+          "cap": 50000
+        }
+      ]
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 231183.29,
+      "insurer_total": 231183.29,
+      "patient_total": 149209.88,
+      "tpa_approval": 231183.29,
+      "top_up_claim": 0,
+      "base_available": 1000000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 146239.88,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 149209.88
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 381083.3,
+      "patient_total": 149209.88,
+      "package_admissible": 149900
+    },
+    "ms": 167,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T14",
+    "name": "Pharmacy ₹25k + investigations ₹500 sub-limits",
+    "input": {
+      "base_sum_insured": 1000000,
+      "sub_limits": [
+        {
+          "applies_to": "pharmacy",
+          "cap": 25000
+        },
+        {
+          "applies_to": "investigations",
+          "cap": 500
+        }
+      ]
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 322834.88,
+      "insurer_total": 322834.88,
+      "patient_total": 57558.29,
+      "tpa_approval": 322834.88,
+      "top_up_claim": 0,
+      "base_available": 1000000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 54588.29,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 57558.29
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 472734.88,
+      "patient_total": 57558.3,
+      "package_admissible": 149900
+    },
+    "ms": 177,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T15",
+    "name": "Procedure sub-limit ₹40k (surgery cap)",
+    "input": {
+      "base_sum_insured": 1000000,
+      "sub_limits": [
+        {
+          "applies_to": "procedure",
+          "cap": 40000
+        }
+      ]
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 375700.16,
+      "insurer_total": 375700.16,
+      "patient_total": 4693,
+      "tpa_approval": 375700.16,
+      "top_up_claim": 0,
+      "base_available": 1000000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 1723,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 4693
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 415700.18,
+      "patient_total": 114593,
+      "package_admissible": 40000
+    },
+    "ms": 169,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T16",
+    "name": "Total claim sub-limit ₹2L",
+    "input": {
+      "base_sum_insured": 1000000,
+      "sub_limits": [
+        {
+          "applies_to": "total",
+          "cap": 200000
+        }
+      ]
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 200000,
+      "insurer_total": 200000,
+      "patient_total": 180393.16,
+      "tpa_approval": 200000,
+      "top_up_claim": 0,
+      "base_available": 1000000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 177423.16,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 180393.16
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 349900,
+      "patient_total": 180393.18,
+      "package_admissible": 149900
+    },
+    "ms": 168,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T17",
+    "name": "All sub-limits + cap + 10% copay stacked",
+    "input": {
+      "base_sum_insured": 500000,
+      "room_rent_cap": {
+        "type": "absolute",
+        "value": 3000
+      },
+      "copay": {
+        "type": "percentage",
+        "value": 10
+      },
+      "sub_limits": [
+        {
+          "applies_to": "implants",
+          "cap": 100000
+        },
+        {
+          "applies_to": "pharmacy",
+          "cap": 50000
+        }
+      ]
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 208527.41,
+      "insurer_total": 187674.67,
+      "patient_total": 192718.5,
+      "tpa_approval": 187674.67,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 0.35,
+      "copay": 20852.74,
+      "patient": {
+        "nme": 2970,
+        "copay": 20852.74,
+        "proportionate_deduction": 44057.59,
+        "sub_limit_overflow": 124838.17,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 192718.5
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 322584.67,
+      "patient_total": 207708.51,
+      "package_admissible": 149900
+    },
+    "ms": 166,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T18",
+    "name": "Tiny SI ₹1L (cover exhausted mid-claim)",
+    "input": {
+      "base_sum_insured": 100000
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 100000,
+      "patient_total": 280393.16,
+      "tpa_approval": 100000,
+      "top_up_claim": 0,
+      "base_available": 100000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 277423.16,
+        "total": 280393.16
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 100000,
+      "patient_total": 430293.18,
+      "package_admissible": 149900
+    },
+    "ms": 164,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T19",
+    "name": "SI 5L, consumed 4.5L, NCB 50k (₹1L left)",
+    "input": {
+      "base_sum_insured": 500000,
+      "consumed": 450000,
+      "ncb": 50000
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 100000,
+      "patient_total": 280393.16,
+      "tpa_approval": 100000,
+      "top_up_claim": 0,
+      "base_available": 100000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 277423.16,
+        "total": 280393.16
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 100000,
+      "patient_total": 430293.18,
+      "package_admissible": 149900
+    },
+    "ms": 189,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T20",
+    "name": "Fully consumed SI, no top-up (zero cover left)",
+    "input": {
+      "base_sum_insured": 500000,
+      "consumed": 500000
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 0,
+      "patient_total": 380393.16,
+      "tpa_approval": 0,
+      "top_up_claim": 0,
+      "base_available": 0,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 377423.16,
+        "total": 380393.16
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 0,
+      "patient_total": 530293.18,
+      "package_admissible": 149900
+    },
+    "ms": 164,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T21",
+    "name": "SI 0 (policy number without cover — degenerate)",
+    "input": {
+      "base_sum_insured": 0
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 0,
+      "patient_total": 380393.16,
+      "tpa_approval": 0,
+      "top_up_claim": 0,
+      "base_available": 0,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 377423.16,
+        "total": 380393.16
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 0,
+      "patient_total": 530293.18,
+      "package_admissible": 149900
+    },
+    "ms": 164,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T22",
+    "name": "Standard top-up 5L, deductible 2L, base 2L consumed 1.5L",
+    "input": {
+      "base_sum_insured": 200000,
+      "consumed": 150000,
+      "top_up": {
+        "amount": 500000,
+        "type": "standard",
+        "deductible": 200000
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 227423.16,
+      "patient_total": 152970,
+      "tpa_approval": 50000,
+      "top_up_claim": 177423.16,
+      "base_available": 50000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 150000,
+        "total": 152970
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 50000,
+      "patient_total": 480293.18,
+      "package_admissible": 149900
+    },
+    "ms": 166,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T23",
+    "name": "Super top-up, same numbers (consumed counts toward deductible)",
+    "input": {
+      "base_sum_insured": 200000,
+      "consumed": 150000,
+      "top_up": {
+        "amount": 500000,
+        "type": "super",
+        "deductible": 200000
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 377423.16,
+      "patient_total": 2970,
+      "tpa_approval": 50000,
+      "top_up_claim": 327423.16,
+      "base_available": 50000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 2970
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 50000,
+      "patient_total": 480293.18,
+      "package_admissible": 149900
+    },
+    "ms": 190,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T24",
+    "name": "Top-up deductible ₹50L above claim (top-up never triggers)",
+    "input": {
+      "base_sum_insured": 100000,
+      "top_up": {
+        "amount": 1000000,
+        "type": "standard",
+        "deductible": 5000000
+      }
+    },
+    "status": 200,
+    "family": "total_hip_replacement_thr_hemiarthroplasty",
+    "org": "ORG55",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 380393.1647619048,
+    "with_package": 530293.18,
+    "package_amount": 149900,
+    "settlement": {
+      "gross": 380393.16,
+      "gross_admissible": 377423.16,
+      "insurer_total": 100000,
+      "patient_total": 280393.16,
+      "tpa_approval": 100000,
+      "top_up_claim": 0,
+      "base_available": 100000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 2970,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 277423.16,
+        "total": 280393.16
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 100000,
+      "patient_total": 430293.18,
+      "package_admissible": 149900
+    },
+    "ms": 170,
+    "bugs": [],
+    "warns": [
+      "with_package ₹530293 > without ₹380393 — package extras not reduced by inclusions (curated-text coverage gap?)"
+    ]
+  },
+  {
+    "id": "T25",
+    "name": "TKR + ICICI (Non-GIPSA package) + 10% copay + Twin room",
+    "input": {
+      "base_sum_insured": 700000,
+      "copay": {
+        "type": "percentage",
+        "value": 10
+      }
+    },
+    "status": 200,
+    "family": "total_knee_replacement_unilateral",
+    "org": "ORG59",
+    "bucket": "Non-GIPSA Insurance",
+    "room": "Twin Sharing",
+    "without_package": 246410.255,
+    "with_package": 125000,
+    "package_amount": 125000,
+    "settlement": {
+      "gross": 0,
+      "gross_admissible": 0,
+      "insurer_total": 0,
+      "patient_total": 0,
+      "tpa_approval": 0,
+      "top_up_claim": 0,
+      "base_available": 700000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 0,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 0
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 112500,
+      "patient_total": 12500,
+      "package_admissible": 125000
+    },
+    "ms": 795,
+    "bugs": [
+      "settlement gross ₹0 while estimate is ₹246410 — room key 'Twin Sharing' not resolved, silent all-zero settlement"
+    ],
+    "warns": []
+  },
+  {
+    "id": "T26",
+    "name": "Robotic TKR + New India (family with NO insurer package)",
+    "input": {
+      "base_sum_insured": 500000,
+      "room_rent_cap": {
+        "type": "absolute",
+        "value": 5000
+      }
+    },
+    "status": 200,
+    "family": "robotic_tkr_unilateral_right",
+    "org": "ORG56",
+    "bucket": "GIPSA Insurance",
+    "room": "Single",
+    "without_package": 389036.03625,
+    "with_package": null,
+    "package_amount": null,
+    "settlement": {
+      "gross": 389036.04,
+      "gross_admissible": 318307.51,
+      "insurer_total": 318307.51,
+      "patient_total": 70728.53,
+      "tpa_approval": 318307.51,
+      "top_up_claim": 0,
+      "base_available": 500000,
+      "ward_ratio": 0.59,
+      "copay": 0,
+      "patient": {
+        "nme": 4140,
+        "copay": 0,
+        "proportionate_deduction": 66588.53,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 70728.53
+      }
+    },
+    "pkg_settlement": null,
+    "ms": 82,
+    "bugs": [],
+    "warns": []
+  },
+  {
+    "id": "T27",
+    "name": "Chemo daycare + Star (room N/A) + cap ₹4,000/day",
+    "input": {
+      "base_sum_insured": 300000,
+      "room_rent_cap": {
+        "type": "absolute",
+        "value": 4000
+      },
+      "copay": {
+        "type": "percentage",
+        "value": 10
+      }
+    },
+    "status": 200,
+    "family": "chemotherapy_systemic_therapy_infusion_daycare",
+    "org": "ORG61",
+    "bucket": "Non-GIPSA Insurance",
+    "room": "Daycare",
+    "without_package": 24643.66,
+    "with_package": null,
+    "package_amount": null,
+    "settlement": {
+      "gross": 24643.66,
+      "gross_admissible": 24643.66,
+      "insurer_total": 22179.29,
+      "patient_total": 2464.37,
+      "tpa_approval": 22179.29,
+      "top_up_claim": 0,
+      "base_available": 300000,
+      "ward_ratio": 1,
+      "copay": 2464.37,
+      "patient": {
+        "nme": 0,
+        "copay": 2464.37,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 2464.37
+      }
+    },
+    "pkg_settlement": null,
+    "ms": 167,
+    "bugs": [],
+    "warns": []
+  },
+  {
+    "id": "T28",
+    "name": "LSCS + Star (insurer whose tariff has no LSCS package)",
+    "input": {
+      "base_sum_insured": 400000
+    },
+    "status": 200,
+    "family": "lscs_caesarean",
+    "org": "ORG61",
+    "bucket": "Non-GIPSA Insurance",
+    "room": "Single",
+    "without_package": 27665.213750000003,
+    "with_package": null,
+    "package_amount": null,
+    "settlement": {
+      "gross": 27665.21,
+      "gross_admissible": 27665.21,
+      "insurer_total": 27665.21,
+      "patient_total": 0,
+      "tpa_approval": 27665.21,
+      "top_up_claim": 0,
+      "base_available": 400000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 0,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 0
+      }
+    },
+    "pkg_settlement": null,
+    "ms": 165,
+    "bugs": [],
+    "warns": []
+  },
+  {
+    "id": "T29",
+    "name": "Negative SI (must 400)",
+    "input": {
+      "base_sum_insured": -100
+    },
+    "status": 500,
+    "expectError": true,
+    "bugs": [
+      "expected HTTP 400 validation error, got 500 ([\n  {\n    \"origin\": \"number\",\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"inclusive\": true,\n    \"path\": [\n      \"insurance\",\n      \"base_sum_insured\"\n    ],\n    \"message\": \"Too small: expected number to be >=0\"\n  }\n])"
+    ],
+    "warns": [],
+    "ms": 4
+  },
+  {
+    "id": "T30",
+    "name": "Sub-limit cap 0 (must 400 — zod positive())",
+    "input": {
+      "base_sum_insured": 500000,
+      "sub_limits": [
+        {
+          "applies_to": "implants",
+          "cap": 0
+        }
+      ]
+    },
+    "status": 500,
+    "expectError": true,
+    "bugs": [
+      "expected HTTP 400 validation error, got 500 ([\n  {\n    \"origin\": \"number\",\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"inclusive\": false,\n    \"path\": [\n      \"insurance\",\n      \"sub_limits\",\n      0,\n      \"cap\"\n    ],\n    \"message\": \"Too small: expected number to be >0\"\n  }\n])"
+    ],
+    "warns": [],
+    "ms": 1
+  },
+  {
+    "id": "T31",
+    "name": "room_type \"TWIN SHARING\" (documented full name)",
+    "input": {
+      "base_sum_insured": 700000
+    },
+    "status": 200,
+    "family": "total_knee_replacement_unilateral",
+    "org": "ORG59",
+    "bucket": "Non-GIPSA Insurance",
+    "room": "TWIN SHARING",
+    "without_package": 246410.255,
+    "with_package": 125000,
+    "package_amount": 125000,
+    "settlement": {
+      "gross": 0,
+      "gross_admissible": 0,
+      "insurer_total": 0,
+      "patient_total": 0,
+      "tpa_approval": 0,
+      "top_up_claim": 0,
+      "base_available": 700000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 0,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 0
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 125000,
+      "patient_total": 0,
+      "package_admissible": 125000
+    },
+    "ms": 791,
+    "bugs": [
+      "settlement gross ₹0 while estimate is ₹246410 — room key 'TWIN SHARING' not resolved, silent all-zero settlement"
+    ],
+    "warns": []
+  },
+  {
+    "id": "T32",
+    "name": "room_type \"General Ward\" (documented full name)",
+    "input": {
+      "base_sum_insured": 700000
+    },
+    "status": 200,
+    "family": "total_knee_replacement_unilateral",
+    "org": "ORG59",
+    "bucket": "Non-GIPSA Insurance",
+    "room": "General Ward",
+    "without_package": 246410.255,
+    "with_package": 125000,
+    "package_amount": 125000,
+    "settlement": {
+      "gross": 0,
+      "gross_admissible": 0,
+      "insurer_total": 0,
+      "patient_total": 0,
+      "tpa_approval": 0,
+      "top_up_claim": 0,
+      "base_available": 700000,
+      "ward_ratio": 1,
+      "copay": 0,
+      "patient": {
+        "nme": 0,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 0,
+        "total": 0
+      }
+    },
+    "pkg_settlement": {
+      "insurer_total": 125000,
+      "patient_total": 0,
+      "package_admissible": 125000
+    },
+    "ms": 773,
+    "bugs": [
+      "settlement gross ₹0 while estimate is ₹246410 — room key 'General Ward' not resolved, silent all-zero settlement"
+    ],
+    "warns": []
+  }
+]
