@@ -152,6 +152,27 @@ const FAMILIES = {
   },
 };
 
+/** Map a hospital package (name/code) back to a registered clinical family. */
+export function familyForPackage({ package_name = '', package_code = '' }) {
+  const n = package_name.toUpperCase();
+  const c = package_code.toUpperCase();
+  if (/^ROBOTIC TKR/.test(n) || c === 'ORT5535' || c === 'ORT5784' || c === 'ORT5536') {
+    if (/BILATERAL/.test(n) || c === 'ORT5536') return 'robotic_tkr_bilateral';
+    if (/LEFT/.test(n) || c === 'ORT5784') return 'robotic_tkr_unilateral_left';
+    return 'robotic_tkr_unilateral_right';
+  }
+  if (/^TOTAL KNEE REPLACEMENT/.test(n)) {
+    return /BILATERAL/.test(n) ? 'total_knee_replacement_bilateral' : 'total_knee_replacement_unilateral';
+  }
+  if (/HIP REPLACEMENT|HEMIARTHROPLASTY|\bTHR\b/.test(n)) return 'total_hip_replacement_thr_hemiarthroplasty';
+  if (/CORONARY ANGIOGRAM.*CAT ?- ?1|CAG.*CAT ?- ?1/.test(n)) return 'coronary_angio_cag_cat_1_daycare';
+  if (/PTCA|ANGIOPLASTY/.test(n) && /1 VESSEL|SINGLE VESSEL/.test(n)) return 'ptca_single_vessel';
+  if (/CHOLECYSTECTOMY/.test(n) && /LAP/.test(n)) return 'lap_cholecystectomy';
+  if (/LSCS|CAESAR/.test(n) && !/NORMAL DELIVERY/.test(n)) return 'lscs_caesarean';
+  if (/CHEMOTHERAPY|SYSTEMIC THERAPY/.test(n)) return 'chemotherapy_systemic_therapy_infusion_daycare';
+  return null; // family not yet onboarded
+}
+
 /** Public registry view for UI/API consumers. */
 export function listFamilies() {
   return Object.values(FAMILIES).map((f) => ({

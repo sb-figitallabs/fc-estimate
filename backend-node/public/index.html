@@ -265,6 +265,12 @@ async function loadFamilies() {
     FAMILIES = await (await fetch('/api/lookup/families')).json();
     $('procedure').innerHTML = FAMILIES.map((f) =>
       `<option value="${esc(f.family)}"${f.validated ? ' selected' : ''}>${esc(f.label)}${f.validated ? ' ✓' : ''}</option>`).join('');
+    // deep link from Package Explorer: /?procedure=<family>&package_code=<code>
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('procedure') && FAMILIES.some((f) => f.family === qs.get('procedure'))) {
+      $('procedure').value = qs.get('procedure');
+      if (qs.get('package_code')) $('pkgText').value = qs.get('package_code');
+    }
     onFamilyChange();
   } catch { showError('Could not load procedure families — is the API running?'); }
 }
@@ -476,6 +482,7 @@ function renderFormatted(d) {
         <span class="chip neutral num">itemized ${delta >= 0 ? '+' : '−'}₹ ${inr(Math.abs(delta))} vs package</span>
         <span class="badge ${ready ? 'ok' : 'warn'}">${esc(p.readiness.runtime_status)}${p.readiness.primary_blocker ? ' — ' + esc(p.readiness.primary_blocker) : ''}</span>
         <span class="chip neutral">${esc(po.source === 'cohort_dominant' ? 'auto-detected' : 'user-selected')}</span>
+        <a href="/packages.html?tariff_code=${encodeURIComponent(p.tariff_code)}&package_code=${encodeURIComponent(p.package_code)}" style="font-size:13px;font-weight:600;color:var(--brand)">View full details →</a>
       </div>
       <div class="muted" style="font-size:12px;margin-top:4px">
         ${p.matched_room_category ? 'Room: ' + esc(p.matched_room_category) + ' · ' : ''}
