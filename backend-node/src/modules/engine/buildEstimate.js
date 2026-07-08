@@ -22,6 +22,7 @@ import { resolveDrivers, computeLineItems } from './lineItems.js';
 import { serviceLineCountAlert } from './rules.js';
 import { packageOfferForEstimate } from '../packages/packages.service.js';
 import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
+import { settle, settleWithPackage } from '../insurance/settlement.js';
 
 async function pharmacyMapping() {
   const { rows } = await query(
@@ -244,7 +245,22 @@ export async function buildEstimate(input) {
     unresolved_items: [],
   };
 
-  // 17. package coverage: per-line inclusion status + dual grand totals
+  // 17. insurance settlement: insurer share vs patient share (itemized claim)
+  if (input.insurance && input.payment.payor_bucket !== 'Cash') {
+    try {
+      estimate.insurance_settlement = settle({
+        lineItems: lineItems.rows,
+        roomKey: room.toLowerCase(),
+        drivers,
+        insurance: input.insurance,
+        grossTotal: lineItems.finalEstimate,
+      });
+    } catch (err) {
+      estimate.insurance_settlement = { error: err.message };
+    }
+  }
+
+  // 18. package coverage: per-line inclusion status + dual grand totals
   // (only when a package resolved and curated inclusion text exists)
   if (packageOffer?.package?.inclusions_text) {
     try {
@@ -258,6 +274,21 @@ export async function buildEstimate(input) {
       const variants = splitVariants(packageOffer.package.inclusions_text);
       packageOffer.package.inclusions_display = variants[0] ?? packageOffer.package.inclusions_text;
       if (variants.length > 1) packageOffer.package.inclusions_variants = variants;
+      // insurance settlement over the PACKAGE route (package + settled extras)
+      if (input.insurance && input.payment.payor_bucket !== 'Cash') {
+        try {
+          packageOffer.insurance_settlement = settleWithPackage({
+            packageAmount: packageOffer.package.package_amount,
+            coverageRows: coverage.rows,
+            lineItems: lineItems.rows,
+            roomKey: room.toLowerCase(),
+            drivers,
+            insurance: input.insurance,
+          });
+        } catch (err) {
+          packageOffer.insurance_settlement = { error: err.message };
+        }
+      }
     } catch (err) {
       packageOffer.coverage = { error: err.message };
     }

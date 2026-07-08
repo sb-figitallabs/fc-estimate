@@ -45,6 +45,33 @@ export const EstimateInput = z.object({
     package_name: z.string().optional(),
     text: z.string().optional(), // free text → alias + Gemini resolution
   }).optional(),
+  insurance: z.object({
+    base_sum_insured: z.number().nonnegative(),
+    consumed: z.number().nonnegative().default(0),
+    ncb: z.number().nonnegative().default(0),
+    top_up: z.object({
+      amount: z.number().nonnegative().default(0),
+      type: z.enum(['standard', 'super']).default('standard'),
+      deductible: z.number().nonnegative().default(0),
+    }).optional(),
+    room_rent_cap: z.object({
+      type: z.enum(['absolute', 'pct_of_si', 'room_category', 'none']).default('none'),
+      value: z.number().nonnegative().optional(),      // absolute ₹/day
+      icu_value: z.number().nonnegative().optional(),  // absolute ICU ₹/day (optional)
+      ward_pct: z.number().positive().default(1),      // pct_of_si
+      icu_pct: z.number().positive().default(2),
+    }).optional(),
+    room_eligibility: z.enum(['General', 'Twin', 'Single']).optional(),
+    copay: z.object({
+      type: z.enum(['percentage', 'absolute']).default('percentage'),
+      value: z.number().nonnegative().default(0),
+    }).optional(),
+    sub_limits: z.array(z.object({
+      label: z.string().optional(),
+      applies_to: z.enum(['implants', 'pharmacy', 'investigations', 'procedure', 'total']),
+      cap: z.number().positive(),
+    })).optional(),
+  }).optional(),
   selections: z.object({
     add_ons: z.record(z.string(), z.enum(['Include', 'Exclude'])).optional(),
     grouped: z.record(z.string(), z.enum(['Include', 'Exclude'])).optional(),

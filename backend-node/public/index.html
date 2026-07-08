@@ -177,6 +177,31 @@
         </div>
       </fieldset>
 
+      <fieldset id="insuranceFs" style="display:none">
+        <legend>Insurance policy (settlement)</legend>
+        <div class="field"><label for="insSI">Base Sum Insured (₹)</label><input id="insSI" type="number" min="0" value="500000"></div>
+        <div class="field"><label for="insConsumed">Consumed (₹)</label><input id="insConsumed" type="number" min="0" value="0"></div>
+        <div class="field"><label for="insNcb">Cumulative Bonus / NCB (₹)</label><input id="insNcb" type="number" min="0" value="0"></div>
+        <div class="field"><label for="insTopup">Top-up amount (₹)</label><input id="insTopup" type="number" min="0" value="0"></div>
+        <div class="field"><label for="insTopupType">Top-up type</label>
+          <select id="insTopupType"><option value="standard">Standard (per-claim)</option><option value="super">Super (aggregate)</option></select>
+        </div>
+        <div class="field"><label for="insTopupDed">Top-up deductible (₹)</label><input id="insTopupDed" type="number" min="0" value="0"></div>
+        <div class="field"><label for="insCapType">Room-rent cap</label>
+          <select id="insCapType"><option value="none">No capping</option><option value="absolute">Absolute ₹/day</option><option value="pct_of_si">% of Base SI (1%/2%)</option><option value="room_category">Room-category tier</option></select>
+        </div>
+        <div class="field"><label for="insCapValue">Cap value (₹/day)</label><input id="insCapValue" type="number" min="0" placeholder="—" disabled></div>
+        <div class="field"><label for="insElig">Room eligibility</label>
+          <select id="insElig"><option value="">— none —</option><option>General</option><option>Twin</option><option>Single</option></select>
+        </div>
+        <div class="field"><label for="insCopay">Co-pay</label>
+          <div style="display:flex;gap:6px"><select id="insCopayType" style="width:44%"><option value="percentage">%</option><option value="absolute">₹</option></select><input id="insCopay" type="number" min="0" value="0"></div>
+        </div>
+        <div class="field full"><label for="insSubLimits">Sub-limits <span class="muted">(one per line: group:amount:label — groups: implants, pharmacy, investigations, procedure, total)</span></label>
+          <textarea id="insSubLimits" placeholder="implants:50000:Stent cap&#10;procedure:300000:CABG limit" style="min-height:48px"></textarea>
+        </div>
+      </fieldset>
+
       <fieldset>
         <legend>Estimate controls</legend>
         <div class="field"><label for="room">Room type</label>
@@ -297,6 +322,7 @@ function payload() {
   const pkgRaw = $('pkgText').value.trim();
   return {
     ...(pkgRaw ? { package: /^[A-Z]{2,4}\d{2,6}$/i.test(pkgRaw) ? { package_code: pkgRaw.toUpperCase() } : { text: pkgRaw } } : {}),
+    ...insurancePayload(),
     patient: { name: $('pName').value || undefined, age: $('pAge').value ? Number($('pAge').value) : undefined, gender: $('pGender').value },
     clinical: { procedure: $('procedure').value },
     payment: { payor_bucket: payor, ...(payor !== 'Cash' && $('org').value ? { organization_cd: $('org').value } : {}) },
@@ -323,11 +349,37 @@ for (const [sel, inp] of [['icuBasis','icuManual'],['wardBasis','wardManual'],['
 
 $('procedure').addEventListener('change', onFamilyChange);
 
+/* insurance fieldset visibility + cap value enable */
+$('insCapType').addEventListener('change', () => {
+  $('insCapValue').disabled = $('insCapType').value !== 'absolute';
+  if ($('insCapValue').disabled) $('insCapValue').value = '';
+});
+function insurancePayload() {
+  if ($('payor').value === 'Cash') return {};
+  const si = +$('insSI').value || 0;
+  if (!si) return {};
+  const subs = $('insSubLimits').value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+    const [g, amt, ...label] = l.split(':');
+    return { applies_to: (g || '').trim().toLowerCase(), cap: +amt || 0, label: label.join(':').trim() || undefined };
+  }).filter((s) => ['implants','pharmacy','investigations','procedure','total'].includes(s.applies_to) && s.cap > 0);
+  return { insurance: {
+    base_sum_insured: si,
+    consumed: +$('insConsumed').value || 0,
+    ncb: +$('insNcb').value || 0,
+    ...( +$('insTopup').value > 0 ? { top_up: { amount: +$('insTopup').value, type: $('insTopupType').value, deductible: +$('insTopupDed').value || 0 } } : {} ),
+    room_rent_cap: { type: $('insCapType').value, ...( $('insCapType').value === 'absolute' ? { value: +$('insCapValue').value || 0 } : {} ) },
+    ...( $('insElig').value ? { room_eligibility: $('insElig').value } : {} ),
+    ...( +$('insCopay').value > 0 ? { copay: { type: $('insCopayType').value, value: +$('insCopay').value } } : {} ),
+    ...( subs.length ? { sub_limits: subs } : {} ),
+  } };
+}
+
 /* payor → insurer select */
 $('payor').addEventListener('change', async () => {
   const isCash = $('payor').value === 'Cash';
   const org = $('org');
   org.disabled = isCash;
+  $('insuranceFs').style.display = isCash ? 'none' : '';
   if (isCash) { org.innerHTML = '<option value="">— Cash / TR1 —</option>'; return; }
   if (org.dataset.loaded) return;
   try {
@@ -505,8 +557,40 @@ function renderFormatted(d) {
   const addOnsIncluded = (d.add_ons || []).filter((a) => a.selected === 'Include').length;
   const groupedIncluded = (d.grouped_adjustments || []).filter((g) => g.selected === 'Include').length;
 
+  // ---- insurance settlement card ----
+  const st = d.insurance_settlement && !d.insurance_settlement.error ? d.insurance_settlement : null;
+  let insHtml = '';
+  if (st) {
+    const c = st.caps;
+    const pat = st.patient;
+    const patRows = [
+      ['NME (non-medical)', pat.nme], ['Co-pay', pat.copay],
+      ['Proportionate deduction', pat.proportionate_deduction], ['Sub-limit overflow', pat.sub_limit_overflow],
+      ['Room upgrade excess', pat.room_upgrade_excess], ['Beyond cover', pat.beyond_cover],
+    ].filter(([, v]) => v > 0);
+    const pkgSt = po.insurance_settlement && !po.insurance_settlement.error ? po.insurance_settlement : null;
+    insHtml = `
+    <div style="border:1px solid var(--brand);border-radius:10px;padding:12px 14px;margin-bottom:18px;background:var(--brand-50)">
+      <div style="display:flex;gap:24px;align-items:baseline;flex-wrap:wrap">
+        <strong>Insurance settlement</strong>
+        <div><div class="muted" style="font-size:11px">INSURANCE COVERS</div><div class="num" style="font-size:22px;font-weight:700;color:var(--ok)">₹ ${inr(st.insurer_total)}</div>
+          <div class="muted" style="font-size:11px">TPA ₹ ${inr(st.tpa_approval)}${st.top_up_claim > 0 ? ' + top-up ₹ ' + inr(st.top_up_claim) : ''}</div></div>
+        <div><div class="muted" style="font-size:11px">PATIENT PAYS</div><div class="num" style="font-size:22px;font-weight:700;color:var(--err)">₹ ${inr(pat.total)}</div></div>
+        ${c.ward_ratio < 1 ? `<span class="badge warn">Room cap breached — ratio ${(c.ward_ratio*100).toFixed(0)}% (bed ₹${inr(c.bed_rate_per_day)}/d vs cap ₹${inr(c.ward_cap_per_day)}/d)</span>` : '<span class="badge ok">No cap breach</span>'}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        ${patRows.map(([k, v]) => `<span class="chip neutral num">${k}: ₹ ${inr(v)}</span>`).join('')}
+        <span class="chip neutral num">Admissible: ₹ ${inr(st.gross_admissible)} of ₹ ${inr(st.gross)}</span>
+        <span class="chip neutral num">Cover available: ₹ ${inr(st.base_available)}</span>
+      </div>
+      ${pkgSt ? `<div style="margin-top:8px;font-size:13px"><strong>Via package route:</strong> insurer ₹ ${inr(pkgSt.insurer_total)} · patient ₹ ${inr(pkgSt.patient_total)} <span class="muted">(package ₹ ${inr(pkgSt.package_admissible)} admissible + settled extras)</span></div>` : ''}
+      ${(st.notes || []).length ? `<div class="muted" style="font-size:12px;margin-top:6px">${st.notes.map(esc).join(' · ')}</div>` : ''}
+    </div>`;
+  }
+
   $('formattedView').innerHTML = `
     ${warnings}
+    ${insHtml}
     ${pkgHtml}
     <div class="kpi">
       <span class="amount num">₹ ${inr(d.final_estimate)}</span>
