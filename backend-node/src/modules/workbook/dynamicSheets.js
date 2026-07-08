@@ -446,6 +446,84 @@ export function buildEstimateVsActuals(ws, estimate, L) {
 }
 
 /* ------------------------------------------------------------------ */
+/**
+ * "Package Comparison" sheet — appended as sheet 17 in BOTH template and
+ * dynamic modes whenever a package resolves (side-by-side rule: the package
+ * never replaces the itemized estimate). Curated fields only; history is
+ * labelled as evidence.
+ */
+export function buildPackageComparison(ws, estimate) {
+  const po = estimate.package_offer || {};
+  const p = po.package;
+  [30, 24, 20, 20, 20].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  setRow(ws, 1, ['Package Comparison — hospital package vs itemized estimate (side-by-side)'], F.header);
+  if (!p) {
+    setRow(ws, 3, ['No hospital package exists for this cohort / payor. Itemized estimate only.'], F.body);
+    return;
+  }
+  const num = (v) => (v == null ? null : Number(v));
+  setRow(ws, 3, ['Comparison', 'Amount (₹)'], F.sub);
+  setRow(ws, 4, ['Hospital Package Amount', num(p.package_amount)], F.result, [2]);
+  setRow(ws, 5, ['Itemized Estimate (selected)'], F.result);
+  ws.getCell('B5').value = fml(`'Estimate Summary'!E2`, estimate.final_estimate);
+  ws.getCell('B5').style = { ...F.result, border, numFmt: F.money };
+  setRow(ws, 6, ['Difference (itemized − package)'], F.body);
+  ws.getCell('B6').value = fml('B5-B4');
+  ws.getCell('B6').style = { ...F.body, border, numFmt: F.money };
+
+  setRow(ws, 8, ['Package Details (curated)', ''], F.sub);
+  const details = [
+    ['Package', `${p.package_name} (${p.package_code})`],
+    ['Tariff / Payor', `${p.tariff_code} ${p.tariff_name ?? ''} · ${p.payor_bucket ?? ''}${p.organization_name ? ' · ' + p.organization_name : ''}`],
+    ['Department / Type', `${p.department_name ?? ''} ${p.package_type ? '· ' + p.package_type : ''}`],
+    ['Duration (days)', p.package_duration ?? ''],
+    ['Pre / Post days', `${p.pre_days ?? ''} / ${p.post_days ?? ''}`],
+    ['Room category', p.matched_room_category ?? ''],
+    ['ATL amount', num(p.package_atl_amount) ?? ''],
+    ['Readiness', `${p.readiness.runtime_status}${p.readiness.primary_blocker ? ' — ' + p.readiness.primary_blocker : ''}`],
+    ['Documentation confidence', p.documentation_confidence ?? ''],
+    ['Source of match', po.source === 'cohort_dominant' ? 'Auto-detected from cohort' : 'User-selected'],
+  ];
+  details.forEach(([k, v], i) => setRow(ws, 9 + i, [k, v], F.body));
+
+  // room rates
+  let r = 20;
+  const rates = Array.isArray(p.room_rates_jsonb) ? p.room_rates_jsonb : [];
+  if (rates.length) {
+    setRow(ws, r, ['Room / Category Rates', '', ''], F.sub); r++;
+    for (const rr of rates.slice(0, 12)) {
+      setRow(ws, r, [rr.room_category ?? rr.category ?? rr.ordinal ?? '', num(rr.amount ?? rr.rate) ?? '', rr.notes ?? ''], F.body, [2]);
+      r++;
+    }
+    r++;
+  }
+  // curated documentation (wrapped text blocks)
+  const docBlock = (title, text) => {
+    if (!text) return;
+    setRow(ws, r, [title], F.sub); r++;
+    const c = ws.getCell(r, 1);
+    c.value = text;
+    c.style = { ...F.body, border, alignment: { vertical: 'top', wrapText: true } };
+    ws.mergeCells(r, 1, r, 5);
+    ws.getRow(r).height = Math.min(180, 16 * Math.ceil(text.length / 110));
+    r += 2;
+  };
+  docBlock('Tariff Information (curated)', p.tariff_information);
+  docBlock('Inclusions (curated)', p.inclusions_text);
+  docBlock('Exclusions (curated)', p.exclusions_text);
+  docBlock('Documentation Notes', p.documentation_notes);
+
+  // history — evidence only
+  const h = po.history;
+  if (h) {
+    setRow(ws, r, ['FC Package History (supporting evidence only — not package documentation)'], F.sub); r++;
+    setRow(ws, r, ['Admissions', Number(h.admission_count) || 0], F.body); r++;
+    setRow(ws, r, ['Observed amount range', `₹${h.min_observed_package_amount ?? '—'} – ₹${h.max_observed_package_amount ?? '—'}`], F.body); r++;
+    setRow(ws, r, ['Latest admission', h.latest_admission_at ? String(h.latest_admission_at).slice(0, 10) : '—'], F.body); r++;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 export function buildEstimateBreakdown(ws, estimate, L) {
   [34, 22, 18, 14, 34, 12, 14, 12, 14, 16].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
   setRow(ws, 1, ['Estimate Breakdown — selected estimate only'], F.header);

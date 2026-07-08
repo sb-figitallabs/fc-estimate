@@ -5,7 +5,7 @@ import { buildBands } from './bands.js';
 import {
   dynamicLayout, buildLineItemDetail, buildServiceAddOns, buildGroupedAdjustments,
   buildAdvancedControls, buildImplantSelection, buildEstimateSummary,
-  buildEstimateVsActuals, buildEstimateBreakdown,
+  buildEstimateVsActuals, buildEstimateBreakdown, buildPackageComparison,
 } from './dynamicSheets.js';
 
 /**
@@ -168,6 +168,13 @@ export async function generateWorkbook(estimate, input) {
         for (const addr of expandRange(part)) ws.dataValidations.add(addr, model);
       }
     }
+  }
+
+  // sheet 17: package side-by-side (whenever a package resolves; parity of the
+  // reference 16 sheets is unaffected — validators compare only those)
+  if (estimate.package_offer && estimate.package_offer.status !== 'no_package_exists') {
+    const ws = wb.addWorksheet('Package Comparison', { views: [{ showGridLines: false }] });
+    buildPackageComparison(ws, estimate);
   }
 
   const buffer = await wb.xlsx.writeBuffer();

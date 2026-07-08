@@ -1,0 +1,39 @@
+tariff_code,package_code,package_name,payor_bucket,package_amount,runtime_status,can_generate_estimate
+TR1,ORT0034,TOTAL HIP REPLACEMENT - UNILATERAL - COP,cash,10,Strong / Ready,t
+TR1,ORT5010,TOTAL HIP REPLACEMENT - UNILATERAL - MOP,cash,10,Strong / Ready,t
+TR1,ORT5792,TOTAL HIP REPLACEMENT - UNILATERAL - COP - ROBOTIC PKG,cash,10,Strong / Ready,t
+TR1,ORT5793,TOTAL HIP REPLACEMENT - UNILATERAL - MOP - ROBOTIC PKG,cash,10,Ready with Minor Gaps,t
+TR1,URO5577,DJ STENT REMOVAL - UNILATERAL WITH ANESTHESIA (DAYCARE),cash,10,Strong / Ready,t
+TR1,VAS0240,AV FISTULA (ARTERIO VENOUS FISTULA),cash,10,Strong / Ready,t
+TR1,VAS86,AMPUTATION MAJOR,cash,10,Strong / Ready,t
+TR1,SGA5072,HEPATICOJEJUNOSTOMY,cash,1,Documentation Ready but FC Mapping Missing,f
+TR1,SGA5092,ILEOSTOMY CLOSURE,cash,1,Documentation Ready but FC Mapping Missing,f
+TR1,VAS129,VARICOSE VEINS-GLUE,cash,1,Documentation Ready but FC Mapping Missing,f
+TR1,CTH5201,CAROTID ENDARTERECTOMY (FOR CVA PT'S) CAT-II,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,GYN5069,DIAGNOSTIC HYSTEROSCOPY,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,GYN5133,LAVH (LAP. ASSISTED VAGINAL HYSTERECTOMY) - PA,cash,10,Needs FC Refinement,f
+TR1,GYN5169,MTP (MEDICAL TERMINATION PREGNANCY),cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,GYN5322,LSCS (CAESAREAN SECTION) - EMERGENCY,cash,10,Needs FC Refinement,f
+TR1,NEP0041,KIDNEY BIOPSY - PACKAGE,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,ORT0051,TOTAL HIP REPLACEMENT - UNILATERAL - COC,cash,10,Needs FC Refinement,f
+TR1,SGA5194,LAP. VENTRAL HERNIA REPAIR,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,SGA5332,FEMORAL HERNIA REPAIR - UNILATERAL,cash,10,Not Ready / Insufficient Data,f
+TR1,SGA5415,UMBILICAL HERNIA - UNILATERAL,cash,10,Needs FC Refinement,f
+TR1,SGA5421,COLOSTOMY CLOSURE,cash,10,Not Ready / Insufficient Data,f
+TR1,SGA5511,WHIPPLE’S SURGERY PANCREATICO DUODENECTOMY,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,SGA5654,VENTRAL HERNIA - UNILATERAL - PA,cash,10,Needs FC Refinement,f
+TR1,SGA5666,LAP. INCISIONAL HERNIA REPAIR,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,SGA5740,FEMORAL HERNIA REPAIR - BILATERAL,cash,10,Not Ready / Insufficient Data,f
+TR1,SGA5751,INGUINAL HERNIA - BILATERAL,cash,10,Needs FC Refinement,f
+TR1,SGA5875,INCISIONAL HERNIOPLASTY,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,SGA5885,LAP. FEMORAL HERNIOPLASTY - BILATERAL - PA,cash,10,Needs FC Refinement,f
+TR1,SGA5886,LAP. FEMORAL HERNIOPLASTY - UNILATERAL - PA,cash,10,Needs FC Refinement,f
+TR1,URO0018,CYSTOSCOPY,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,URO5183,LASER TURP (TRANS URETHRAL RESECTION PROSTATE),cash,10,Needs FC Refinement,f
+TR1,URO5443,DJ STENTING (DOUBLE J STENTING) - UNILATERAL,cash,10,Needs FC Refinement,f
+TR1,URO5488,PARTIAL NEPHRECTOMY,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,URO5512,RADICAL NEPHRECTOMY,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,VAS0319,DEBRIDEMENT - MAJOR,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,VAS0408,VARICOSE VEINS UNILATERAL - LASER,cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,VAS127,VARICOSE VEIN RADIO FREQUENCY ABLATION (RFA),cash,10,Documentation Ready but FC Mapping Missing,f
+TR1,VAS67,AMPUTATION MINOR,cash,10,Needs FC Refinement,f

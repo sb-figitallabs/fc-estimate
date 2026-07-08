@@ -41,8 +41,9 @@ const normF = (f) => String(f ?? '').replace(/^=/, '').replace(/\s+/g, '');
 const isNum = (v) => typeof v === 'number';
 
 const wantOrder = parity.workbook.sheet_names;
-const gotOrder = wb.worksheets.map((w) => w.name);
-console.log('\nsheet order:', JSON.stringify(gotOrder) === JSON.stringify(wantOrder) ? 'PASS' : `FAIL got=${gotOrder}`);
+// extra sheets beyond the reference 16 (e.g. "Package Comparison") are allowed
+const gotOrder = wb.worksheets.map((w) => w.name).slice(0, wantOrder.length);
+console.log('\nsheet order (first 16):', JSON.stringify(gotOrder) === JSON.stringify(wantOrder) ? 'PASS' : `FAIL got=${gotOrder}`);
 
 function cellParts(cell) {
   // -> {f?, v?} from an exceljs cell
