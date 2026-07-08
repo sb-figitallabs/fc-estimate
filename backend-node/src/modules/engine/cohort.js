@@ -87,6 +87,69 @@ const FAMILIES = {
     excludeCathLabFromTemplate: true, // cath rows priced via the cath-lab history row
     ipPharmacyMode: 'bucket',
   },
+  total_knee_replacement_unilateral: {
+    family: 'total_knee_replacement_unilateral',
+    familyKind: 'surgical',
+    // conventional (non-robotic) TKR unilateral — all LEFT/RIGHT/UNILATERAL name variants (~683 cases, insurance-heavy)
+    whereSql: `package_name ~* '^TOTAL KNEE REPLACEMENT' AND package_name !~* 'BILATERAL'`,
+    params: [],
+    procedure: null,
+    includeProcedure: false,
+    templateName: 'Total Knee Replacement (TKR) — Unilateral (Conventional)',
+    coreTemplate: 'auto',
+    implantProfile: 'knee',
+    rows: { cathLab: false },
+  },
+  total_knee_replacement_bilateral: {
+    family: 'total_knee_replacement_bilateral',
+    familyKind: 'surgical',
+    whereSql: `package_name ~* '^TOTAL KNEE REPLACEMENT' AND package_name ~* 'BILATERAL'`,
+    params: [],
+    procedure: null,
+    includeProcedure: false,
+    templateName: 'Total Knee Replacement (TKR) — Bilateral (Conventional)',
+    coreTemplate: 'auto',
+    implantProfile: 'knee',
+    rows: { cathLab: false },
+  },
+  ptca_single_vessel: {
+    family: 'ptca_single_vessel',
+    familyKind: 'surgical',
+    // NOT daycare: ~3.7-day stay with ICU observation; cath-lab carries the procedure
+    whereSql: `package_name IN ('PTCA (PERCUTANEOUS TRANSLUMINAL CORONARY ANGIOPLASTY) - 1 VESSEL','CORONARY ANGIOPLASTY (PTCA) - SINGLE VESSEL')`,
+    params: [],
+    procedure: null,
+    includeProcedure: false,
+    templateName: 'PTCA — Single Vessel',
+    coreTemplate: 'auto',
+    rows: { ot: false, cathLab: true, surgical: false },
+    excludeCathLabFromTemplate: true,
+  },
+  lap_cholecystectomy: {
+    family: 'lap_cholecystectomy',
+    familyKind: 'surgical',
+    // all laparoscopic-cholecystectomy name variants (~252 cases)
+    whereSql: `package_name ~* 'CHOLECYSTECTOMY' AND package_name ~* 'LAP'`,
+    params: [],
+    procedure: null,
+    includeProcedure: false,
+    templateName: 'Laparoscopic Cholecystectomy',
+    coreTemplate: 'auto',
+    rows: { cathLab: false },
+  },
+  lscs_caesarean: {
+    family: 'lscs_caesarean',
+    familyKind: 'surgical',
+    // LSCS/caesarean variants; excludes mixed normal-delivery packages (~186 cases)
+    // ot:false — only ~8% have parseable OT-hour rows; procedure cost is in template rows
+    whereSql: `package_name ~* 'LSCS|CAESAR' AND package_name !~* 'NORMAL DELIVERY'`,
+    params: [],
+    procedure: null,
+    includeProcedure: false,
+    templateName: 'LSCS (Caesarean Section)',
+    coreTemplate: 'auto',
+    rows: { ot: false, cathLab: false },
+  },
 };
 
 /** Public registry view for UI/API consumers. */
