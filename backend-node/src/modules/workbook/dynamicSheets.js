@@ -462,16 +462,27 @@ export function buildPackageComparison(ws, estimate) {
     return;
   }
   const num = (v) => (v == null ? null : Number(v));
+  const cov = po.coverage && !po.coverage.error ? po.coverage : null;
   setRow(ws, 3, ['Comparison', 'Amount (₹)'], F.sub);
   setRow(ws, 4, ['Hospital Package Amount', num(p.package_amount)], F.result, [2]);
-  setRow(ws, 5, ['Itemized Estimate (selected)'], F.result);
+  setRow(ws, 5, ['Itemized Estimate — WITHOUT package'], F.result);
   ws.getCell('B5').value = fml(`'Estimate Summary'!E2`, estimate.final_estimate);
   ws.getCell('B5').style = { ...F.result, border, numFmt: F.money };
-  setRow(ws, 6, ['Difference (itemized − package)'], F.body);
-  ws.getCell('B6').value = fml('B5-B4');
-  ws.getCell('B6').style = { ...F.body, border, numFmt: F.money };
+  if (cov) {
+    setRow(ws, 6, ['Payable extras beyond package', cov.totals.payable_extras], F.body, [2]);
+    setRow(ws, 7, ['Total WITH package (package + extras)'], F.result);
+    ws.getCell('B7').value = fml('B4+B6', cov.totals.with_package);
+    ws.getCell('B7').style = { ...F.result, border, numFmt: F.money };
+    setRow(ws, 8, ['Patient saves with package'], F.body);
+    ws.getCell('B8').value = fml('B5-B7');
+    ws.getCell('B8').style = { ...F.body, border, numFmt: F.money };
+  } else {
+    setRow(ws, 6, ['Difference (itemized − package)'], F.body);
+    ws.getCell('B6').value = fml('B5-B4');
+    ws.getCell('B6').style = { ...F.body, border, numFmt: F.money };
+  }
 
-  setRow(ws, 8, ['Package Details (curated)', ''], F.sub);
+  setRow(ws, 10, ['Package Details (curated)', ''], F.sub);
   const details = [
     ['Package', `${p.package_name} (${p.package_code})`],
     ['Tariff / Payor', `${p.tariff_code} ${p.tariff_name ?? ''} · ${p.payor_bucket ?? ''}${p.organization_name ? ' · ' + p.organization_name : ''}`],
@@ -484,10 +495,10 @@ export function buildPackageComparison(ws, estimate) {
     ['Documentation confidence', p.documentation_confidence ?? ''],
     ['Source of match', po.source === 'cohort_dominant' ? 'Auto-detected from cohort' : 'User-selected'],
   ];
-  details.forEach(([k, v], i) => setRow(ws, 9 + i, [k, v], F.body));
+  details.forEach(([k, v], i) => setRow(ws, 11 + i, [k, v], F.body));
 
   // room rates
-  let r = 20;
+  let r = 22;
   const rates = Array.isArray(p.room_rates_jsonb) ? p.room_rates_jsonb : [];
   if (rates.length) {
     setRow(ws, r, ['Room / Category Rates', '', ''], F.sub); r++;
@@ -508,10 +519,23 @@ export function buildPackageComparison(ws, estimate) {
     ws.getRow(r).height = Math.min(180, 16 * Math.ceil(text.length / 110));
     r += 2;
   };
-  docBlock('Tariff Information (curated)', p.tariff_information);
-  docBlock('Inclusions (curated)', p.inclusions_text);
+  docBlock(`Inclusions (curated)${cov && cov.parse.variants > 1 ? ` — text has ${cov.parse.variants} source variants, showing first` : ''}`,
+    p.inclusions_display || p.inclusions_text);
   docBlock('Exclusions (curated)', p.exclusions_text);
-  docBlock('Documentation Notes', p.documentation_notes);
+
+  // per-line coverage table (drives the WITH-package total)
+  if (cov) {
+    const LBL = { fully_included: 'Fully Included', partially_included: 'Partially Included', capped: 'Capped', excluded: 'Excluded', not_included: 'Not Included', review: 'Review', recomputed: 'Recomputed' };
+    setRow(ws, r, ['Line-Item Coverage', '', '', '', ''], F.sub); r++;
+    setRow(ws, r, ['Line Item', 'Itemized (₹)', 'Package Inclusion Status', 'Final Amount (₹)', 'Basis (curated source / note)'], F.sub); r++;
+    for (const c of cov.rows) {
+      if (!c.amount && !c.final_amount) continue; // skip zero rows for readability
+      setRow(ws, r, [c.name, c.amount, LBL[c.status] ?? c.status, c.final_amount,
+        [c.note, c.source].filter(Boolean).join(' — ').slice(0, 140)], F.body, [2, 4]);
+      r++;
+    }
+    setRow(ws, r, ['Payable Extras Total', '', '', cov.totals.payable_extras, ''], F.result, [4]); r += 2;
+  }
 
   // history — evidence only
   const h = po.history;

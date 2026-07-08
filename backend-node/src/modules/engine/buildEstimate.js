@@ -21,6 +21,7 @@ import {
 import { resolveDrivers, computeLineItems } from './lineItems.js';
 import { serviceLineCountAlert } from './rules.js';
 import { packageOfferForEstimate } from '../packages/packages.service.js';
+import { parseCoverage, applyCoverage, dedupeVariants } from '../packages/coverage.js';
 
 async function pharmacyMapping() {
   const { rows } = await query(
@@ -201,7 +202,7 @@ export async function buildEstimate(input) {
     bucketTotals[row.bucket] = (bucketTotals[row.bucket] || 0) + v;
   }
 
-  return {
+  const estimate = {
     resolved_context: {
       payor_bucket: input.payment.payor_bucket,
       pricing_mode: pricingMode,
@@ -223,7 +224,7 @@ export async function buildEstimate(input) {
     grand_total: lineItems.grandTotal,
     final_estimate: lineItems.finalEstimate,
     bucket_totals: bucketTotals,
-    package_offer: packageOffer,
+    package_offer: packageOffer, // coverage attached below once final totals exist
     add_ons: addOns,
     grouped_adjustments: grouped,
     advanced_controls: {
@@ -242,4 +243,23 @@ export async function buildEstimate(input) {
     warnings,
     unresolved_items: [],
   };
+
+  // 17. package coverage: per-line inclusion status + dual grand totals
+  // (only when a package resolved and curated inclusion text exists)
+  if (packageOffer?.package?.inclusions_text) {
+    try {
+      const model = parseCoverage(packageOffer.package.inclusions_text, packageOffer.package.exclusions_text);
+      const coverage = applyCoverage(estimate, model);
+      const pkgAmt = Number(packageOffer.package.package_amount) || 0;
+      coverage.totals.package_amount = pkgAmt;
+      coverage.totals.with_package = Math.round((pkgAmt + coverage.totals.payable_extras) * 100) / 100;
+      packageOffer.coverage = coverage;
+      // deduped display text (curated text may contain 2 source variants)
+      packageOffer.package.inclusions_display = dedupeVariants(packageOffer.package.inclusions_text).text;
+    } catch (err) {
+      packageOffer.coverage = { error: err.message };
+    }
+  }
+
+  return estimate;
 }

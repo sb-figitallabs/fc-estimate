@@ -408,6 +408,8 @@ function renderFormatted(d) {
   const ctx = d.resolved_context || {};
   // machine key (daycare families display "Daycare (room N/A)" but compute on general)
   const roomKey = ctx.room_key || (ctx.room_type || 'Single').toLowerCase();
+  const po = d.package_offer || {};
+  const cov = po.coverage && !po.coverage.error ? po.coverage : null;
   const slc = d.service_line_count || {};
   const withinRange = /within/i.test(slc.status || '');
   const basis = ctx.payer_bases?.service_basis || {};
@@ -422,33 +424,50 @@ function renderFormatted(d) {
     return `<tr><td>${label}</td><td class="r num">${dr.p25}</td><td class="r num">${dr.p50}</td><td class="r num">${dr.p75}</td><td class="r num"><strong>${dr.selected}</strong></td></tr>`;
   }).join('');
 
+  const STATUS_LABEL = {
+    fully_included: ['Fully Included', 'var(--ok)'], partially_included: ['Partially Included', 'var(--warn)'],
+    capped: ['Capped', 'var(--warn)'], excluded: ['Excluded', 'var(--err)'],
+    not_included: ['Not Included', 'var(--ink-3)'], review: ['Review', 'var(--err)'], recomputed: ['Recomputed', 'var(--ink-2)'],
+  };
+  const nCols = cov ? 6 : 4;
   let liRows = '', currentBucket = null;
-  for (const row of d.line_items || []) {
+  (d.line_items || []).forEach((row, i) => {
+    const covRow = cov ? cov.rows[i] : null;
+    const payable = covRow ? covRow.final_amount > 0 : true;
     if (row.bucket !== currentBucket) {
       currentBucket = row.bucket;
-      liRows += `<tr class="section"><td colspan="4">${esc(currentBucket)}</td></tr>`;
+      liRows += `<tr class="section" data-payable="1"><td colspan="${nCols}">${esc(currentBucket)}</td></tr>`;
     }
     const amt = row.selected?.[roomKey];
-    liRows += `<tr>
+    const [sl, sc] = covRow ? (STATUS_LABEL[covRow.status] || [covRow.status, 'var(--ink-3)']) : ['', ''];
+    liRows += `<tr data-payable="${payable ? 1 : 0}">
       <td>${esc(row.name)}${row.code ? ` <span class="muted">· ${esc(row.code)}</span>` : ''}</td>
       <td class="muted">${esc(row.how || row.source || '')}</td>
       <td class="r num">${row.qty?.selected ?? ''}</td>
       <td class="r num">${inr2(amt)}</td>
+      ${cov ? `<td style="color:${sc};font-weight:600" title="${esc(covRow?.note || '')}${covRow?.source ? ' — ' + esc(covRow.source) : ''}">${sl}</td>
+      <td class="r num">${inr2(covRow?.final_amount)}</td>` : ''}
     </tr>`;
-  }
-  liRows += `<tr class="total"><td colspan="3">Grand Total (${esc(ctx.estimate_mode)}, ${esc(ctx.room_type)} room)</td><td class="r num">${inr2(d.final_estimate)}</td></tr>`;
+  });
+  liRows += `<tr class="total" data-payable="1"><td colspan="3">Grand Total (${esc(ctx.estimate_mode)}, ${esc(ctx.room_type)} room)</td><td class="r num">${inr2(d.final_estimate)}</td>${cov ? `<td>With package</td><td class="r num">${inr2(cov.totals.with_package)}</td>` : ''}</tr>`;
 
   const warnings = (d.warnings || []).length
     ? `<div class="alert err" style="display:block;margin-bottom:16px">${(d.warnings).map(esc).join('<br>')}</div>` : '';
 
   // ---- side-by-side package offer ----
-  const po = d.package_offer || {};
   const p = po.package;
   let pkgHtml = '';
   if (po.status === 'resolved' || po.status === 'not_ready') {
     const delta = d.final_estimate - Number(p.package_amount ?? 0);
     const hist = po.history;
     const ready = po.status === 'resolved';
+    const covTotals = cov ? `
+      <div style="display:flex;gap:20px;margin-top:10px;flex-wrap:wrap">
+        <div><div class="muted" style="font-size:11px">WITHOUT PACKAGE</div><div class="num" style="font-size:22px;font-weight:700">₹ ${inr(cov.totals.without_package)}</div></div>
+        <div><div class="muted" style="font-size:11px">WITH PACKAGE</div><div class="num" style="font-size:22px;font-weight:700;color:var(--ok)">₹ ${inr(cov.totals.with_package)}</div>
+          <div class="muted" style="font-size:11px">package ₹ ${inr(cov.totals.package_amount)} + payable extras ₹ ${inr(cov.totals.payable_extras)}</div></div>
+        <div><div class="muted" style="font-size:11px">PATIENT SAVES</div><div class="num" style="font-size:22px;font-weight:700">₹ ${inr(cov.totals.without_package - cov.totals.with_package)}</div></div>
+      </div>` : '';
     pkgHtml = `
     <div style="border:1px solid ${ready ? 'var(--ok)' : 'var(--warn)'};border-radius:10px;padding:12px 14px;margin-bottom:18px;background:${ready ? 'var(--ok-bg)' : 'var(--warn-bg)'}">
       <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap">
@@ -463,9 +482,10 @@ function renderFormatted(d) {
         ${p.package_duration ? 'Duration: ' + p.package_duration + 'd · ' : ''}
         ${hist ? `History: ${hist.admission_count} admissions, observed ₹${inr(hist.min_observed_package_amount)}–₹${inr(hist.max_observed_package_amount)}` : ''}
       </div>
-      ${(p.inclusions_text || p.exclusions_text) ? `
-      <details style="margin-top:8px;border:0"><summary style="padding:4px 0">Inclusions / Exclusions (curated)</summary>
-        <div style="font-size:12.5px;white-space:pre-wrap;padding:6px 0">${p.inclusions_text ? '<strong>Included:</strong>\n' + esc(p.inclusions_text) : ''}${p.exclusions_text ? '\n<strong>Excluded:</strong>\n' + esc(p.exclusions_text) : ''}</div>
+      ${covTotals}
+      ${(p.inclusions_display || p.inclusions_text || p.exclusions_text) ? `
+      <details style="margin-top:8px;border:0"><summary style="padding:4px 0">Inclusions / Exclusions (curated)${cov && cov.parse.variants > 1 ? ' <span class="muted">· curated text has ' + cov.parse.variants + ' source variants, showing first</span>' : ''}</summary>
+        <div style="font-size:12.5px;white-space:pre-wrap;padding:6px 0">${(p.inclusions_display || p.inclusions_text) ? '<strong>Included:</strong>\n' + esc(p.inclusions_display || p.inclusions_text) : ''}${p.exclusions_text ? '\n<strong>Excluded:</strong>\n' + esc(p.exclusions_text) : ''}</div>
       </details>` : `<div class="muted" style="font-size:12px;margin-top:4px">No curated inclusion/exclusion documentation${p.documentation_confidence ? ' (confidence: ' + esc(p.documentation_confidence) + ')' : ''}</div>`}
     </div>`;
   } else if (po.status === 'no_package_exists') {
@@ -507,12 +527,19 @@ function renderFormatted(d) {
 
     <details>
       <summary>Line-item detail — ${(d.line_items || []).length} rows · ${addOnsIncluded}/${(d.add_ons || []).length} add-ons on · ${groupedIncluded} grouped residuals on</summary>
-      <div class="scroll-x" style="padding:12px"><table>
-        <thead><tr><th scope="col">Item</th><th scope="col">How</th><th scope="col" class="r">Qty</th><th scope="col" class="r">Amount (₹)</th></tr></thead>
+      <div style="padding:8px 12px 0">${cov ? `<label style="font-size:13px;cursor:pointer"><input type="checkbox" id="payableOnly" style="min-height:auto;width:auto;margin-right:6px">Show patient-payable rows only</label>` : ''}</div>
+      <div class="scroll-x" style="padding:12px"><table id="liTable">
+        <thead><tr><th scope="col">Item</th><th scope="col">How</th><th scope="col" class="r">Qty</th><th scope="col" class="r">Amount (₹)</th>${cov ? '<th scope="col">Package Inclusion</th><th scope="col" class="r">Final Amount (₹)</th>' : ''}</tr></thead>
         <tbody>${liRows}</tbody>
       </table></div>
     </details>
   `;
+  const toggle = $('formattedView').querySelector('#payableOnly');
+  if (toggle) toggle.addEventListener('change', () => {
+    for (const tr of $('formattedView').querySelectorAll('#liTable tbody tr')) {
+      tr.style.display = (toggle.checked && tr.dataset.payable === '0') ? 'none' : '';
+    }
+  });
 }
 </script>
 </body>
