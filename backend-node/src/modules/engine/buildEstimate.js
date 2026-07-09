@@ -197,6 +197,14 @@ export async function buildEstimate(input) {
     packageOffer = { status: 'lookup_error', error: err.message, package: null };
   }
 
+  // curated inclusions can concatenate 2 source variants — expose the deduped
+  // first variant for display (name|value stays on one line) plus the variants
+  if (packageOffer?.package?.inclusions_text) {
+    const parts = splitVariants(packageOffer.package.inclusions_text);
+    packageOffer.package.inclusions_display = parts[0] ?? packageOffer.package.inclusions_text;
+    packageOffer.package.inclusions_variants = parts;
+  }
+
   // 16. sections/totals for API consumers
   const bucketTotals = {};
   for (const row of lineItems.rows) {
