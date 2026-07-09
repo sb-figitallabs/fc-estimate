@@ -44,6 +44,20 @@ function subLimitGroup(row) {
 const ROOM_KEYS = ['general', 'twin', 'single'];
 
 /**
+ * Eligibility can be one tier or a list ("General + Twin allowed"). The
+ * highest tier governs the cap / upgrade math — allowing Twin implicitly
+ * allows everything below it. Returns the governing tier key or null.
+ */
+function governingEligibility(roomEligibility) {
+  const list = (Array.isArray(roomEligibility) ? roomEligibility : [roomEligibility])
+    .filter(Boolean)
+    .map((r) => String(r).toLowerCase())
+    .filter((r) => ROOM_KEYS.includes(r));
+  if (!list.length) return null;
+  return list.sort((a, b) => ROOM_KEYS.indexOf(b) - ROOM_KEYS.indexOf(a))[0];
+}
+
+/**
  * Shared claim-ceiling core — copay, base-cover ceiling and top-up applied to a
  * gross-admissible amount. Single source of truth for the per-row `settle()`
  * and the bucket-level `settleManual()` so the two can never drift.
@@ -115,20 +129,20 @@ export function settle({ lineItems, roomKey, drivers, insurance, grossTotal }) {
     wardCap = baseSI * (Number(cap.ward_pct ?? 1) / 100);
     icuCap = baseSI * (Number(cap.icu_pct ?? 2) / 100);
   } else if (cap.type === 'room_category' && ins.room_eligibility) {
-    const elig = String(ins.room_eligibility).toLowerCase();
-    if (ROOM_KEYS.includes(elig) && bedRow) {
+    const elig = governingEligibility(ins.room_eligibility);
+    if (elig && bedRow) {
       eligibleRate = Number(bedRow.rate?.[elig] ?? 0);
       wardCap = eligibleRate;
     } else notes.push(`room_eligibility "${ins.room_eligibility}" not resolvable to a tier rate`);
   }
   // eligibility upgrade excess is computed even when the cap is monetary
   if (ins.room_eligibility && bedRow) {
-    const elig = String(ins.room_eligibility).toLowerCase();
-    if (ROOM_KEYS.includes(elig)) {
+    const elig = governingEligibility(ins.room_eligibility);
+    if (elig) {
       const eligRate = Number(bedRow.rate?.[elig] ?? 0);
       if (eligRate > 0 && bedRate > eligRate) {
         upgradeExcess = (bedRate - eligRate) * (drivers?.ward?.selected ?? 0);
-        notes.push(`room upgrade: eligible ${ins.room_eligibility} @₹${eligRate}/d, selected @₹${bedRate}/d`);
+        notes.push(`room upgrade: eligible up to ${elig} @₹${eligRate}/d, selected @₹${bedRate}/d`);
       }
     }
   }

@@ -22,7 +22,12 @@ const InsuranceSchema = z.object({
     ward_pct: z.number().positive().default(1),      // pct_of_si
     icu_pct: z.number().positive().default(2),
   }).optional(),
-  room_eligibility: z.enum(['General', 'Twin', 'Single']).optional(),
+  // one tier or a list of eligible tiers — the highest-rate tier governs the
+  // cap / upgrade math (a policy allowing Twin implicitly allows General)
+  room_eligibility: z.union([
+    z.enum(['General', 'Twin', 'Single']),
+    z.array(z.enum(['General', 'Twin', 'Single'])).min(1),
+  ]).optional(),
   copay: z.object({
     type: z.enum(['percentage', 'absolute']).default('percentage'),
     value: z.number().nonnegative().default(0),

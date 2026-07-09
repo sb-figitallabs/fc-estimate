@@ -23,6 +23,7 @@ import { serviceLineCountAlert } from './rules.js';
 import { packageOfferForEstimate } from '../packages/packages.service.js';
 import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
 import { settle, settleWithPackage } from '../insurance/settlement.js';
+import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
   const { rows } = await query(
@@ -330,10 +331,6 @@ export async function buildEstimate(input) {
       coverage.totals.package_amount = pkgAmt;
       coverage.totals.with_package = Math.round((pkgAmt + coverage.totals.payable_extras) * 100) / 100;
       packageOffer.coverage = coverage;
-      // deduped display text (curated text may contain 2 source variants)
-      const variants = splitVariants(packageOffer.package.inclusions_text);
-      packageOffer.package.inclusions_display = variants[0] ?? packageOffer.package.inclusions_text;
-      if (variants.length > 1) packageOffer.package.inclusions_variants = variants;
       // insurance settlement over the PACKAGE route (package + settled extras)
       if (input.insurance && input.payment.payor_bucket !== 'Cash') {
         try {
@@ -351,6 +348,43 @@ export async function buildEstimate(input) {
       }
     } catch (err) {
       packageOffer.coverage = { error: err.message };
+    }
+  }
+
+  // 19. per-room side-by-side data (manager: show all room types at once).
+  // Line-item and grand totals already carry all rooms; only the cheap tail —
+  // package coverage and insurance settlement — is room-specific, so we replay
+  // just that math per room in-memory. NO extra engine work / DB calls.
+  if (!isDaycare) {
+    const insuranceOn = input.insurance && input.payment.payor_bucket !== 'Cash';
+    const model = packageOffer?.coverage && !packageOffer.coverage.error
+      ? parseCoverage(packageOffer.package.inclusions_text, packageOffer.package.exclusions_text)
+      : null;
+    const pkgAmt = Number(packageOffer?.package?.package_amount) || 0;
+    estimate.by_room = {};
+    for (const rk of ['general', 'twin', 'single']) {
+      const entry = { final_estimate: round2(lineItems.grandTotal.selected[rk] ?? 0) };
+      if (model) {
+        try {
+          const cov = applyCoverage({ ...estimate, resolved_context: { ...estimate.resolved_context, room_key: rk } }, model);
+          entry.coverage = {
+            with_package: round2(pkgAmt + cov.totals.payable_extras),
+            payable_extras: round2(cov.totals.payable_extras),
+            rows: cov.rows.map((r) => ({ index: r.index, status: r.status, final_amount: r.final_amount })),
+          };
+        } catch { /* leave coverage off this room */ }
+      }
+      if (insuranceOn) {
+        try {
+          const s = settle({ lineItems: lineItems.rows, roomKey: rk, drivers, insurance: input.insurance, grossTotal: lineItems.grandTotal.selected[rk] ?? 0 });
+          if (!s.error) entry.settlement = { insurer_total: s.insurer_total, patient_total: s.patient.total };
+          if (model) {
+            const ps = settleWithPackage({ packageAmount: pkgAmt, coverageRows: (entry.coverage?.rows ?? []).map((r) => ({ ...r })), lineItems: lineItems.rows, roomKey: rk, drivers, insurance: input.insurance });
+            if (!ps.error) entry.package_settlement = { insurer_total: ps.insurer_total, patient_total: ps.patient_total };
+          }
+        } catch { /* leave settlement off this room */ }
+      }
+      estimate.by_room[rk] = entry;
     }
   }
 
