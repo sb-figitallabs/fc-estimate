@@ -138,6 +138,7 @@ export async function buildEstimate(input) {
     code: o.item_code, name: o.item_name, grouping: o.grouping, bucket: o.fc_estimate_bucket,
     presence: o.case_presence_rate,
     q25: o.quantity_p25, q50: o.quantity_p50, q75: o.quantity_p75,
+    amount: o.amount_cash_typical ?? 0, // typical ₹ contribution when included
     selected: (input.selections?.add_ons?.[o.item_code]) ?? 'Exclude',
   }));
 
