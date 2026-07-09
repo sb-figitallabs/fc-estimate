@@ -37,6 +37,16 @@ export async function interpretIntake(text, file) {
   if (text) parts.push({ text });
   const structured = await geminiJson(parts.length === 1 && text ? text : [{ role: 'user', parts }], { system: SYSTEM() });
 
+  // Ground the procedure: `procedure` must be a known family key. Models often
+  // put the verbatim wording there despite the prompt — move it to
+  // procedure_text so the UI can say "not in our database" instead of
+  // silently dropping it.
+  const known = new Set(listFamilies().map((f) => f.family));
+  if (structured?.clinical?.procedure && !known.has(structured.clinical.procedure)) {
+    structured.clinical.procedure_text = structured.clinical.procedure_text || structured.clinical.procedure;
+    structured.clinical.procedure = null;
+  }
+
   // Ground insurer name → organization_cd via DB (AI suggests, DB decides)
   if (structured?.payment?.organization_name && structured.payment.payor_bucket !== 'Cash') {
     const { rows } = await query(
