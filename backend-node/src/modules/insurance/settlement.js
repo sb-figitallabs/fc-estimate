@@ -403,9 +403,22 @@ export function settleManual({ buckets = {}, insurance = {}, los_days = 0, icu_d
   };
   patient.total = round2(Object.values(patient).reduce((a, b) => a + b, 0));
 
+  // per-bucket split: distribute the insurer share proportionally over each
+  // bucket's admissible (copay + cover-ceiling fold in via insurerShare).
+  const insurerShare = grossAdmissible > 0 ? insurerTotal / grossAdmissible : 0;
+  const bucketBreakdown = rows.map((r) => {
+    const insurer = round2(r.admissible * insurerShare);
+    const note = r.class === 'nme' ? 'Non-payable item'
+      : r.class === 'associated' && wardRatio < 1 ? 'Room-rent proportionate deduction'
+      : r.class === 'exempt' ? 'No proportionate deduction'
+      : '';
+    return { bucket: r.name, estimate: round2(r._raw), insurer, patient: round2(r._raw - insurer), class: r.class, note };
+  });
+
   return {
     mode: 'manual',
     gross: round2(gross),
+    bucket_breakdown: bucketBreakdown,
     caps: {
       allowed_room_total: allowedRoom != null ? round2(allowedRoom) : null,
       room_charges: round2(roomCharges),
