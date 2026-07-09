@@ -173,6 +173,28 @@ export function familyForPackage({ package_name = '', package_code = '' }) {
   return null; // family not yet onboarded
 }
 
+/**
+ * Sub-limit likelihood per family (manager note i6: flag treatments with a
+ * strong likelihood of policy sub-limits). Classified ONCE via Gemini
+ * (2026-07-09) and baked in after review — groups follow common Indian
+ * retail/group policy wording: implants/stents, maternity caps,
+ * modern-treatment (robotic) caps, chemo/daycare caps, procedure caps.
+ */
+const SUBLIMIT_RISK = {
+  robotic_tkr_unilateral_right: { level: 'high', groups: ['implants', 'modern_treatment', 'procedure_cap'] },
+  robotic_tkr_unilateral_left: { level: 'high', groups: ['implants', 'modern_treatment', 'procedure_cap'] },
+  robotic_tkr_bilateral: { level: 'high', groups: ['implants', 'modern_treatment', 'procedure_cap'] },
+  total_hip_replacement_thr_hemiarthroplasty: { level: 'high', groups: ['implants', 'procedure_cap'] },
+  general_medical_management: { level: 'low', groups: [] },
+  chemotherapy_systemic_therapy_infusion_daycare: { level: 'high', groups: ['chemo_daycare'] },
+  coronary_angio_cag_cat_1_daycare: { level: 'medium', groups: ['chemo_daycare'] },
+  total_knee_replacement_unilateral: { level: 'high', groups: ['implants', 'procedure_cap'] },
+  total_knee_replacement_bilateral: { level: 'high', groups: ['implants', 'procedure_cap'] },
+  ptca_single_vessel: { level: 'high', groups: ['implants', 'procedure_cap'] },
+  lap_cholecystectomy: { level: 'medium', groups: ['procedure_cap'] },
+  lscs_caesarean: { level: 'high', groups: ['maternity'] },
+};
+
 /** Public registry view for UI/API consumers. */
 export function listFamilies() {
   return Object.values(FAMILIES).map((f) => ({
@@ -181,6 +203,7 @@ export function listFamilies() {
     family_kind: f.familyKind,
     daycare: f.daycare === true,     // daycare ⇒ room selection not applicable
     validated: f.family === 'robotic_tkr_unilateral_right', // exact workbook parity
+    sublimit_risk: SUBLIMIT_RISK[f.family] ?? { level: 'low', groups: [] },
   }));
 }
 

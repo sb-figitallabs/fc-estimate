@@ -124,12 +124,16 @@ router.post('/workbook', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/** POST /api/estimate/intake — AI: free-text patient/clinical/insurance details → structured input */
+/**
+ * POST /api/estimate/intake — AI: admission note → structured input.
+ * Body: { text?, file?: { mimeType, data(base64) } } — at least one required.
+ * Files (pdf/image) go to Gemini multimodal alongside any typed note.
+ */
 router.post('/intake', async (req, res, next) => {
   try {
-    const { text } = req.body;
-    if (!text) return res.status(400).json({ error: 'text is required' });
-    const structured = await interpretIntake(text);
+    const { text, file } = req.body;
+    if (!text && !file?.data) return res.status(400).json({ error: 'text or file is required' });
+    const structured = await interpretIntake(text, file);
     res.json(structured);
   } catch (err) { next(err); }
 });

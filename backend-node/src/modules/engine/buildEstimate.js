@@ -203,6 +203,55 @@ export async function buildEstimate(input) {
     bucketTotals[row.bucket] = (bucketTotals[row.bucket] || 0) + v;
   }
 
+  // historic metrics (manager i6): curated bucket ranges for the selected basis —
+  // relevant p25/p50/p75 only, labelled with basis + case count; UI compares
+  // them against the live bucket_totals. Computed once, shared with artifacts.
+  const actualMetrics = buildActualBasisMetrics(cohorts);
+  const pfSummary = buildPfPayorSummary(cohorts);
+  const HISTORIC_FIELDS = {
+    total_amount_excluding_food_and_beverage_and_returns_plus_drug_admin: 'Gross total',
+    pharmacy_total: 'Pharmacy (total)',
+    ip_drugs: 'IP Drugs', ip_consumables: 'IP Consumables',
+    ot_drugs: 'OT Drugs', ot_consumables: 'OT Consumables', implants: 'Implants',
+    professional_fees: 'Professional Fees',
+    investigations: 'Investigations',
+    procedure_ot_charges: 'Procedure / OT Charges',
+    room_charges: 'Room Charges',
+    bedside_services: 'Bedside Services',
+    ot_hours: 'OT hours',
+    los_days: 'Length of stay (days)',
+  };
+  const metricOf = (basis, field) => actualMetrics.find((r) => r.basis_label === basis && r.field_key === field);
+  const historicMetrics = {
+    basis: svcBasis,
+    basis_confidence: bases.service_basis.confidence,
+    case_count: (cohorts[svcBasis] ?? []).length,
+    buckets: Object.fromEntries(Object.entries(HISTORIC_FIELDS).flatMap(([field, label]) => {
+      const m = metricOf(svcBasis, field);
+      return m ? [[field, { label, p25: m.p25, p50: m.p50, p75: m.p75 }]] : [];
+    })),
+  };
+
+  // PF analysis (manager i6): compare logic-derived PF with the historic P50;
+  // if significantly different (>25%) the UI should offer the historic value.
+  const logicPf = bucketTotals['Professional Fees'] ?? 0;
+  const histPf = metricOf(bases.pf_basis.selected_basis, 'professional_fees');
+  const pfDeviation = histPf?.p50 > 0 ? (logicPf - histPf.p50) / histPf.p50 : null;
+  const pfAnalysis = pricingMode !== 'Cash / TR1' || !histPf
+    ? { applicable: false, reason: pricingMode !== 'Cash / TR1' ? 'PF folded into tariff in insurance mode' : 'no historic PF data' }
+    : {
+        applicable: true,
+        logic_pf: Math.round(logicPf * 100) / 100,
+        historic_p50: histPf.p50,
+        historic_p25: histPf.p25,
+        historic_p75: histPf.p75,
+        basis: bases.pf_basis.selected_basis,
+        deviation_pct: pfDeviation == null ? null : Math.round(pfDeviation * 1000) / 10,
+        significantly_different: pfDeviation != null && Math.abs(pfDeviation) > 0.25,
+        recommended: pfDeviation != null && Math.abs(pfDeviation) > 0.25 ? 'historic_p50' : 'logic',
+        final_estimate_with_historic_pf: Math.round((lineItems.finalEstimate - logicPf + (histPf.p50 ?? 0)) * 100) / 100,
+      };
+
   const estimate = {
     resolved_context: {
       payor_bucket: input.payment.payor_bucket,
@@ -233,11 +282,13 @@ export async function buildEstimate(input) {
       implants: { hierarchy: implantHierarchy, resolved: implantResolved, controls: implantControls, p25: pharmBasisRow.implants_p25, p50: pharmBasisRow.implants_p50, p75: pharmBasisRow.implants_p75 },
     },
     service_line_count: slcAlert,
+    historic_metrics: historicMetrics,
+    pf_analysis: pfAnalysis,
     // full artifact payload for the workbook generator
     artifacts: {
       basisSummary, svcStats, pharmacyStats,
-      actualMetrics: buildActualBasisMetrics(cohorts),
-      pfSummary: buildPfPayorSummary(cohorts),
+      actualMetrics,
+      pfSummary,
       otSlotRows, cohortRows, cleaned, autoIncluded, gaps,
       orgDirectory: await buildOrgDirectory(),
     },
