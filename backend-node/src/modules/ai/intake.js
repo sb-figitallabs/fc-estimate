@@ -12,12 +12,15 @@ ${listFamilies().map((f) => `- ${f.family}: ${f.label}`).join('\n')}
 
 Return JSON: {
   patient: {name, age, gender},
-  clinical: {procedure, department_name, doctor_name},
+  clinical: {procedure, procedure_text, department_name, doctor_name},
   payment: {payor_bucket: "Cash"|"GIPSA Insurance"|"Non-GIPSA Insurance"|"Corporate", organization_name},
   insurance: {base_sum_insured, consumed, ncb, copay_pct, room_rent_cap_per_day, room_eligibility: "General"|"Twin"|"Single"},
   flags: {emergency_ot: boolean, mlc: boolean},
   notes: string[]
 }.
+clinical.procedure_text: ALWAYS include the procedure/surgery/treatment wording verbatim from the
+note whenever any is mentioned (e.g. "Lap ovarian cystectomy"), even when no known family fits;
+clinical.procedure: only when one of the known family keys clearly fits — never force a match.
 If the note implies insurance, set payor_bucket to the best-guess bucket and include the insurer
 name verbatim in payment.organization_name. Amounts must be plain numbers in rupees.
 Do not invent values; omit unknown fields. Set flags.mlc true only for medico-legal cases
