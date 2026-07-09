@@ -3,6 +3,41 @@ import { z } from 'zod';
 import { buildEstimate } from '../modules/engine/buildEstimate.js';
 import { generateWorkbook } from '../modules/workbook/generateWorkbook.js';
 import { interpretIntake } from '../modules/ai/intake.js';
+import { settleManual } from '../modules/insurance/settlement.js';
+
+/** Insurance policy input — shared by /build and /settle-manual. */
+const InsuranceSchema = z.object({
+  base_sum_insured: z.number().nonnegative(),
+  consumed: z.number().nonnegative().default(0),
+  ncb: z.number().nonnegative().default(0),
+  top_up: z.object({
+    amount: z.number().nonnegative().default(0),
+    type: z.enum(['standard', 'super']).default('standard'),
+    deductible: z.number().nonnegative().default(0),
+  }).optional(),
+  room_rent_cap: z.object({
+    type: z.enum(['absolute', 'pct_of_si', 'room_category', 'none']).default('none'),
+    value: z.number().nonnegative().optional(),      // absolute ₹/day
+    icu_value: z.number().nonnegative().optional(),  // absolute ICU ₹/day (optional)
+    ward_pct: z.number().positive().default(1),      // pct_of_si
+    icu_pct: z.number().positive().default(2),
+  }).optional(),
+  // one tier or a list of eligible tiers — the highest-rate tier governs the
+  // cap / upgrade math (a policy allowing Twin implicitly allows General)
+  room_eligibility: z.union([
+    z.enum(['General', 'Twin', 'Single']),
+    z.array(z.enum(['General', 'Twin', 'Single'])).min(1),
+  ]).optional(),
+  copay: z.object({
+    type: z.enum(['percentage', 'absolute']).default('percentage'),
+    value: z.number().nonnegative().default(0),
+  }).optional(),
+  sub_limits: z.array(z.object({
+    label: z.string().optional(),
+    applies_to: z.enum(['implants', 'pharmacy', 'investigations', 'procedure', 'total']),
+    cap: z.number().positive(),
+  })).optional(),
+});
 
 const router = Router();
 
@@ -60,33 +95,7 @@ export const EstimateInput = z.object({
     package_name: z.string().optional(),
     text: z.string().optional(), // free text → alias + Gemini resolution
   }).optional(),
-  insurance: z.object({
-    base_sum_insured: z.number().nonnegative(),
-    consumed: z.number().nonnegative().default(0),
-    ncb: z.number().nonnegative().default(0),
-    top_up: z.object({
-      amount: z.number().nonnegative().default(0),
-      type: z.enum(['standard', 'super']).default('standard'),
-      deductible: z.number().nonnegative().default(0),
-    }).optional(),
-    room_rent_cap: z.object({
-      type: z.enum(['absolute', 'pct_of_si', 'room_category', 'none']).default('none'),
-      value: z.number().nonnegative().optional(),      // absolute ₹/day
-      icu_value: z.number().nonnegative().optional(),  // absolute ICU ₹/day (optional)
-      ward_pct: z.number().positive().default(1),      // pct_of_si
-      icu_pct: z.number().positive().default(2),
-    }).optional(),
-    room_eligibility: z.enum(['General', 'Twin', 'Single']).optional(),
-    copay: z.object({
-      type: z.enum(['percentage', 'absolute']).default('percentage'),
-      value: z.number().nonnegative().default(0),
-    }).optional(),
-    sub_limits: z.array(z.object({
-      label: z.string().optional(),
-      applies_to: z.enum(['implants', 'pharmacy', 'investigations', 'procedure', 'total']),
-      cap: z.number().positive(),
-    })).optional(),
-  }).optional(),
+  insurance: InsuranceSchema.optional(),
   selections: z.object({
     add_ons: z.record(z.string(), z.enum(['Include', 'Exclude'])).optional(),
     grouped: z.record(z.string(), z.enum(['Include', 'Exclude'])).optional(),
@@ -156,6 +165,26 @@ router.post('/explain', async (req, res, next) => {
     const { explainEstimate } = await import('../modules/ai/explain.js');
     const explanation = await explainEstimate(estimate);
     res.json({ final_estimate: estimate.final_estimate, bucket_totals: estimate.bucket_totals, explanation });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/estimate/settle-manual — bucket-level insurance settlement for the
+ * manual / open-billing fallback (no cohort estimate). Body:
+ * { buckets: {<bucket>: number}, insurance: {...}, los_days?, icu_days?, nme_amount? }
+ */
+const ManualSettleInput = z.object({
+  buckets: z.record(z.string(), z.number().nonnegative()).default({}),
+  insurance: InsuranceSchema,
+  los_days: z.number().nonnegative().default(0),
+  icu_days: z.number().nonnegative().default(0),
+  nme_amount: z.number().nonnegative().default(0),
+});
+
+router.post('/settle-manual', async (req, res, next) => {
+  try {
+    const input = ManualSettleInput.parse(req.body);
+    res.json(settleManual(input));
   } catch (err) { next(err); }
 });
 
