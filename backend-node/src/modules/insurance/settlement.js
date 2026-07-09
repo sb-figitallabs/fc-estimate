@@ -44,6 +44,38 @@ function subLimitGroup(row) {
 const ROOM_KEYS = ['general', 'twin', 'single'];
 
 /**
+ * Shared claim-ceiling core — copay, base-cover ceiling and top-up applied to a
+ * gross-admissible amount. Single source of truth for the per-row `settle()`
+ * and the bucket-level `settleManual()` so the two can never drift.
+ * Returns { copay, tpaBeforeCap, tpaApproval, topUpPay, beyondCover, insurerTotal }.
+ */
+function applyClaimCeiling({ grossAdmissible, insurance, baseAvailable, notes = [] }) {
+  const ins = insurance;
+  const topUpAmount = Number(ins.top_up?.amount ?? 0);
+  let copay = 0;
+  if (ins.copay?.value > 0) {
+    copay = ins.copay.type === 'absolute'
+      ? Number(ins.copay.value)
+      : grossAdmissible * (Number(ins.copay.value) / 100);
+  }
+  const tpaBeforeCap = Math.max(0, grossAdmissible - copay);
+  const tpaApproval = Math.min(tpaBeforeCap, baseAvailable);
+  const overflow = Math.max(0, tpaBeforeCap - baseAvailable);
+  let topUpPay = 0;
+  if (overflow > 0 && topUpAmount > 0) {
+    const deductible = Number(ins.top_up?.deductible ?? 0);
+    const met = ins.top_up?.type === 'super' ? Number(ins.consumed ?? 0) : 0;
+    const threshold = Math.max(0, deductible - met);
+    const eligibleAbove = Math.max(0, tpaBeforeCap - Math.max(baseAvailable, threshold));
+    topUpPay = Math.min(eligibleAbove, topUpAmount);
+    if (threshold > baseAvailable) notes.push(`top-up deductible ₹${deductible} above base cover — gap is patient-payable`);
+  }
+  const beyondCover = Math.max(0, overflow - topUpPay);
+  const insurerTotal = tpaApproval + topUpPay;
+  return { copay, tpaBeforeCap, tpaApproval, topUpPay, beyondCover, insurerTotal };
+}
+
+/**
  * @param {object} p
  * @param {Array} p.lineItems  estimate.line_items
  * @param {string} p.roomKey   'general'|'twin'|'single'
@@ -154,31 +186,10 @@ export function settle({ lineItems, roomKey, drivers, insurance, grossTotal }) {
     .reduce((t, r) => t + (r._rawAmount - r._preSubLimit), 0); // exact, not display-rounded
   const subLimitOverflow = subLimitDetail.reduce((t, s) => t + (s.overflow_to_patient ?? 0), 0);
 
-  // copay on gross admissible
-  let copay = 0;
-  if (ins.copay?.value > 0) {
-    copay = ins.copay.type === 'absolute'
-      ? Number(ins.copay.value)
-      : grossAdmissible * (Number(ins.copay.value) / 100);
-  }
+  // copay + base-cover ceiling + top-up (shared core)
+  const { copay, tpaBeforeCap, tpaApproval, topUpPay, beyondCover, insurerTotal } =
+    applyClaimCeiling({ grossAdmissible, insurance: ins, baseAvailable, notes });
 
-  const tpaBeforeCap = Math.max(0, grossAdmissible - copay);
-  const tpaApproval = Math.min(tpaBeforeCap, baseAvailable);
-  let overflow = Math.max(0, tpaBeforeCap - baseAvailable);
-
-  // top-up (standard: per-claim deductible on this claim; super: consumed counts toward it)
-  let topUpPay = 0;
-  if (overflow > 0 && topUpAmount > 0) {
-    const deductible = Number(ins.top_up?.deductible ?? 0);
-    const met = ins.top_up?.type === 'super' ? Number(ins.consumed ?? 0) : 0;
-    const threshold = Math.max(0, deductible - met);
-    const eligibleAbove = Math.max(0, tpaBeforeCap - Math.max(baseAvailable, threshold));
-    topUpPay = Math.min(eligibleAbove, topUpAmount);
-    if (threshold > baseAvailable) notes.push(`top-up deductible ₹${deductible} above base cover — gap is patient-payable`);
-  }
-  const beyondCover = Math.max(0, overflow - topUpPay);
-
-  const insurerTotal = tpaApproval + topUpPay;
   const patient = {
     nme: round2(nme),
     copay: round2(copay),
@@ -272,5 +283,132 @@ export function settleWithPackage({ packageAmount, coverageRows, lineItems, room
     tpa_approval: round2(tpaApproval),
     insurer_total: round2(insurerTotal),
     patient_total: patientTotal,
+  };
+}
+
+/**
+ * Bucket-level settlement for the manual / open-billing fallback (no cohort
+ * line items). Applies the SAME IRDAI logic as `settle()` at bucket
+ * granularity: room-rent proportionate deduction on associated buckets,
+ * per-bucket sub-limits, then the shared copay/ceiling/top-up core.
+ *
+ * Room-rent capping needs a per-day basis the buckets don't carry, so it uses
+ * the entered stay: allowed room total for the stay ÷ the Room Charges bucket
+ * → ward ratio. Conservation invariant insurer + patient = gross holds exactly.
+ *
+ * @param {object}  p.buckets    { 'Room Charges': n, 'Implants': n, ... }
+ * @param {object}  p.insurance  the policy input (same shape as settle())
+ * @param {number}  p.los_days   total length of stay (days)
+ * @param {number}  p.icu_days   ICU days within the stay
+ * @param {number}  p.nme_amount non-medical amount (100% patient)
+ */
+const MANUAL_BUCKETS = {
+  'Room Charges': { class: 'associated', group: null, roomLinked: true },
+  'Procedure / OT Charges': { class: 'associated', group: 'procedure' },
+  'Professional Fees': { class: 'associated', group: null },
+  'Pharmacy & Consumables': { class: 'exempt', group: 'pharmacy' },
+  'Implants': { class: 'exempt', group: 'implants' },
+  'Investigations': { class: 'exempt', group: 'investigations' },
+  'Other Services': { class: 'associated', group: null },
+};
+
+export function settleManual({ buckets = {}, insurance = {}, los_days = 0, icu_days = 0, nme_amount = 0 }) {
+  const ins = insurance;
+  const notes = [];
+  const baseSI = Number(ins.base_sum_insured ?? 0);
+  const baseAvailable = Math.max(0, baseSI - Number(ins.consumed ?? 0) + Number(ins.ncb ?? 0));
+  const losDays = Math.max(0, Number(los_days) || 0);
+  const icuDays = Math.min(Math.max(0, Number(icu_days) || 0), losDays);
+  const wardDays = Math.max(0, losDays - icuDays);
+
+  // rows from buckets (+ an NME row that is 100% patient)
+  const rows = [];
+  for (const [name, meta] of Object.entries(MANUAL_BUCKETS)) {
+    const amount = Number(buckets[name]) || 0;
+    if (amount <= 0) continue;
+    rows.push({ name, bucket: name, amount, class: meta.class, group: meta.group, roomLinked: !!meta.roomLinked, admissible: amount, _raw: amount, _preSubLimit: amount });
+  }
+  const nme = Math.max(0, Number(nme_amount) || 0);
+  if (nme > 0) rows.push({ name: 'Non-medical (NME)', bucket: 'Other Services', amount: nme, class: 'nme', group: null, roomLinked: false, admissible: 0, _raw: nme, _preSubLimit: 0 });
+
+  // ---- room-rent cap → allowed room total for the stay → ward ratio ----
+  const cap = ins.room_rent_cap ?? {};
+  const roomCharges = rows.filter((r) => r.roomLinked).reduce((t, r) => t + r.amount, 0);
+  let allowedRoom = null, wardRatio = 1;
+  if (cap.type === 'absolute' && Number(cap.value) > 0) {
+    allowedRoom = Number(cap.value) * losDays;
+  } else if (cap.type === 'pct_of_si' && baseSI > 0) {
+    allowedRoom = baseSI * (Number(cap.ward_pct ?? 1) / 100) * wardDays + baseSI * (Number(cap.icu_pct ?? 2) / 100) * icuDays;
+  } else if (cap.type === 'room_category') {
+    notes.push('Room-category cap needs the hospital tariff — not applied in manual mode. Use an absolute or %-of-SI cap to apply room-rent capping.');
+  }
+  if (cap.type && cap.type !== 'none' && cap.type !== 'room_category' && losDays === 0) {
+    notes.push('Enter length of stay for the room-rent cap to apply.');
+  }
+  if (allowedRoom != null && roomCharges > allowedRoom && roomCharges > 0) {
+    wardRatio = allowedRoom / roomCharges;
+    for (const r of rows) {
+      if (r.class === 'associated') { r._preSubLimit = r.amount * wardRatio; r.admissible = r.amount * wardRatio; }
+    }
+  }
+
+  // ---- per-bucket sub-limits (same rule as settle()) ----
+  const subLimitDetail = [];
+  for (const sl of (ins.sub_limits ?? [])) {
+    const capAmt = Number(sl.cap ?? 0);
+    if (!(capAmt > 0)) continue;
+    const applies = String(sl.applies_to ?? 'total').toLowerCase();
+    const members = applies === 'total' ? rows.filter((r) => r.class !== 'nme')
+      : rows.filter((r) => r.group === applies && r.class !== 'nme');
+    const groupAdm = members.reduce((t, r) => t + r.admissible, 0);
+    if (groupAdm <= capAmt || !members.length) {
+      subLimitDetail.push({ ...sl, applied: false, group_admissible: round2(groupAdm) });
+      continue;
+    }
+    const scale = capAmt / groupAdm;
+    for (const r of members) r.admissible *= scale;
+    subLimitDetail.push({ ...sl, applied: true, group_admissible: round2(groupAdm), overflow_to_patient: round2(groupAdm - capAmt) });
+  }
+
+  // ---- totals ----
+  const gross = rows.reduce((t, r) => t + r._raw, 0);
+  const grossAdmissible = rows.reduce((t, r) => t + r.admissible, 0);
+  const proportionateDeduction = rows.filter((r) => r.class === 'associated').reduce((t, r) => t + (r._raw - r._preSubLimit), 0);
+  const subLimitOverflow = subLimitDetail.reduce((t, s) => t + (s.overflow_to_patient ?? 0), 0);
+
+  const { copay, tpaBeforeCap, tpaApproval, topUpPay, beyondCover, insurerTotal } =
+    applyClaimCeiling({ grossAdmissible, insurance: ins, baseAvailable, notes });
+
+  const patient = {
+    nme: round2(nme),
+    copay: round2(copay),
+    proportionate_deduction: round2(proportionateDeduction),
+    sub_limit_overflow: round2(subLimitOverflow),
+    room_upgrade_excess: 0, // eligibility upgrade not modelled at bucket level
+    beyond_cover: round2(beyondCover),
+  };
+  patient.total = round2(Object.values(patient).reduce((a, b) => a + b, 0));
+
+  return {
+    mode: 'manual',
+    gross: round2(gross),
+    caps: {
+      allowed_room_total: allowedRoom != null ? round2(allowedRoom) : null,
+      room_charges: round2(roomCharges),
+      ward_ratio: round2(wardRatio),
+      los_days: losDays, icu_days: icuDays,
+    },
+    gross_admissible: round2(grossAdmissible),
+    sub_limits: subLimitDetail,
+    copay: round2(copay),
+    tpa_before_cap: round2(tpaBeforeCap),
+    base_available: round2(baseAvailable),
+    tpa_approval: round2(tpaApproval),
+    top_up_claim: round2(topUpPay),
+    insurer_total: round2(insurerTotal),
+    patient,
+    check: { insurer_plus_patient: round2(insurerTotal + patient.total), gross_plus_upgrade: round2(gross) },
+    rows: rows.map(({ _raw, _preSubLimit, roomLinked, ...r }) => ({ ...r, admissible: round2(r.admissible) })),
+    notes,
   };
 }
