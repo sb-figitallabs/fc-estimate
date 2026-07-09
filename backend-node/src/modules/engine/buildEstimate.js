@@ -377,7 +377,11 @@ export async function buildEstimate(input) {
       if (insuranceOn) {
         try {
           const s = settle({ lineItems: lineItems.rows, roomKey: rk, drivers, insurance: input.insurance, grossTotal: lineItems.grandTotal.selected[rk] ?? 0 });
-          if (!s.error) entry.settlement = { insurer_total: s.insurer_total, patient_total: s.patient.total };
+          if (!s.error) entry.settlement = {
+            insurer_total: s.insurer_total, patient_total: s.patient.total,
+            top_up_claim: s.top_up_claim,
+            patient: s.patient, // full breakdown: nme, copay, proportionate_deduction, sub_limit_overflow, room_upgrade_excess, beyond_cover
+          };
           if (model) {
             const ps = settleWithPackage({ packageAmount: pkgAmt, coverageRows: (entry.coverage?.rows ?? []).map((r) => ({ ...r })), lineItems: lineItems.rows, roomKey: rk, drivers, insurance: input.insurance });
             if (!ps.error) entry.package_settlement = { insurer_total: ps.insurer_total, patient_total: ps.patient_total };
