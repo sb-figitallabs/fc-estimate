@@ -1,11 +1,38 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
-import { listFamilies } from '../modules/engine/cohort.js';
+import { listFamilies, getCohort } from '../modules/engine/cohort.js';
+import { fetchCohortRows, basisCohorts, buildBasisSummary } from '../modules/engine/artifacts.js';
+import { payorBucketCounts, resolveBasis } from '../modules/resolve/payerBasis.js';
 
 const router = Router();
 
 /** GET /api/lookup/families — clinical families (drives the UI dropdown; daycare ⇒ no room selection) */
 router.get('/families', (_req, res) => res.json(listFamilies()));
+
+/**
+ * GET /api/lookup/stay-stats?procedure=&payor_bucket=
+ * Lightweight cohort stay stats (LOS / ward / ICU day quartiles) for the
+ * resolved payer basis — lets the UI show the typical stay before a full build.
+ */
+router.get('/stay-stats', async (req, res, next) => {
+  try {
+    const procedure = String(req.query.procedure || '');
+    const payorBucket = String(req.query.payor_bucket || 'Cash');
+    const def = await getCohort(procedure); // throws 400 for unknown family
+    const rows = await fetchCohortRows(def.whereSql, def.params);
+    if (!rows.length) return res.json({ procedure, basis: null, case_count: 0 });
+    const cohorts = basisCohorts(rows);
+    const counts = await payorBucketCounts(def.whereSql, def.params);
+    const { selected_basis: basis } = resolveBasis(payorBucket, counts, def.familyKind);
+    const b = buildBasisSummary(cohorts).find((r) => r.basis_label === basis);
+    res.json({
+      procedure, basis, case_count: (cohorts[basis] ?? []).length,
+      los: { p25: b?.los_p25, p50: b?.los_p50, p75: b?.los_p75 },
+      ward: { p25: b?.ward_p25, p50: b?.ward_p50, p75: b?.ward_p75 },
+      icu: { p25: b?.icu_p25, p50: b?.icu_p50, p75: b?.icu_p75 },
+    });
+  } catch (err) { next(err); }
+});
 
 /**
  * GET /api/lookup/organizations — payor organizations with tariff mapping,
