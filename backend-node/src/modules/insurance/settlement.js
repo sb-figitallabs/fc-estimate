@@ -128,12 +128,19 @@ export function settle({ lineItems, roomKey, drivers, insurance, grossTotal }) {
   } else if (cap.type === 'pct_of_si' && baseSI > 0) {
     wardCap = baseSI * (Number(cap.ward_pct ?? 1) / 100);
     icuCap = baseSI * (Number(cap.icu_pct ?? 2) / 100);
-  } else if (cap.type === 'room_category' && ins.room_eligibility) {
-    const elig = governingEligibility(ins.room_eligibility);
-    if (elig && bedRow) {
-      eligibleRate = Number(bedRow.rate?.[elig] ?? 0);
+  } else if (cap.type === 'room_category') {
+    // explicit allowed category (newer frontends) wins; older payloads only
+    // send room_eligibility, whose highest tier governs — keep as fallback
+    const explicit = cap.category != null ? String(cap.category).toLowerCase() : null;
+    const tier = explicit && ROOM_KEYS.includes(explicit)
+      ? explicit
+      : governingEligibility(ins.room_eligibility);
+    if (tier && bedRow) {
+      eligibleRate = Number(bedRow.rate?.[tier] ?? 0);
       wardCap = eligibleRate;
-    } else notes.push(`room_eligibility "${ins.room_eligibility}" not resolvable to a tier rate`);
+    } else if (cap.category != null || ins.room_eligibility) {
+      notes.push(`room-category cap: "${cap.category ?? ins.room_eligibility}" not resolvable to a tier rate`);
+    }
   }
   // eligibility upgrade excess is computed even when the cap is monetary
   if (ins.room_eligibility && bedRow) {

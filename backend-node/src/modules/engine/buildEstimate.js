@@ -14,6 +14,7 @@ import {
 import {
   cleanServiceRows, splitCleanedRows, prioritizeOptionalRows, splitRoboticOptional,
   roboticPresenceRate, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
+  isRemoveCategory,
 } from './services.js';
 import {
   buildOtConsumableShortlist, otConsumablesApplied, buildImplantHierarchy, resolveImplantEstimate,
@@ -141,8 +142,9 @@ export async function buildEstimate(input) {
   const implantControls = input.selections?.implants ?? { mode: 'Default P50' };
   const implantResolved = resolveImplantEstimate(implantControls, implantHierarchy, pharmBasisRow);
 
-  // 12. add-on selection state
-  const addOns = optional.map((o) => ({
+  // 12. add-on selection state — never offer 'remove'-category rows
+  // (room-linked services already priced via the room logic rows)
+  const addOns = optional.filter((o) => !isRemoveCategory(o.fc_estimate_bucket, o.grouping)).map((o) => ({
     code: o.item_code, name: o.item_name, grouping: o.grouping, bucket: o.fc_estimate_bucket,
     presence: o.case_presence_rate,
     q25: o.quantity_p25, q50: o.quantity_p50, q75: o.quantity_p75,

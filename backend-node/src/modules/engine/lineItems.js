@@ -431,8 +431,15 @@ export function computeLineItems(ctx) {
     const inc = a.selected === 'Include';
     const q = { low: s.quantity_p25 ?? 0, typ: s.quantity_p50 ?? 0, high: s.quantity_p75 ?? 0 };
     const mk = (qty, rate) => guard(a.code, inc ? qty * (rate ?? 0) : 0);
+    // Included add-ons surface in their service's real clinical bucket (e.g.
+    // CRP → Investigations) so the FC sees them where they'd look for them;
+    // 'Optional Add-Ons' stays only as the fallback for rows with no usable
+    // bucket, and for excluded (₹0) rows so clinical buckets aren't padded
+    // with dozens of zero-amount candidates.
+    const hasRealBucket = a.bucket && !/remove|unmapped/i.test(a.bucket);
+    const bucket = inc && hasRealBucket ? a.bucket : 'Optional Add-Ons';
     push({
-      name: a.name, bucket: 'Optional Add-Ons', sub: a.grouping, source: 'Advanced',
+      name: a.name, bucket, sub: a.grouping, source: 'Advanced',
       how: 'Include / Exclude selection', code: a.code, addOn: true, included: inc,
       qty: { selected: modePick(mode, q.low, q.typ, q.high), ...q },
       rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },

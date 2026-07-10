@@ -21,6 +21,7 @@ const InsuranceSchema = z.object({
     icu_value: z.number().nonnegative().optional(),  // absolute ICU ₹/day (optional)
     ward_pct: z.number().positive().default(1),      // pct_of_si
     icu_pct: z.number().positive().default(2),
+    category: z.string().optional(),                 // room_category: explicit allowed tier ('General'|'Twin'|'Single'); falls back to room_eligibility's highest tier when absent
   }).optional(),
   // one tier or a list of eligible tiers — the highest-rate tier governs the
   // cap / upgrade math (a policy allowing Twin implicitly allows General)

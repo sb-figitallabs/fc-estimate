@@ -298,7 +298,7 @@ export function buildBands(estimate, input, template) {
   // =========================================================== Service Add-Ons
   {
     const S = 'Service Add-Ons';
-    const addOnItems = items.filter((it) => it.bucket === 'Optional Add-Ons');
+    const addOnItems = items.filter((it) => it.addOn); // included add-ons carry their real clinical bucket
     estimate.add_ons.forEach((a, i) => {
       const row = 7 + i;
       const li = addOnItems[i];
@@ -345,7 +345,7 @@ export function buildBands(estimate, input, template) {
   // =========================================================== Grouped Adjustments
   {
     const G = 'Grouped Adjustments';
-    const addOnItems = items.filter((it) => it.bucket === 'Optional Add-Ons');
+    const addOnItems = items.filter((it) => it.addOn); // included add-ons carry their real clinical bucket
     const addonSums = (grouping) => {
       let low = 0, typ = 0, high = 0;
       estimate.add_ons.forEach((a, i) => {
