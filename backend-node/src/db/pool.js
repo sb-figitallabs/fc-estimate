@@ -16,5 +16,12 @@ export const pool = new pg.Pool({
   ...(ssl ? { ssl } : {}),
 });
 
+// A transient error on an IDLE pooled connection (e.g. RDS dropping the socket,
+// EADDRNOTAVAIL/ECONNRESET) is emitted on the pool; without a listener Node
+// treats it as uncaught and crashes the process. Log and let the pool recycle.
+pool.on('error', (err) => {
+  console.error('[pg pool] idle client error (recovered):', err.message);
+});
+
 /** Tagged-template-free helper: query(text, params) */
 export const query = (text, params) => pool.query(text, params);
