@@ -89,6 +89,10 @@ export const EstimateInput = z.object({
     robotic: z.enum(['yes', 'no', 'auto']).default('auto'),
     emergency_ot: z.enum(['No', 'Yes']).default('No'), // switches OT pricing to the OT-E slot ladder
     mlc: z.enum(['No', 'Yes']).default('No'),          // applies the MLC charge row (HSP0047)
+    // Narrow the clinical cohort to a specific care type / setting. Omitted =>
+    // use the family's own mix. Drives cohort filter + template row structure.
+    care_type: z.enum(['Surgical', 'Medical']).optional(),
+    setting: z.enum(['Daycare', 'Inpatient']).optional(),
   }).default({}),
   package: z.object({
     package_code: z.string().optional(),

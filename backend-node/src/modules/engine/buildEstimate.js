@@ -5,7 +5,7 @@
 import { query } from '../../db/pool.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
 import { payorBucketCounts, resolveBasis } from '../resolve/payerBasis.js';
-import { getCohort } from './cohort.js';
+import { getCohort, applyCareControls } from './cohort.js';
 import {
   fetchCohortRows, basisCohorts, buildBasisSummary, buildServiceStats,
   buildPharmacyStats, buildActualBasisMetrics, buildPfPayorSummary,
@@ -57,9 +57,16 @@ export async function buildEstimate(input) {
   }
   const pricingMode = input.payment.payor_bucket === 'Cash' ? 'Cash / TR1' : 'Insurance / Org Tariff';
 
-  // 5. cohort + artifacts
-  const cohortDef = await getCohort(input.clinical.procedure);
-  const cohortRows = await fetchCohortRows(cohortDef.whereSql, cohortDef.params);
+  // 5. cohort + artifacts — narrowed by the care-type / setting controls
+  const cohortDef = applyCareControls(await getCohort(input.clinical.procedure), controls);
+  let cohortRows = await fetchCohortRows(cohortDef.whereSql, cohortDef.params);
+  if (!cohortRows.length && cohortDef._careFiltered) {
+    // The chosen care type / setting has no cases — fall back to the family's
+    // full cohort but keep the template-structure flags the user selected.
+    warnings.push('Not enough cases for the chosen care type / setting — priced on the full cohort instead.');
+    cohortDef.whereSql = cohortDef._baseWhereSql;
+    cohortRows = await fetchCohortRows(cohortDef.whereSql, cohortDef.params);
+  }
   if (!cohortRows.length) {
     warnings.push(`No historical cohort found for family ${cohortDef.family}`);
     return { resolved_context: { tariff, family: cohortDef.family }, warnings, unresolved_items: ['cohort'] };

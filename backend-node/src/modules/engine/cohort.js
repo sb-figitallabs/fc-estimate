@@ -221,3 +221,39 @@ export async function getCohort(procedure) {
   }
   return def;
 }
+
+/**
+ * Narrow a family cohort to a specific care type (Surgical/Medical) and/or
+ * setting (Daycare/Inpatient) from the build controls, and flip the template
+ * flags to match. Values are validated against fixed literals (no SQL from
+ * user input). Returns a shallow clone; `_careFiltered` marks that a cohort
+ * filter was applied so the caller can fall back if it yields no cases.
+ */
+export function applyCareControls(def, controls = {}) {
+  const care = controls.care_type;   // 'Surgical' | 'Medical'
+  const setting = controls.setting;  // 'Daycare' | 'Inpatient'
+  const next = { ...def };
+  const clauses = [];
+
+  if (care === 'Surgical' || care === 'Medical') {
+    clauses.push(`surgical_medical = '${care}'`);
+    next.familyKind = care === 'Surgical' ? 'surgical' : 'medical';
+    if (care === 'Medical') {
+      // medical: no OT / surgical / cath fixed template rows
+      next.rows = { ...(def.rows || {}), ot: false, surgical: false, cathLab: false };
+    }
+  }
+  if (setting === 'Daycare' || setting === 'Inpatient') {
+    const isDay = setting === 'Daycare';
+    clauses.push(`is_daycare_broad = ${isDay}`);
+    next.daycare = isDay;
+    if (isDay) next.ipPharmacyMode = 'bucket'; // per-day × 0-stay would zero out
+  }
+
+  if (clauses.length) {
+    next.whereSql = `(${def.whereSql}) AND ${clauses.join(' AND ')}`;
+    next._careFiltered = true;
+    next._baseWhereSql = def.whereSql;
+  }
+  return next;
+}
