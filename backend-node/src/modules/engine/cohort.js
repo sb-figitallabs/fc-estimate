@@ -3,6 +3,8 @@
  * The exact robotic TKR cohort filter is being confirmed against
  * export_robotic_tkr_fc_estimate_builder.py (see spec/BUILD_SPEC.md).
  */
+import GENERATED_FAMILIES from './generatedFamilies.js';
+
 const FAMILIES = {
   robotic_tkr_unilateral_right: {
     family: 'robotic_tkr_unilateral_right',
@@ -151,6 +153,9 @@ const FAMILIES = {
     rows: { ot: false, cathLab: false },
   },
 };
+
+// Merge in the auto-generated curated-template families (data-driven onboarding).
+Object.assign(FAMILIES, GENERATED_FAMILIES);
 
 /** Map a hospital package (name/code) back to a registered clinical family. */
 export function familyForPackage({ package_name = '', package_code = '' }) {
