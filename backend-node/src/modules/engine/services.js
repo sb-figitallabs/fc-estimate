@@ -21,6 +21,15 @@ const isOtSlotName = (name) => /^OT(-E)? - .*HOURS?/i.test(name || '');
 const isRoboticText = (...texts) => texts.some((t) => /ROBO/i.test(t || ''));
 
 /**
+ * 'remove'-category rows are room-linked services (BED CHARGES, OXYGEN PER DAY…)
+ * already priced via the room logic rows. The classification may mark them in
+ * fc_estimate_bucket OR grouping — treat either as remove (manager review:
+ * they must never surface as Service add-ons).
+ */
+export const isRemoveCategory = (bucket, grouping) =>
+  /remove/i.test(bucket || '') || /remove/i.test(grouping || '');
+
+/**
  * Clean service stats rows for one basis into the FC template set:
  * mapped, non-"remove" bucket, not a fixed/logic template code, not an OT slot row.
  */
@@ -33,7 +42,7 @@ const isRoboticText = (...texts) => texts.some((t) => /ROBO/i.test(t || ''));
 export function cleanServiceRows(statsRows, { excludeFixed = true, excludeCathLab = false } = {}) {
   return statsRows.filter((r) =>
     r.mapped &&
-    !/remove/i.test(r.fc_estimate_bucket || '') &&
+    !isRemoveCategory(r.fc_estimate_bucket, r.grouping) &&
     (r.grouping || '').trim() !== '' && // doctor-fee and F&B rows carry no grouping
     !LOGIC_DRIVEN_SERVICE_CODES.has(r.item_code) &&
     !(excludeFixed && FIXED_ESTIMATE_TEMPLATE_SERVICE_CODES.has(r.item_code)) &&
@@ -90,7 +99,7 @@ export function splitRoboticOptional(optional, procedureCode) {
 export function roboticPresenceRate(statsRows, procedureCode) {
   let max = 0;
   for (const r of statsRows) {
-    if (/remove/i.test(r.fc_estimate_bucket || '')) continue;
+    if (isRemoveCategory(r.fc_estimate_bucket, r.grouping)) continue;
     const robotic = isRoboticText(r.item_code, r.item_name, r.grouping, r.fc_estimate_bucket);
     if (!robotic) continue;
     if (r.item_code !== procedureCode && TEMPLATE_EXCLUDED_SERVICE_CODES.has(r.item_code)) continue;
@@ -128,7 +137,7 @@ export function buildGroupingGaps(cohortRows, cleaned, mappingByCode) {
     const per = new Map(), perDefault = new Map();
     for (const s of (adm.services_json || [])) {
       const m = mappingByCode.get(s.service_code);
-      if (!m || !(m.grouping || '').trim() || /remove/i.test(m.fc_estimate_bucket || '')) continue;
+      if (!m || !(m.grouping || '').trim() || isRemoveCategory(m.fc_estimate_bucket, m.grouping)) continue;
       // logic-driven codes are modeled as LID logic rows, not template gaps
       if (LOGIC_DRIVEN_SERVICE_CODES.has(s.service_code)) continue;
       if (isOtSlotName(s.service_name)) continue;
