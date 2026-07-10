@@ -186,6 +186,10 @@ export function resolveImplantEstimate(controls, hierarchy, basisRow) {
   if (mode === 'Exact Item Override') {
     return hierarchy.items.find((i) => i.code === itemCode)?.amount_p50 ?? brandVal();
   }
+  // Percentile pins (estimate-builder-v3 implants pills): fix the implant
+  // bucket at its P25/P75 regardless of the overall estimate mode.
+  if (mode === 'P25') return basisRow.implants_p25 ?? dflt;
+  if (mode === 'P75') return basisRow.implants_p75 ?? dflt;
   return dflt;
 }
 
