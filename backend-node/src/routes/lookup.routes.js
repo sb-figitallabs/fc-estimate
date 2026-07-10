@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
-import { listFamilies, getCohort } from '../modules/engine/cohort.js';
+import { listFamilies, getCohort, applyCareControls } from '../modules/engine/cohort.js';
 import { fetchCohortRows, basisCohorts, buildBasisSummary } from '../modules/engine/artifacts.js';
-import { payorBucketCounts, resolveBasis } from '../modules/resolve/payerBasis.js';
+import { payorBucketCounts, resolveBasis, resolveComponentBases } from '../modules/resolve/payerBasis.js';
 
 const router = Router();
 
@@ -30,6 +30,76 @@ router.get('/stay-stats', async (req, res, next) => {
       los: { p25: b?.los_p25, p50: b?.los_p50, p75: b?.los_p75 },
       ward: { p25: b?.ward_p25, p50: b?.ward_p50, p75: b?.ward_p75 },
       icu: { p25: b?.icu_p25, p50: b?.icu_p50, p75: b?.icu_p75 },
+    });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/lookup/provenance?procedure=&payor_bucket=&care_type=&setting=
+ * Read-only admin audit view: where an estimate's numbers come from — which
+ * hospital package display names the cohort combines (and how many IPs each
+ * contributes), the payor/care/daycare splits, and which payer basis
+ * (Cash / GIPSA / Insurance All / All Payers …) each estimate component
+ * resolved to for the requested payor bucket.
+ */
+router.get('/provenance', async (req, res, next) => {
+  try {
+    const procedure = String(req.query.procedure || '');
+    const payorBucket = String(req.query.payor_bucket || 'Cash');
+    const base = await getCohort(procedure); // throws 400 for unknown family
+
+    // optional cohort narrowing — only the exact literals are applied;
+    // anything else is ignored (applyCareControls validates the same way)
+    const careType = ['Surgical', 'Medical'].includes(req.query.care_type) ? req.query.care_type : null;
+    const setting = ['Daycare', 'Inpatient'].includes(req.query.setting) ? req.query.setting : null;
+    const def = applyCareControls(base, { care_type: careType, setting });
+
+    // def.whereSql is a trusted server-side literal from the family registry
+    // (never user input) — interpolated the same way artifacts.js does.
+    const [agg, pkgs, buckets, samples, counts] = await Promise.all([
+      query(
+        `SELECT count(*)::int AS total_cases,
+                count(*) FILTER (WHERE surgical_medical = 'Surgical')::int AS surgical,
+                count(*) FILTER (WHERE surgical_medical = 'Medical')::int AS medical,
+                count(*) FILTER (WHERE is_daycare_broad IS TRUE)::int AS daycare,
+                count(*) FILTER (WHERE is_daycare_broad IS NOT TRUE)::int AS inpatient
+         FROM mart.main_table WHERE ${def.whereSql}`, def.params
+      ),
+      query(
+        `SELECT COALESCE(NULLIF(package_name, ''), '(none)') AS package_name, count(*)::int AS cases
+         FROM mart.main_table WHERE ${def.whereSql}
+         GROUP BY 1 ORDER BY cases DESC, package_name LIMIT 20`, def.params
+      ),
+      query(
+        `SELECT payor_bucket, count(*)::int AS cases
+         FROM mart.main_table WHERE ${def.whereSql}
+         GROUP BY 1 ORDER BY cases DESC`, def.params
+      ),
+      query(
+        `SELECT admission_no FROM mart.main_table WHERE ${def.whereSql}
+         ORDER BY admission_no DESC LIMIT 10`, def.params
+      ),
+      payorBucketCounts(def.whereSql, def.params),
+    ]);
+
+    const a = agg.rows[0];
+    res.json({
+      family: def.family,
+      template_name: def.templateName,
+      family_kind: def.familyKind,
+      daycare: def.daycare === true,
+      applied_controls: { care_type: careType, setting },
+      cohort: {
+        total_cases: a.total_cases,
+        package_names: pkgs.rows,
+        payor_buckets: buckets.rows,
+        care_split: { surgical: a.surgical, medical: a.medical },
+        daycare_split: { daycare: a.daycare, inpatient: a.inpatient },
+        sample_admissions: samples.rows.map((r) => r.admission_no),
+      },
+      // service/pharmacy/PF resolve independently per doc 14 (currently the
+      // same framework — all three keys emitted for forward-compat)
+      bases: { ...resolveComponentBases(payorBucket, counts, def.familyKind), counts },
     });
   } catch (err) { next(err); }
 });

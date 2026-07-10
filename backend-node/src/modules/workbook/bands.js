@@ -266,6 +266,12 @@ export function buildBands(estimate, input, template) {
       put(S, 'B22', { r: pfHist.collectible_p50 });
       put(S, 'B23', { r: estimate.final_estimate - bucketSum.get('Professional Fees') + pfHist.collectible_p50 });
     }
+    // Historical case count behind this estimate (matches the UI's
+    // "N Historical Cases"). L12/M12 are empty in the template, directly
+    // below the "Cohort Basis Counts" block (L6:M11) — generateWorkbook
+    // writes non-template band cells as static values.
+    put(S, 'L12', { v: 'Historical Cases (All Payers)' });
+    put(S, 'M12', { v: cohortN });
   }
 
   // =========================================================== Advanced Controls
