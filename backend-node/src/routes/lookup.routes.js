@@ -54,7 +54,7 @@ and an empty array if nothing fits. Never invent family keys not in the list.`;
 
 /**
  * GET /api/lookup/stay-stats?procedure=&payor_bucket=
- * Lightweight cohort stay stats (LOS / ward / ICU day quartiles) for the
+ * Lightweight cohort stay stats (LOS / ward / ICU day + OT hour quartiles) for the
  * resolved payer basis — lets the UI show the typical stay before a full build.
  */
 router.get('/stay-stats', async (req, res, next) => {
@@ -73,6 +73,7 @@ router.get('/stay-stats', async (req, res, next) => {
       los: { p25: b?.los_p25, p50: b?.los_p50, p75: b?.los_p75 },
       ward: { p25: b?.ward_p25, p50: b?.ward_p50, p75: b?.ward_p75 },
       icu: { p25: b?.icu_p25, p50: b?.icu_p50, p75: b?.icu_p75 },
+      ot: { p25: b?.ot_p25, p50: b?.ot_p50, p75: b?.ot_p75 },
     });
   } catch (err) { next(err); }
 });
