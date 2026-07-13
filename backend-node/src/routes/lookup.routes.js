@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
+import { geminiJson } from '../modules/ai/gemini.js';
 import { listFamilies, getCohort, applyCareControls } from '../modules/engine/cohort.js';
 import { fetchCohortRows, basisCohorts, buildBasisSummary } from '../modules/engine/artifacts.js';
 import { payorBucketCounts, resolveBasis, resolveComponentBases } from '../modules/resolve/payerBasis.js';
@@ -8,6 +9,48 @@ const router = Router();
 
 /** GET /api/lookup/families — clinical families (drives the UI dropdown; daycare ⇒ no room selection) */
 router.get('/families', (_req, res) => res.json(listFamilies()));
+
+/**
+ * POST /api/lookup/resolve-treatment  body: { text }
+ * Free-text treatment wording ("Spine L4 L5 surgery", "gallbladder removal")
+ * → top procedure-family matches, AI-ranked against the family registry.
+ * Returned family keys are validated against listFamilies() (AI suggests,
+ * the registry decides — unknown keys are dropped).
+ */
+router.post('/resolve-treatment', async (req, res, next) => {
+  try {
+    const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+    if (!text) return res.status(400).json({ error: 'text is required' });
+
+    const families = listFamilies();
+    const system = `You map a doctor's free-text treatment/surgery wording to a hospital's
+known procedure families for cost estimation.
+
+Known procedure families (use the exact key):
+${families.map((f) => `- ${f.family}: ${f.label}`).join('\n')}
+
+Return STRICT JSON: { "matches": [{ "family": "<exact key from the list>",
+"confidence": "high"|"medium"|"low", "reason": "<one line why it matches>" }] }.
+Return at most the top 3 matches ordered best-first; fewer if fewer plausibly fit,
+and an empty array if nothing fits. Never invent family keys not in the list.`;
+
+    const out = await geminiJson(`Doctor's wording: ${text}`, { system });
+
+    const byKey = new Map(families.map((f) => [f.family, f]));
+    const seen = new Set();
+    const matches = (Array.isArray(out?.matches) ? out.matches : [])
+      .filter((m) => m && byKey.has(m.family) && !seen.has(m.family) && seen.add(m.family))
+      .slice(0, 3)
+      .map((m) => ({
+        family: m.family,
+        label: byKey.get(m.family).label,
+        confidence: ['high', 'medium', 'low'].includes(m.confidence) ? m.confidence : 'low',
+        reason: typeof m.reason === 'string' ? m.reason : '',
+      }));
+
+    res.json({ text, matches });
+  } catch (err) { next(err); }
+});
 
 /**
  * GET /api/lookup/stay-stats?procedure=&payor_bucket=

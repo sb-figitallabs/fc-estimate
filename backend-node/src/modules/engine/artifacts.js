@@ -241,12 +241,11 @@ export function buildPharmacyStats(cohorts, _unused = new Map()) {
   return out;
 }
 
-/** TR-tariff rate lookup: item_code -> {general,twin,single,icu} (+ daycare/deluxe if present). */
-export async function tariffRateLookup(tariffCd) {
-  const { rows } = await query(
-    `SELECT service_cd, service_name, ward_group_name, charge::float
-     FROM fc.service_tariff_rate_matrix WHERE tariff_cd = $1`, [tariffCd]
-  );
+/** Room keys carried on each tariff-rate entry. */
+const TARIFF_ROOM_KEYS = ['general', 'twin', 'single', 'icu', 'deluxe', 'daycare'];
+
+/** Fold raw tariff matrix rows into a Map: service_cd -> {name, general, twin, ...}. */
+function foldTariffRows(rows) {
   const map = new Map();
   for (const r of rows) {
     const cur = map.get(r.service_cd) || { name: r.service_name };
@@ -259,6 +258,63 @@ export async function tariffRateLookup(tariffCd) {
     else if (w.includes('DAY')) cur.daycare = r.charge;
     map.set(r.service_cd, cur);
   }
+  return map;
+}
+
+/**
+ * TR-tariff rate lookup: item_code -> {general,twin,single,icu} (+ daycare/deluxe if present).
+ *
+ * Insurer tariffs (e.g. TR287 Star, TR286 HDFC, TR289 Bajaj) often carry empty or ₹0
+ * service-rate matrices. For any tariff other than TR1 (cash), missing/zero room rates
+ * are filled per-item from TR1 and flagged `tr1_fallback: true` on the entry.
+ * Conservative rule: an org rate of exactly 1 (₹1 token, usually "inside package") is a
+ * REAL value and is never overridden — only null/undefined or <= 0 rates are filled.
+ * The returned Map additionally carries `tr1FallbackCount` and `tr1FallbackCodes`
+ * (capped at 200) so callers can surface fallback usage.
+ */
+export async function tariffRateLookup(tariffCd) {
+  if (tariffCd === 'TR1') {
+    const { rows } = await query(
+      `SELECT service_cd, service_name, ward_group_name, charge::float
+       FROM fc.service_tariff_rate_matrix WHERE tariff_cd = $1`, [tariffCd]
+    );
+    return foldTariffRows(rows);
+  }
+
+  // One query for both the org tariff and the TR1 (cash) baseline, then partition.
+  const { rows } = await query(
+    `SELECT tariff_cd, service_cd, service_name, ward_group_name, charge::float
+     FROM fc.service_tariff_rate_matrix WHERE tariff_cd IN ($1, 'TR1')`, [tariffCd]
+  );
+  const map = foldTariffRows(rows.filter((r) => r.tariff_cd === tariffCd));
+  const tr1 = foldTariffRows(rows.filter((r) => r.tariff_cd === 'TR1'));
+
+  const fallbackCodes = [];
+  for (const [code, base] of tr1) {
+    const cur = map.get(code);
+    if (!cur) {
+      // Service exists only in TR1 — whole-entry fallback.
+      map.set(code, { ...base, tr1_fallback: true });
+      fallbackCodes.push(code);
+      continue;
+    }
+    let filled = false;
+    for (const k of TARIFF_ROOM_KEYS) {
+      const v = cur[k];
+      // Fill only when the org tariff has no value or a non-positive value.
+      // An org rate of exactly 1 (₹1 token) is > 0, hence kept as-is.
+      if ((v == null || v <= 0) && base[k] != null && base[k] > 0) {
+        cur[k] = base[k];
+        filled = true;
+      }
+    }
+    if (filled) {
+      cur.tr1_fallback = true;
+      fallbackCodes.push(code);
+    }
+  }
+  map.tr1FallbackCount = fallbackCodes.length;
+  map.tr1FallbackCodes = fallbackCodes.slice(0, 200);
   return map;
 }
 

@@ -33,6 +33,7 @@ const roomPick = (room, g, t, s) => (room === 'General' ? g : room === 'Twin' ? 
 export function resolveDrivers(basisRow, controls, otLadder) {
   const sel = (basis, p25, p50, p75, manual) =>
     basis === 'P25' ? p25 : basis === 'P50' ? p50 : basis === 'P75' ? p75 : (manual ?? p50);
+  const isPct = (b) => b === 'P25' || b === 'P50' || b === 'P75';
 
   const icu = {
     p25: dayRound(basisRow.icu_p25), p50: dayRound(basisRow.icu_p50), p75: dayRound(basisRow.icu_p75),
@@ -42,6 +43,16 @@ export function resolveDrivers(basisRow, controls, otLadder) {
     p25: dayRound(basisRow.ward_p25), p50: dayRound(basisRow.ward_p50), p75: dayRound(basisRow.ward_p75),
   };
   ward.selected = dayRound(sel(controls.ward_basis, ward.p25, ward.p50, ward.p75, controls.ward_manual));
+  // Manual total-LOS without a manual ward/icu split: keep the ICU basis days
+  // (capped at the stated LOS) and give the remaining days to the ward, so a
+  // partial payload {los_basis:'manual', los_manual:N} still drives the stay.
+  // When ward/icu are themselves manual they define the split and LOS follows.
+  if (!isPct(controls.los_basis) && controls.los_manual != null
+      && isPct(controls.ward_basis) && isPct(controls.icu_basis)) {
+    const t = Math.max(0, dayRound(controls.los_manual));
+    icu.selected = Math.min(icu.selected, t);
+    ward.selected = Math.max(0, t - icu.selected);
+  }
   const los = {
     p25: icu.p25 + ward.p25, p50: icu.p50 + ward.p50, p75: icu.p75 + ward.p75,
     selected: icu.selected + ward.selected,
@@ -123,6 +134,13 @@ export function computeLineItems(ctx) {
         twin: [mk(d.p25, rr.twin), mk(d.p50, rr.twin), mk(d.p75, rr.twin)],
         single: [mk(d.p25, rr.single), mk(d.p50, rr.single), mk(d.p75, rr.single)],
       },
+      // selected amount must follow the SELECTED days (manual overrides
+      // included), not the mode-picked percentile cell
+      selectedCells: {
+        general: mk(d.selected, rr.general),
+        twin: mk(d.selected, rr.twin),
+        single: mk(d.selected, rr.single),
+      },
     });
   };
 
@@ -144,12 +162,15 @@ export function computeLineItems(ctx) {
   let idx = 0;
   function push(row) {
     row.index = idx++;
-    // selected totals per room column (mode-pick over that room's low/typ/high)
-    row.selected = {
+    // selected totals per room column — day-driven rows carry an explicit
+    // selectedCells (selected days x rate, honouring manual LOS/ward/ICU
+    // overrides); every other row mode-picks that room's low/typ/high
+    row.selected = row.selectedCells ?? {
       general: modePick(mode, ...row.cells.general),
       twin: modePick(mode, ...row.cells.twin),
       single: modePick(mode, ...row.cells.single),
     };
+    delete row.selectedCells;
     rows.push(row);
     return row;
   }
@@ -182,6 +203,11 @@ export function computeLineItems(ctx) {
           general: [mk(d.p25, bedRates.general), mk(d.p50, bedRates.general), mk(d.p75, bedRates.general)],
           twin: [mk(d.p25, bedRates.twin), mk(d.p50, bedRates.twin), mk(d.p75, bedRates.twin)],
           single: [mk(d.p25, bedRates.single), mk(d.p50, bedRates.single), mk(d.p75, bedRates.single)],
+        },
+        selectedCells: {
+          general: mk(d.selected, bedRates.general),
+          twin: mk(d.selected, bedRates.twin),
+          single: mk(d.selected, bedRates.single),
         },
       });
     }
@@ -273,6 +299,11 @@ export function computeLineItems(ctx) {
         general: [mk(d.p25, bedRates.general), mk(d.p50, bedRates.general), mk(d.p75, bedRates.general)],
         twin: [mk(d.p25, bedRates.twin), mk(d.p50, bedRates.twin), mk(d.p75, bedRates.twin)],
         single: [mk(d.p25, bedRates.single), mk(d.p50, bedRates.single), mk(d.p75, bedRates.single)],
+      },
+      selectedCells: {
+        general: mk(d.selected, bedRates.general),
+        twin: mk(d.selected, bedRates.twin),
+        single: mk(d.selected, bedRates.single),
       },
     });
   }
@@ -499,36 +530,47 @@ export function computeLineItems(ctx) {
   }
   // subtotal before PF = all rows except PF rows
   const subtotal = sumCells((_, i) => i < pfStart || i > pfStart + 3);
+  // selected subtotal sums the rows' SELECTED amounts (day-driven rows carry
+  // manual LOS/ward/ICU overrides there that the percentile cells don't have)
+  const subtotalSelected = { general: 0, twin: 0, single: 0 };
+  rows.forEach((row, i) => {
+    if (i >= pfStart && i <= pfStart + 3) return;
+    for (const c of cols) subtotalSelected[c] += row.selected[c] ?? 0;
+  });
   // PF cascade
   const pf = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
+  const pfSel = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
   for (const c of cols) {
     pf.surgeon[c] = subtotal[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
     pf.asstSurgeon[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.15 * v));
     pf.anesthetist[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
     pf.asstAnesthetist[c] = pf.anesthetist[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
+    pfSel.surgeon[c] = insuranceMode ? 0 : 0.25 * subtotalSelected[c];
+    pfSel.asstSurgeon[c] = insuranceMode ? 0 : 0.15 * pfSel.surgeon[c];
+    pfSel.anesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.surgeon[c];
+    pfSel.asstAnesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.anesthetist[c];
   }
   const pfRows = [pf.surgeon, pf.asstSurgeon, pf.anesthetist, pf.asstAnesthetist];
+  const pfSelRows = [pfSel.surgeon, pfSel.asstSurgeon, pfSel.anesthetist, pfSel.asstAnesthetist];
   pfRows.forEach((p, k) => {
     const row = rows[pfStart + k];
     for (const c of cols) row.cells[c] = p[c];
-    row.selected = { general: modePick(mode, ...p.general), twin: modePick(mode, ...p.twin), single: modePick(mode, ...p.single) };
+    row.selected = { ...pfSelRows[k] };
   });
   // grand total
   const grand = { general: [0, 0, 0], twin: [0, 0, 0], single: [0, 0, 0] };
   for (const c of cols) for (let m = 0; m < 3; m++) {
     grand[c][m] = subtotal[c][m] + pfRows.reduce((t, p) => t + p[c][m], 0);
   }
-  const selTotals = (block) => ({
-    general: modePick(mode, ...block.general),
-    twin: modePick(mode, ...block.twin),
-    single: modePick(mode, ...block.single),
-  });
-  const grandSelected = selTotals(grand);
+  const grandSelected = { general: 0, twin: 0, single: 0 };
+  for (const c of cols) {
+    grandSelected[c] = subtotalSelected[c] + pfSelRows.reduce((t, p) => t + p[c], 0);
+  }
   const finalEstimate = roomPick(room, grandSelected.general, grandSelected.twin, grandSelected.single);
 
   return {
     rows,
-    subtotal: { ...subtotal, selected: selTotals(subtotal) },
+    subtotal: { ...subtotal, selected: subtotalSelected },
     grandTotal: { ...grand, selected: grandSelected },
     finalEstimate,
     indices: { drugAdmin: drugAdminIdx, pfStart, pharmStart, pharmEnd },

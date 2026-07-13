@@ -106,6 +106,7 @@ export async function buildEstimate(input) {
 
   // 8. drivers
   const drivers = resolveDrivers(svcBasisRow, {
+    los_basis: controls.los_basis ?? 'P50', los_manual: controls.los_manual,
     icu_basis: controls.icu_basis ?? 'P50', icu_manual: controls.icu_manual,
     ward_basis: controls.ward_basis ?? 'P50', ward_manual: controls.ward_manual,
     ot_hours_basis: controls.ot_hours_basis ?? 'P50', ot_hours_manual: controls.ot_hours_manual,
