@@ -35,12 +35,8 @@ jobs:
               if grep -q '^PORT=' .env; then sed -i 's/^PORT=.*/PORT=4200/' .env; else echo 'PORT=4200' >> .env; fi
             fi
             npm ci --omit=dev
-            if pm2 describe fc-builder-api-dev >/dev/null 2>&1; then
-              pm2 restart fc-builder-api-dev --update-env
-            else
-              pm2 start src/index.js --name fc-builder-api-dev
-            fi
-            pm2 save
+            pm2 restart fc-builder-api-dev --update-env || pm2 start src/index.js --name fc-builder-api-dev
+            pm2 save || true
             sleep 3
             curl -sf localhost:4200/health || (pm2 logs fc-builder-api-dev --lines 30 --nostream; exit 1)
             echo "dev deploy OK"
