@@ -337,6 +337,54 @@ export function buildImplantSelection(ws, estimate, L) {
 }
 
 /* ------------------------------------------------------------------ */
+/**
+ * "Robotic Data" provenance block (manager i14): from how many historical
+ * cases the robotic data comes, whether robotic is applied, and the charge
+ * value actually used in this estimate. Shared by BOTH generation paths
+ * (dynamic Estimate Summary here; template-replay bands in bands.js).
+ * Returns null when the estimate has no robotic relevance — non-robotic
+ * workbooks are unchanged.
+ */
+export function roboticProvenance(estimate) {
+  const ctx = estimate.resolved_context ?? {};
+  const robo = ctx.robotic ?? {};
+  const rate = robo.presence_rate ?? 0;
+  // the robotic charge row is the roboticControlled procedure line item
+  const row = (estimate.line_items ?? []).find((r) => /ROBO/i.test(r.name ?? ''));
+  if (!row && !(rate > 0)) return null;
+
+  const basis = robo.basis ?? ctx.payer_bases?.service_basis?.selected_basis ?? '';
+  const N = robo.basis_case_count ?? ctx.payer_bases?.service_basis?.case_count ?? null;
+  // exact count when the engine provides it; otherwise derived from the
+  // presence rate over the same basis cohort (rate = n/N so the round-trip
+  // reproduces the exact integer) — NEVER an invented figure
+  const exact = robo.cases_with_robotic != null;
+  const n = exact ? robo.cases_with_robotic : (N != null ? Math.round((rate / 100) * N) : null);
+  const pct = Math.round(rate * 10) / 10;
+  const seen = n != null && N != null
+    ? `${n} of ${N} ${basis} cases (${pct}%)${exact ? '' : ' — derived from presence rate'}`
+    : `${pct}% of ${basis || 'cohort'} cases`;
+  const applied = robo.selection === 'Yes' ? 'Yes' : robo.selection === 'No' ? 'No' : 'Auto (not applied)';
+  const roomKey = ctx.room_key ?? (ctx.room_type ?? 'Single').toLowerCase();
+  const inr = (x) => (x == null ? '—' : '₹' + Number(x).toLocaleString('en-IN'));
+
+  const rows = [
+    ['Robotic charge seen in', seen],
+    ['Robotic applied', applied],
+  ];
+  if (row) {
+    rows.push(['Robotic charge (this estimate)', row.selected?.[roomKey] ?? 0]);
+    const r = row.rate ?? {};
+    rows.push(['Robotic tariff rate (Gen / Twin / Single)', `${inr(r.general)} / ${inr(r.twin)} / ${inr(r.single)}`]);
+  } else {
+    rows.push(['Robotic charge (this estimate)', 'Not a line item in this estimate']);
+  }
+  rows.push(['Source', `Presence measured over the ${basis || 'selected'} basis of the family cohort` +
+    (N != null ? ` (${N} cases` + (ctx.cohort_case_count != null && ctx.cohort_case_count !== N ? `; full cohort ${ctx.cohort_case_count} cases)` : ')') : '')]);
+  return { rows };
+}
+
+/* ------------------------------------------------------------------ */
 export function buildEstimateSummary(ws, estimate, L) {
   [24, 18, 4, 20, 18, 14, 14, 4, 30, 16].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
   const ctx = estimate.resolved_context;
@@ -400,6 +448,19 @@ export function buildEstimateSummary(ws, estimate, L) {
   // context note
   ws.getCell('D4').value = `Cohort: ${ctx.cohort_case_count} historical cases (${ctx.family}); basis ${ctx.payer_bases?.service_basis?.selected_basis} — ${ctx.payer_bases?.service_basis?.reason ?? ''}`;
   ws.getCell('D4').style = { ...F.body };
+  // Robotic Data provenance (manager i14) — only for robotic-relevant estimates;
+  // sits directly below the drivers panel (I6 header + 12 rows -> ends row 18)
+  const robo = roboticProvenance(estimate);
+  if (robo) {
+    ws.getCell('I20').value = 'Robotic Data'; ws.getCell('I20').style = { ...F.sub, border };
+    robo.rows.forEach(([label, v], i) => {
+      const r = 21 + i;
+      ws.getCell(r, 9).value = label; ws.getCell(r, 9).style = { ...F.body, border };
+      const c = ws.getCell(r, 10);
+      c.value = v; c.style = { ...F.body, border };
+      if (typeof v === 'number') c.numFmt = F.money;
+    });
+  }
 }
 
 /* ------------------------------------------------------------------ */

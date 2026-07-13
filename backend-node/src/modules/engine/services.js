@@ -95,17 +95,30 @@ export function splitRoboticOptional(optional, procedureCode) {
   return { optional: rest, roboticRows: robotic };
 }
 
-/** Robotic presence = MAX presence among robotic signal rows (BUILD_SPEC §3f). */
-export function roboticPresenceRate(statsRows, procedureCode) {
-  let max = 0;
+/**
+ * Robotic presence = MAX presence among robotic signal rows (BUILD_SPEC §3f).
+ * Returns the rate plus the exact case counts behind it (workbook provenance):
+ * { rate, case_count, basis_case_count } — counts are null when no robotic
+ * signal row exists in the basis cohort.
+ */
+export function roboticPresenceInfo(statsRows, procedureCode) {
+  let best = null;
   for (const r of statsRows) {
     if (isRemoveCategory(r.fc_estimate_bucket, r.grouping)) continue;
     const robotic = isRoboticText(r.item_code, r.item_name, r.grouping, r.fc_estimate_bucket);
     if (!robotic) continue;
     if (r.item_code !== procedureCode && TEMPLATE_EXCLUDED_SERVICE_CODES.has(r.item_code)) continue;
-    max = Math.max(max, r.case_presence_rate ?? 0);
+    if (!best || (r.case_presence_rate ?? 0) > (best.case_presence_rate ?? 0)) best = r;
   }
-  return max;
+  return {
+    rate: best?.case_presence_rate ?? 0,
+    case_count: best?.case_count ?? null,
+    basis_case_count: best?.basis_case_count ?? null,
+  };
+}
+
+export function roboticPresenceRate(statsRows, procedureCode) {
+  return roboticPresenceInfo(statsRows, procedureCode).rate;
 }
 
 export function roboticDefaultSelection(mode, presenceRate, threshold = 90) {

@@ -163,6 +163,8 @@ export async function buildServiceStats(cohorts, tariffCd = 'TR1') {
         item_name: m?.item_name || list[0].name,
         fc_estimate_bucket: m?.fc_estimate_bucket || 'unmapped',
         grouping: m?.grouping || '',
+        case_count: list.length,        // admissions (this basis) where the item appears
+        basis_case_count: n,            // total admissions in this basis cohort
         case_presence_rate: n ? (list.length / n) * 100 : 0,
         quantity_p25: qq.p25, quantity_p50: qq.p50, quantity_p75: qq.p75,
         amount_cash_typical: aq.p50,

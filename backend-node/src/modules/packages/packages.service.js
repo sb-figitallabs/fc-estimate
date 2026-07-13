@@ -107,16 +107,29 @@ function shape(row) {
  */
 async function withCleanTexts(pkg) {
   if (!pkg) return pkg;
-  try {
-    const { rows } = await query(
-      `SELECT inclusions_text_clean, exclusions_text_clean
-       FROM fc.package_master WHERE tariff_code = $1 AND package_code = $2`,
-      [pkg.tariff_code, pkg.package_code]);
-    if (rows[0]) {
-      pkg.inclusions_text_clean = rows[0].inclusions_text_clean;
-      pkg.exclusions_text_clean = rows[0].exclusions_text_clean;
-    }
-  } catch { /* columns not bootstrapped yet — additive fields, omit */ }
+  // Widest column set first; fall back to the older set so lookups keep
+  // working when inclusions_clean_variants has not been bootstrapped yet.
+  const attempts = [
+    'inclusions_text_clean, exclusions_text_clean, inclusions_clean_variants',
+    'inclusions_text_clean, exclusions_text_clean',
+  ];
+  for (const cols of attempts) {
+    try {
+      const { rows } = await query(
+        `SELECT ${cols}
+         FROM fc.package_master WHERE tariff_code = $1 AND package_code = $2`,
+        [pkg.tariff_code, pkg.package_code]);
+      if (rows[0]) {
+        pkg.inclusions_text_clean = rows[0].inclusions_text_clean;
+        pkg.exclusions_text_clean = rows[0].exclusions_text_clean;
+        // per-variant clean texts (JSONB array aligned with inclusions_variants)
+        if (rows[0].inclusions_clean_variants != null) {
+          pkg.inclusions_clean_variants = rows[0].inclusions_clean_variants;
+        }
+      }
+      break;
+    } catch { /* columns not bootstrapped yet — try narrower set / omit */ }
+  }
   return pkg;
 }
 

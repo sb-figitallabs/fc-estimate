@@ -13,7 +13,7 @@ import {
 } from './artifacts.js';
 import {
   cleanServiceRows, splitCleanedRows, prioritizeOptionalRows, splitRoboticOptional,
-  roboticPresenceRate, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
+  roboticPresenceInfo, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
   isRemoveCategory,
 } from './services.js';
 import {
@@ -153,7 +153,8 @@ export async function buildEstimate(input) {
   const prioritized = prioritizeOptionalRows(optionalRaw);
   const procedureCode = cohortDef.procedure?.code ?? null;
   const { optional, roboticRows } = splitRoboticOptional(prioritized, procedureCode);
-  const roboticPresence = roboticPresenceRate(svcStatsForBasis, procedureCode);
+  const roboticInfo = roboticPresenceInfo(svcStatsForBasis, procedureCode);
+  const roboticPresence = roboticInfo.rate;
   const roboticSelection = controls.robotic && controls.robotic !== 'auto'
     ? (controls.robotic === 'yes' ? 'Yes' : 'No')
     : roboticDefaultSelection('auto', roboticPresence);
@@ -316,7 +317,16 @@ export async function buildEstimate(input) {
       room_type: isDaycare ? 'Daycare (room N/A)' : room,  // display label
       room_key: room.toLowerCase(),                        // machine key into selected{general,twin,single}
       daycare: isDaycare,
-      robotic: { selection: roboticSelection, presence_rate: roboticPresence },
+      robotic: {
+        selection: roboticSelection,
+        presence_rate: roboticPresence,
+        // exact provenance counts (manager i14): robotic charge seen in
+        // cases_with_robotic of basis_case_count admissions of the selected
+        // service basis — null when no robotic signal row exists in history
+        cases_with_robotic: roboticInfo.case_count,
+        basis_case_count: roboticInfo.basis_case_count ?? (cohorts[svcBasis]?.length ?? null),
+        basis: svcBasis,
+      },
       ot_slot: lineItems.rows.find((r) => r.name === 'OT Charges')?.otSlot,
     },
     drivers,
