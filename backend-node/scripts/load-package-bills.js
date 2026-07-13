@@ -200,6 +200,13 @@ async function streamCsvGz(filePath, expectedHeader, onDataRow) {
 /* ------------------------------------------------------------ S3 download */
 
 function downloadAll() {
+  // Prefer the repo-shipped copies (data/records/, delivered by the dev deploy)
+  // — no AWS credentials needed on the box. S3 remains the fallback source.
+  const localDir = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data', 'records');
+  if ([...BILL_FILES, DETL_FILE].every((f) => fs.existsSync(path.join(localDir, f)))) {
+    console.log(`[local] using repo data at ${localDir}`);
+    return localDir;
+  }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pkg-bills-'));
   for (const f of [...BILL_FILES, DETL_FILE]) {
     const dest = path.join(dir, f);
