@@ -5,7 +5,7 @@
 import { query } from '../../db/pool.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
 import { payorBucketCounts, resolveBasis } from '../resolve/payerBasis.js';
-import { getCohort, applyCareControls } from './cohort.js';
+import { getCohort, applyCareControls, roboticBaseOf } from './cohort.js';
 import {
   fetchCohortRows, basisCohorts, buildBasisSummary, buildServiceStats,
   buildPharmacyStats, buildActualBasisMetrics, buildPfPayorSummary,
@@ -88,6 +88,37 @@ export async function buildEstimate(input) {
   const basisRowOf = (label) => basisSummary.find((b) => b.basis_label === label);
   const svcBasisRow = basisRowOf(svcBasis);
   const pharmBasisRow = basisRowOf(pharmBasis);
+
+  // 6b. robotic-redirect suggestion (manager approved): GIPSA/Non-GIPSA insurers
+  // historically price robotic procedures as the conventional base family's
+  // package + a robotic add-on charge. When the robotic cohort is insurance-thin
+  // (< 5 cases in the target bucket) but the base family's bucket cohort is
+  // solid (>= 5), surface a one-click switch suggestion. Additive field —
+  // reuses the payorBucketCounts already computed for the basis; only ONE extra
+  // count query (the base family's cohort) when the payor/family gate matches.
+  const suggestions = [];
+  const roboticBaseFamily = roboticBaseOf(cohortDef.family);
+  if (roboticBaseFamily && (target === 'GIPSA Insurance' || target === 'Non-GIPSA Insurance')) {
+    const roboticCases = counts.counts[target] || 0;
+    if (roboticCases < 5) {
+      try {
+        const baseDef = await getCohort(roboticBaseFamily);
+        const baseCounts = await payorBucketCounts(baseDef.whereSql, baseDef.params);
+        const baseCases = baseCounts.counts[target] || 0;
+        if (baseCases >= 5) {
+          suggestions.push({
+            type: 'robotic_redirect',
+            base_family: roboticBaseFamily,
+            base_label: baseDef.templateName,
+            payor_bucket: target,
+            message: `${target} historically prices this as ${baseDef.templateName} + robotic add-on`,
+            robotic_cases: roboticCases,
+            base_cases: baseCases,
+          });
+        }
+      } catch { /* best-effort suggestion — never blocks the build */ }
+    }
+  }
 
   // 7. stats + reference lookups
   const [svcStats, pharmMap, svcMap] = await Promise.all([
@@ -315,6 +346,7 @@ export async function buildEstimate(input) {
     warnings,
     unresolved_items: [],
   };
+  if (suggestions.length) estimate.suggestions = suggestions; // additive — absent when not applicable
 
   // 17. insurance settlement: insurer share vs patient share (itemized claim)
   if (input.insurance && input.payment.payor_bucket !== 'Cash') {

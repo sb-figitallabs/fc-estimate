@@ -200,6 +200,24 @@ const SUBLIMIT_RISK = {
   lscs_caesarean: { level: 'high', groups: ['maternity'] },
 };
 
+/**
+ * Robotic family → conventional base family (manager-approved robotic redirect).
+ * Insurers (GIPSA / Non-GIPSA) historically price robotic procedures as the
+ * conventional base package + a robotic add-on charge, so when the robotic
+ * cohort is insurance-thin the engine suggests switching to the base family
+ * with robotic='yes'.
+ */
+export const ROBOTIC_BASE_FAMILY = {
+  robotic_tkr_unilateral_right: 'total_knee_replacement_unilateral',
+  robotic_tkr_unilateral_left: 'total_knee_replacement_unilateral',
+  robotic_tkr_bilateral: 'total_knee_replacement_bilateral',
+};
+
+/** Conventional base family key for a robotic family, or null if not robotic. */
+export function roboticBaseOf(family) {
+  return ROBOTIC_BASE_FAMILY[family] ?? null;
+}
+
 /** Public registry view for UI/API consumers. */
 export function listFamilies() {
   return Object.values(FAMILIES).map((f) => ({

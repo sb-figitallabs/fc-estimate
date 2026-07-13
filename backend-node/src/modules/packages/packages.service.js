@@ -42,6 +42,27 @@ function shape(row) {
   };
 }
 
+/**
+ * Additive patient-facing rewrite columns. They live on fc.package_master
+ * (base table of the runtime view; populated by scripts/rewrite-inclusions.js)
+ * and are fetched separately + defensively so lookups keep working before the
+ * columns are bootstrapped. Originals stay untouched as the audit copy.
+ */
+async function withCleanTexts(pkg) {
+  if (!pkg) return pkg;
+  try {
+    const { rows } = await query(
+      `SELECT inclusions_text_clean, exclusions_text_clean
+       FROM fc.package_master WHERE tariff_code = $1 AND package_code = $2`,
+      [pkg.tariff_code, pkg.package_code]);
+    if (rows[0]) {
+      pkg.inclusions_text_clean = rows[0].inclusions_text_clean;
+      pkg.exclusions_text_clean = rows[0].exclusions_text_clean;
+    }
+  } catch { /* columns not bootstrapped yet — additive fields, omit */ }
+  return pkg;
+}
+
 /** Direct lookup by code, then exact name. Returns runtime row or null. */
 export async function lookupPackage({ tariff_code, package_code, package_name, organization_cd }) {
   if (!tariff_code) return null;
@@ -51,7 +72,7 @@ export async function lookupPackage({ tariff_code, package_code, package_name, o
       `SELECT ${RUNTIME_COLS} FROM fc.v_package_runtime_lookup
        WHERE tariff_code = $1 AND package_code = $2 AND ${orgClause(organization_cd, 3)}
        LIMIT 1`, params);
-    if (rows[0]) return shape(rows[0]);
+    if (rows[0]) return withCleanTexts(shape(rows[0]));
   }
   if (package_name) {
     const params = [tariff_code, package_name, ...(organization_cd ? [organization_cd] : [])];
@@ -59,7 +80,7 @@ export async function lookupPackage({ tariff_code, package_code, package_name, o
       `SELECT ${RUNTIME_COLS} FROM fc.v_package_runtime_lookup
        WHERE tariff_code = $1 AND upper(package_name) = upper($2) AND ${orgClause(organization_cd, 3)}
        LIMIT 1`, params);
-    if (rows[0]) return shape(rows[0]);
+    if (rows[0]) return withCleanTexts(shape(rows[0]));
   }
   return null;
 }

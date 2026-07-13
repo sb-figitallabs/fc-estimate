@@ -95,6 +95,9 @@ export function computeLineItems(ctx) {
   const rows = [];
   const rateOf = (code) => rates.get(code) || {};
   const svcOf = (code) => svc.get(code) || {};
+  // Rate entry was back-filled from the TR1 (cash) tariff because the insurer's
+  // org tariff had no usable rate — surface it on the row so the UI can mark it.
+  const tr1Flag = (r) => (r && r.tr1_fallback ? { tr1_rate: true } : {});
 
   /** template row: qty percentiles × per-room rate */
   const template = (name, bucket, sub, code, { roboticControlled = false, how = 'Auto-Included', source = 'Template' } = {}) => {
@@ -107,7 +110,7 @@ export function computeLineItems(ctx) {
       return guard(code, v);
     };
     return push({
-      name, bucket, sub, source, how, code,
+      name, bucket, sub, source, how, code, ...tr1Flag(r),
       qty: { selected: modePick(mode, q.low, q.typ, q.high), ...q },
       rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
       cells: {
@@ -126,7 +129,7 @@ export function computeLineItems(ctx) {
       : { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 };
     const mk = (days, rate) => guard(code, days * (rate ?? 0));
     return push({
-      name, bucket, sub, source: 'Logic', how, code,
+      name, bucket, sub, source: 'Logic', how, code, ...tr1Flag(r),
       qty: { selected: d.selected, low: d.p25, typ: d.p50, high: d.p75 },
       rate: rr,
       cells: {
@@ -148,7 +151,7 @@ export function computeLineItems(ctx) {
     const r = rateOf(code);
     const mk = (rate) => guard(code, rate ?? 0);
     return push({
-      name, bucket, sub, source: 'Logic', how: 'Fixed 1', code,
+      name, bucket, sub, source: 'Logic', how: 'Fixed 1', code, ...tr1Flag(r),
       qty: { selected: 1, low: 1, typ: 1, high: 1 },
       rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
       cells: {
@@ -198,6 +201,7 @@ export function computeLineItems(ctx) {
       push({
         name: 'Bed Charges - Ward', bucket: 'Room Charges', sub: 'Ward Care', source: 'Logic',
         how: 'Ward days x room rate', code: 'ROOM_BED',
+        ...(rateOf('ROM0001').tr1_fallback || rateOf('ROM0024').tr1_fallback || rateOf('ROM0036').tr1_fallback ? { tr1_rate: true } : {}),
         qty: { selected: d.selected, low: d.p25, typ: d.p50, high: d.p75 }, rate: bedRates,
         cells: {
           general: [mk(d.p25, bedRates.general), mk(d.p50, bedRates.general), mk(d.p75, bedRates.general)],
@@ -265,7 +269,7 @@ export function computeLineItems(ctx) {
       const mk = (rate) => guard('HSP0047', qty * (rate ?? 0));
       push({
         name: 'MLC Charges', bucket: 'Bedside Services', sub: 'Administrative', source: 'Logic',
-        how: 'Applied only when MLC input is Yes', code: 'HSP0047',
+        how: 'Applied only when MLC input is Yes', code: 'HSP0047', ...tr1Flag(r),
         qty: { selected: qty, low: qty, typ: qty, high: qty },
         rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
         cells: {
@@ -294,6 +298,7 @@ export function computeLineItems(ctx) {
     push({
       name: 'Bed Charges - Ward', bucket: 'Room Charges', sub: 'Ward Care', source: 'Logic',
       how: 'Ward days x room rate', code: 'ROOM_BED',
+      ...(rateOf('ROM0001').tr1_fallback || rateOf('ROM0024').tr1_fallback || rateOf('ROM0036').tr1_fallback ? { tr1_rate: true } : {}),
       qty: { selected: d.selected, low: d.p25, typ: d.p50, high: d.p75 }, rate: bedRates,
       cells: {
         general: [mk(d.p25, bedRates.general), mk(d.p50, bedRates.general), mk(d.p75, bedRates.general)],
@@ -471,7 +476,7 @@ export function computeLineItems(ctx) {
     const bucket = inc && hasRealBucket ? a.bucket : 'Optional Add-Ons';
     push({
       name: a.name, bucket, sub: a.grouping, source: 'Advanced',
-      how: 'Include / Exclude selection', code: a.code, addOn: true, included: inc,
+      how: 'Include / Exclude selection', code: a.code, addOn: true, included: inc, ...tr1Flag(r),
       qty: { selected: modePick(mode, q.low, q.typ, q.high), ...q },
       rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
       cells: {
