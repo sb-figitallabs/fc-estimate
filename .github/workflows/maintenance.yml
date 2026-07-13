@@ -1,0 +1,33 @@
+name: Maintenance script (dev box)
+
+# Runs a one-off script from backend-node/scripts on the EC2 dev checkout
+# (~/fc-estimate-dev has the .env with DB + Gemini credentials).
+# Trigger: gh workflow run maintenance.yml -f script=rewrite-inclusions.js
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'Script file under backend-node/scripts to run'
+        required: true
+        default: rewrite-inclusions.js
+
+concurrency:
+  group: maintenance-dev
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run script on EC2 dev checkout over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 120m
+          script_stop: true
+          script: |
+            cd ~/fc-estimate-dev/backend-node
+            node scripts/${{ inputs.script }}
