@@ -26,13 +26,70 @@ const orgClause = (org, i) => (org
   ? `organization_cd = $${i}`
   : `(organization_cd IS NULL OR organization_cd = '')`);
 
+/**
+ * Map one room_rates_jsonb tier label to the engine's room key.
+ * Observed room_category_code / source_field variants per tariff:
+ *  - TR287 Star / TR290 GIPSA: multi_sharing_general_ward,
+ *    twin_sharing_ac_single_room_non_ac, deluxe_single_room_ac_private
+ *  - TR289 Bajaj: general, twin, single_deluxe
+ *  - TR285 Medi Assist: general, twin, single (+ general_ward_add_on /
+ *    twin_sharing_add_on / single_room_add_on per-day add-ons — skipped)
+ *  - TR201 ICICI: general, triple, twin, single_ac (triple ignored)
+ * ICCU / suite / standalone-deluxe tiers are ignored — the engine only
+ * prices general/twin/single today. Order matters: TWIN before SINGLE
+ * (twin_sharing_ac_single_room_non_ac), SEMI before PRIVATE (Semi Private).
+ */
+function roomKeyForTier(label) {
+  const k = String(label || '').toUpperCase();
+  if (!k) return null;
+  if (/ADD[\s_-]?ON|PER[\s_-]?DAY/.test(k)) return null; // per-day room add-ons, not tier prices
+  if (/ICCU|SUITE|TRIPLE/.test(k)) return null;          // tiers the engine doesn't price yet
+  if (/TWIN|SEMI/.test(k)) return 'twin';
+  if (/SINGLE|PRIVATE/.test(k)) return 'single';         // single_deluxe, single_ac, deluxe_single_room_ac_private
+  if (/GENERAL|MULTI|WARD|\bGW\b/.test(k)) return 'general';
+  return null;
+}
+
+/**
+ * Additive per-room package amounts derived from room_rates_jsonb
+ * (fc.package_master → fc.v_package_runtime_lookup). Only tiers that are
+ * present and > 0 appear; returns null (field omitted) when the jsonb is
+ * missing, empty, or unmappable — callers fall back to scalar package_amount.
+ */
+export function deriveRoomAmounts(raw) {
+  let rates = raw;
+  if (typeof rates === 'string') { try { rates = JSON.parse(rates); } catch { return null; } }
+  if (!rates) return null;
+  const out = {};
+  const put = (roomKey, amount) => {
+    const amt = Number(amount);
+    if (roomKey && Number.isFinite(amt) && amt > 0 && out[roomKey] == null) out[roomKey] = amt;
+  };
+  if (Array.isArray(rates)) {
+    for (const rr of rates) {
+      if (!rr || typeof rr !== 'object') continue;
+      const roomKey = [rr.room_category_code, rr.source_field, rr.room_category_label, rr.room_category, rr.category]
+        .map(roomKeyForTier).find(Boolean);
+      put(roomKey, rr.amount ?? rr.rate);
+    }
+  } else if (typeof rates === 'object') {
+    // defensive: plain { "GENERAL WARD": 103084, ... } map form
+    for (const [k, v] of Object.entries(rates)) {
+      put(roomKeyForTier(k), (v && typeof v === 'object') ? (v.amount ?? v.rate) : v);
+    }
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 function shape(row) {
   if (!row) return null;
   const {
     runtime_status, can_generate_estimate, primary_blocker, warning_reason, ...pkg
   } = row;
+  const room_amounts = deriveRoomAmounts(row.room_rates_jsonb);
   return {
     ...pkg,
+    ...(room_amounts ? { room_amounts } : {}), // additive — absent when jsonb missing/empty
     readiness: {
       runtime_status,
       can_generate_estimate,

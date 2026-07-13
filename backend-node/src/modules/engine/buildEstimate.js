@@ -363,13 +363,19 @@ export async function buildEstimate(input) {
     }
   }
 
+  // Package tariff differs per room type: use the room's tier from
+  // room_amounts (derived from fc.package_master.room_rates_jsonb), falling
+  // back to the scalar package_amount (= General Ward tier) when the jsonb
+  // is missing/empty for that tier.
+  const pkgAmountForRoom = (pkg, rk) => Number(pkg?.room_amounts?.[rk] ?? pkg?.package_amount) || 0;
+
   // 18. package coverage: per-line inclusion status + dual grand totals
   // (only when a package resolved and curated inclusion text exists)
   if (packageOffer?.package?.inclusions_text) {
     try {
       const model = parseCoverage(packageOffer.package.inclusions_text, packageOffer.package.exclusions_text);
       const coverage = applyCoverage(estimate, model);
-      const pkgAmt = Number(packageOffer.package.package_amount) || 0;
+      const pkgAmt = pkgAmountForRoom(packageOffer.package, room.toLowerCase());
       coverage.totals.package_amount = pkgAmt;
       coverage.totals.with_package = Math.round((pkgAmt + coverage.totals.payable_extras) * 100) / 100;
       packageOffer.coverage = coverage;
@@ -377,7 +383,7 @@ export async function buildEstimate(input) {
       if (input.insurance && input.payment.payor_bucket !== 'Cash') {
         try {
           packageOffer.insurance_settlement = settleWithPackage({
-            packageAmount: packageOffer.package.package_amount,
+            packageAmount: pkgAmt,
             coverageRows: coverage.rows,
             lineItems: lineItems.rows,
             roomKey: room.toLowerCase(),
@@ -402,14 +408,16 @@ export async function buildEstimate(input) {
     const model = packageOffer?.coverage && !packageOffer.coverage.error
       ? parseCoverage(packageOffer.package.inclusions_text, packageOffer.package.exclusions_text)
       : null;
-    const pkgAmt = Number(packageOffer?.package?.package_amount) || 0;
     estimate.by_room = {};
     for (const rk of ['general', 'twin', 'single']) {
+      // per-room package tariff (room_rates_jsonb tier, scalar fallback)
+      const pkgAmt = pkgAmountForRoom(packageOffer?.package, rk);
       const entry = { final_estimate: round2(lineItems.grandTotal.selected[rk] ?? 0) };
       if (model) {
         try {
           const cov = applyCoverage({ ...estimate, resolved_context: { ...estimate.resolved_context, room_key: rk } }, model);
           entry.coverage = {
+            package_amount: pkgAmt,
             with_package: round2(pkgAmt + cov.totals.payable_extras),
             payable_extras: round2(cov.totals.payable_extras),
             rows: cov.rows.map((r) => ({ index: r.index, status: r.status, final_amount: r.final_amount })),

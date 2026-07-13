@@ -464,7 +464,9 @@ export function buildPackageComparison(ws, estimate) {
   const num = (v) => (v == null ? null : Number(v));
   const cov = po.coverage && !po.coverage.error ? po.coverage : null;
   setRow(ws, 3, ['Comparison', 'Amount (₹)'], F.sub);
-  setRow(ws, 4, ['Hospital Package Amount', num(p.package_amount)], F.result, [2]);
+  // per-room tariff: coverage totals carry the selected room's tier amount
+  // (room_rates_jsonb); fall back to the scalar (General Ward) package_amount
+  setRow(ws, 4, ['Hospital Package Amount', num(cov?.totals?.package_amount ?? p.package_amount)], F.result, [2]);
   setRow(ws, 5, ['Itemized Estimate — WITHOUT package'], F.result);
   ws.getCell('B5').value = fml(`'Estimate Summary'!E2`, estimate.final_estimate);
   ws.getCell('B5').style = { ...F.result, border, numFmt: F.money };
