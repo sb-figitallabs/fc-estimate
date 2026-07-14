@@ -29,8 +29,5 @@ jobs:
           command_timeout: 120m
           script_stop: true
           script: |
-            export PATH=$PATH:$HOME/.local/bin
-            command -v aws >/dev/null 2>&1 || pip3 install --user --quiet awscli || python3 -m pip install --user --quiet awscli
-            aws --version
             cd ~/fc-estimate-dev/backend-node
             node scripts/${{ inputs.script }}
