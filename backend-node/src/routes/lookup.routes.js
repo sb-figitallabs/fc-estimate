@@ -5,6 +5,7 @@ import { listFamilies, getCohort, applyCareControls, familyPayorCounts } from '.
 import { fetchCohortRows, basisCohorts, buildBasisSummary } from '../modules/engine/artifacts.js';
 import { payorBucketCounts, resolveBasis, resolveComponentBases } from '../modules/resolve/payerBasis.js';
 import { quartilesInclusive, round2 } from '../modules/engine/stats.js';
+import { packageGate } from '../modules/packages/packageGate.js';
 
 const router = Router();
 
@@ -66,6 +67,25 @@ and an empty array if nothing fits. Never invent family keys not in the list.`;
       }));
 
     res.json({ text, matches });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/lookup/package-gate  body: { treatment, payor_bucket, organization_cd? }
+ * Intake classification chain (manager 14-Jul): payor → tariff → package in
+ * master? → details usable? → FC history? → route. Every step is returned
+ * with its status and evidence so the flow can be audited even when data is
+ * missing — this endpoint explains, it never estimates.
+ */
+router.post('/package-gate', async (req, res, next) => {
+  try {
+    const treatment = typeof req.body?.treatment === 'string' ? req.body.treatment.trim() : '';
+    const payorBucket = typeof req.body?.payor_bucket === 'string' ? req.body.payor_bucket.trim() : '';
+    if (!treatment) return res.status(400).json({ error: 'treatment is required' });
+    if (!payorBucket) return res.status(400).json({ error: 'payor_bucket is required' });
+    const organizationCd = typeof req.body?.organization_cd === 'string' && req.body.organization_cd.trim()
+      ? req.body.organization_cd.trim() : undefined;
+    res.json(await packageGate({ treatment, payorBucket, organizationCd }));
   } catch (err) { next(err); }
 });
 
