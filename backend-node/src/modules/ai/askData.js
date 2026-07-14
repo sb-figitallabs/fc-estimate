@@ -69,6 +69,8 @@ const SQL_TOOL = {
 
 const WRITE_WORDS = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|call|vacuum|refresh|reindex|listen|notify|prepare|execute|deallocate|lock|comment|security|import)\b/i;
 
+const res2text = (res) => (res.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('');
+
 function assertReadOnly(sql) {
   const s = String(sql || '').trim().replace(/;+\s*$/, '');
   if (!s) throw new Error('empty sql');
@@ -148,7 +150,28 @@ Answer rules:
     const parts = res.candidates?.[0]?.content?.parts ?? [];
     const calls = parts.filter((p) => p.functionCall);
     if (!calls.length || i === MAX_TOOL_CALLS) {
-      const answer = parts.map((p) => p.text ?? '').join('').trim();
+      let answer = parts.map((p) => p.text ?? '').join('').trim();
+      // Completeness pass: with tool results in play the model reliably drops
+      // the how/why half of multi-part questions — have it audit its own
+      // answer against the question once, without tools.
+      if (answer && queries.length) {
+        try {
+          const check = await ai.models.generateContent({
+            model: MODEL,
+            contents: [
+              ...contents,
+              { role: 'model', parts: [{ text: answer }] },
+              {
+                role: 'user',
+                parts: [{ text: `Audit your answer against the user's question: "${question}". If it already addresses EVERY part (including any how/why part — use the engine-logic notes for those), reply with exactly: SAME. Otherwise reply with the complete corrected answer and nothing else.` }],
+              },
+            ],
+            config: { systemInstruction: system, temperature: 0.2, maxOutputTokens: 2048 },
+          });
+          const audited = (res2text(check) || '').trim();
+          if (audited && audited !== 'SAME') answer = audited;
+        } catch { /* keep the unaudited answer */ }
+      }
       return { answer: answer || 'I could not produce an answer from the data.', queries };
     }
     contents.push({ role: 'model', parts });
