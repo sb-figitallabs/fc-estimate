@@ -250,8 +250,8 @@ export function computeLineItems(ctx) {
       push({
         name: 'OT Charges', bucket: 'Procedure / OT Charges', sub: 'OT Charges', source: 'Logic',
         how: 'Selected OT duration snapped to the nearest supported tariff OT slot using the normal or emergency ladder',
-        code: slot.item_code ?? null,
-        otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal' },
+        code: slot.item_code ?? null, ...(slot.tr1_fallback ? { tr1_rate: true } : {}),
+        otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal', ...(slot.tr1_fallback ? { tr1_fallback: true } : {}) },
         qty: { selected: drivers.ot.selected, low: drivers.ot.p25, typ: drivers.ot.p50, high: drivers.ot.p75 },
         rate: { general: slot.general ?? 0, twin: slot.twin ?? 0, single: slot.single ?? 0 },
         cells: { general: mkCells('general'), twin: mkCells('twin'), single: mkCells('single') },
@@ -366,8 +366,8 @@ export function computeLineItems(ctx) {
     push({
       name: 'OT Charges', bucket: 'Procedure / OT Charges', sub: 'OT Charges', source: 'Logic',
       how: 'Selected OT duration snapped to the nearest supported tariff OT slot using the normal or emergency ladder',
-      code: slot.item_code ?? null,
-      otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal' },
+      code: slot.item_code ?? null, ...(slot.tr1_fallback ? { tr1_rate: true } : {}),
+      otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal', ...(slot.tr1_fallback ? { tr1_fallback: true } : {}) },
       qty: { selected: drivers.ot.selected, low: drivers.ot.p25, typ: drivers.ot.p50, high: drivers.ot.p75 },
       rate: { general: slot.general ?? 0, twin: slot.twin ?? 0, single: slot.single ?? 0 },
       cells: { general: mkCells('general'), twin: mkCells('twin'), single: mkCells('single') },

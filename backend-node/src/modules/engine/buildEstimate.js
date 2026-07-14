@@ -127,7 +127,25 @@ export async function buildEstimate(input) {
   const catalogNames = await pharmacyCatalogNames();
   const pharmacyStats = buildPharmacyStats(cohorts, catalogNames);
   const rates = await tariffRateLookup(tariff.tariff_cd);
-  const otSlotRows = await buildOtSlotMatrix([tariff.tariff_cd]);
+  // OT slot ladder: many insurer tariffs carry no "OT - X HOURS" rows at all,
+  // which used to leave the ladder empty and silently price OT Charges at ₹0
+  // (verified on dev: TR289 Bajaj → ot_slot.hours null, OT row ₹0). Mirror
+  // tariffRateLookup's conservative TR1 fallback: ONLY when the org tariff has
+  // zero slot rows, price OT on the TR1 (cash) ladder and flag + warn.
+  let otSlotRows = await buildOtSlotMatrix(tariff.tariff_cd === 'TR1' ? ['TR1'] : [tariff.tariff_cd, 'TR1']);
+  let otSlotTariff = tariff.tariff_cd;
+  if (tariff.tariff_cd !== 'TR1') {
+    const orgSlots = otSlotRows.filter((s) => s.tariff_code === tariff.tariff_cd);
+    if (orgSlots.length) {
+      otSlotRows = orgSlots;
+    } else {
+      otSlotRows = otSlotRows.filter((s) => s.tariff_code === 'TR1').map((s) => ({ ...s, tr1_fallback: true }));
+      otSlotTariff = 'TR1';
+      if (otSlotRows.length) {
+        warnings.push(`Tariff ${tariff.tariff_cd} has no OT hour-slot rates — OT Charges priced on the TR1 (cash) OT slot ladder.`);
+      }
+    }
+  }
   const otSlots = new Map(otSlotRows.map((s) => [`${s.ot_mode}|${s.ot_slot_hours}`, s]));
   const otLadder = [...new Set(otSlotRows.filter((s) => s.ot_mode === 'normal').map((s) => s.ot_slot_hours))];
 
@@ -314,11 +332,83 @@ export async function buildEstimate(input) {
         final_estimate_with_historic_pf: Math.round((lineItems.finalEstimate - logicPf + (histPf.p50 ?? 0)) * 100) / 100,
       };
 
+  // resolved_context.flow (manager model #5, 14-Jul): "the entire flow should
+  // only be selected once we have the exact payer AND the treatment". Today the
+  // family (treatment) picks the cohort/template and the payer picks tariff,
+  // rates and statistical basis — this additive block EXPLAINS every one of
+  // those flow decisions so the payer+treatment → flow choice is fully
+  // transparent and auditable, even where the logic is still family-driven.
+  const basisOut = (b) => ({
+    basis: b.selected_basis,
+    status: b.status,
+    confidence: b.confidence,
+    ...(b.case_count != null ? { case_count: b.case_count } : {}),
+    reason: b.reason,
+  });
+  const flow = {
+    treatment: {
+      family: cohortDef.family,
+      label: cohortDef.templateName,
+      family_kind: cohortDef.familyKind,
+    },
+    payer: {
+      payor_bucket: target,
+      organization_cd: input.payment.organization_cd ?? null,
+      organization_name: tariff.organization_name ?? null,
+    },
+    tariff: {
+      tariff_cd: tariff.tariff_cd,
+      tariff_name: tariff.tariff_name,
+      source: tariff.source,               // cash_default | organization_tariff_mapping
+      pricing_mode: pricingMode,
+    },
+    rates: {
+      service_rates_tariff: tariff.tariff_cd,
+      tr1_fallback_item_count: rates.tr1FallbackCount ?? 0, // org-tariff gaps back-filled from TR1
+      ot_slot_ladder_tariff: otSlotTariff,
+      ot_slot_ladder_tr1_fallback: otSlotTariff !== tariff.tariff_cd,
+    },
+    cohort: {
+      scope: 'clinical_family_all_payors', // membership is treatment-wide; the payer enters via component_basis
+      case_count: cohortRows.length,
+      payor_mix: counts.counts,
+      care_filtered: cohortDef._careFiltered === true,
+    },
+    component_basis: {
+      mode: auto ? 'auto' : 'manual_override',
+      services: basisOut(bases.service_basis),
+      pharmacy: basisOut(bases.pharmacy_basis),
+      professional_fees: basisOut(bases.pf_basis),
+      drivers: {
+        basis: svcBasis,
+        note: 'LOS / ICU / ward / OT-hour / cath-hour percentiles ride the service basis',
+      },
+    },
+    template: {
+      layout: autoTemplate ? 'auto_from_cohort' : 'fixed_workbook_parity',
+      ...(autoTemplate ? { derived_from_basis: svcBasis } : {}),
+      row_flags: cohortDef.rows ?? {},
+    },
+    billing_route: {
+      itemized: true, // the itemized (open-billing) estimate is always produced
+      package_status: packageOffer?.status ?? 'no_package_exists',
+      package_source: packageOffer?.source ?? null,
+      package_code: packageOffer?.package?.package_code ?? null,
+      package_tariff: packageOffer?.package?.tariff_code ?? null,
+    },
+    robotic: {
+      selection: roboticSelection,
+      redirect_suggested: suggestions.some((s) => s.type === 'robotic_redirect'),
+      ...(roboticBaseFamily ? { base_family: roboticBaseFamily } : {}),
+    },
+  };
+
   const estimate = {
     resolved_context: {
       payor_bucket: input.payment.payor_bucket,
       pricing_mode: pricingMode,
       tariff,
+      flow,
       family: cohortDef.family,
       family_kind: cohortDef.familyKind,
       cohort_case_count: cohortRows.length,
