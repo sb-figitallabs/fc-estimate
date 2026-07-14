@@ -1,15 +1,31 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
 import { geminiJson } from '../modules/ai/gemini.js';
-import { listFamilies, getCohort, applyCareControls } from '../modules/engine/cohort.js';
+import { listFamilies, getCohort, applyCareControls, familyPayorCounts } from '../modules/engine/cohort.js';
 import { fetchCohortRows, basisCohorts, buildBasisSummary } from '../modules/engine/artifacts.js';
 import { payorBucketCounts, resolveBasis, resolveComponentBases } from '../modules/resolve/payerBasis.js';
 import { quartilesInclusive, round2 } from '../modules/engine/stats.js';
 
 const router = Router();
 
-/** GET /api/lookup/families — clinical families (drives the UI dropdown; daycare ⇒ no room selection) */
-router.get('/families', (_req, res) => res.json(listFamilies()));
+/**
+ * GET /api/lookup/families — clinical families (drives the UI dropdown; daycare
+ * ⇒ no room selection). Each family additionally carries `payor_counts`
+ * ({ "Cash": n, "GIPSA Insurance": n, ... } — cached, see familyPayorCounts)
+ * so the UI can hint per-payor history; purely informational, nothing is
+ * filtered. Fail-open: on any counts failure the families are served without
+ * payor_counts — this endpoint must never break.
+ */
+router.get('/families', async (_req, res) => {
+  const families = listFamilies();
+  try {
+    const counts = await familyPayorCounts();
+    if (counts) {
+      return res.json(families.map((f) => (counts[f.family] ? { ...f, payor_counts: counts[f.family] } : f)));
+    }
+  } catch { /* fall through — serve without payor_counts */ }
+  res.json(families);
+});
 
 /**
  * POST /api/lookup/resolve-treatment  body: { text }

@@ -4,6 +4,7 @@
  * export_robotic_tkr_fc_estimate_builder.py (see spec/BUILD_SPEC.md).
  */
 import GENERATED_FAMILIES from './generatedFamilies.js';
+import { query } from '../../db/pool.js';
 
 const FAMILIES = {
   robotic_tkr_unilateral_right: {
@@ -229,6 +230,81 @@ export function listFamilies() {
     validated: f.family === 'robotic_tkr_unilateral_right', // exact workbook parity
     sublimit_risk: SUBLIMIT_RISK[f.family] ?? { level: 'low', groups: [] },
   }));
+}
+
+// ——— Per-family payor-bucket case counts (dropdown hints) ————————————————
+// Powers the additive `payor_counts` field on GET /api/lookup/families so the
+// UI can show "· 248 Cash cases" / "· no GIPSA Insurance history" per option.
+//
+// Efficiency: ~170 families would mean ~170 GROUP BYs per request if done
+// naively. Instead:
+//  (a) every family whose whereSql is EXACTLY the curated-template pattern
+//      `curated_template_names_jsonb ? '<Template>'` (all 158 generated
+//      families + general_medical_management) is covered by ONE scan that
+//      unnests the jsonb array and groups by (template, payor_bucket);
+//  (b) the ~11 hand-written families with custom whereSql run their own
+//      grouped count once (in parallel).
+// The whole result is cached module-level with a TTL: computed lazily on the
+// first /families request, served stale while a background refresh runs.
+const TEMPLATE_WHERE_RE = /^curated_template_names_jsonb \? '([^']+)'$/;
+const PAYOR_COUNTS_TTL_MS = 15 * 60 * 1000;
+let payorCountsCache = null;    // { at: epoch-ms, data: { [family]: { [bucket]: n } } }
+let payorCountsInflight = null; // de-dupes concurrent refreshes
+
+async function computeFamilyPayorCounts() {
+  const byTemplate = new Map(); // template string → [family keys]
+  const customDefs = [];
+  for (const def of Object.values(FAMILIES)) {
+    const m = (def.params ?? []).length === 0 ? TEMPLATE_WHERE_RE.exec(def.whereSql) : null;
+    if (m) byTemplate.set(m[1], [...(byTemplate.get(m[1]) ?? []), def.family]);
+    else customDefs.push(def);
+  }
+
+  // Every registered family gets an entry — an empty object means "counts are
+  // known and this family has NO history in any bucket" (amber hint in the UI).
+  const data = {};
+  for (const def of Object.values(FAMILIES)) data[def.family] = {};
+  const add = (family, bucket, n) => { if (bucket) data[family][bucket] = n; };
+
+  const [tmpl, ...custom] = await Promise.all([
+    // one scan covers all curated-template families
+    query(
+      `SELECT t.template, m.payor_bucket, count(*)::int AS n
+       FROM mart.main_table m, jsonb_array_elements_text(m.curated_template_names_jsonb) t(template)
+       GROUP BY 1, 2`
+    ),
+    // custom whereSql values are trusted server-side registry literals (never
+    // user input) — interpolated exactly the way artifacts.js does.
+    ...customDefs.map((def) =>
+      query(
+        `SELECT payor_bucket, count(*)::int AS n
+         FROM mart.main_table WHERE ${def.whereSql} GROUP BY payor_bucket`,
+        def.params
+      ).then(({ rows }) => ({ family: def.family, rows }))
+    ),
+  ]);
+  for (const r of tmpl.rows) {
+    for (const fam of byTemplate.get(r.template) ?? []) add(fam, r.payor_bucket, r.n);
+  }
+  for (const c of custom) for (const r of c.rows) add(c.family, r.payor_bucket, r.n);
+  return data;
+}
+
+/**
+ * Cached per-family payor-bucket counts, or null when no computation has ever
+ * succeeded (e.g. DB down) — callers must treat null as "omit payor_counts".
+ * Stale-while-refresh: an expired cache is still served while the refresh runs.
+ */
+export function familyPayorCounts() {
+  const fresh = payorCountsCache && Date.now() - payorCountsCache.at < PAYOR_COUNTS_TTL_MS;
+  if (!fresh && !payorCountsInflight) {
+    payorCountsInflight = computeFamilyPayorCounts()
+      .then((data) => { payorCountsCache = { at: Date.now(), data }; return data; })
+      .catch(() => null) // fail-open: next request retries
+      .finally(() => { payorCountsInflight = null; });
+  }
+  if (payorCountsCache) return Promise.resolve(payorCountsCache.data);
+  return payorCountsInflight ?? Promise.resolve(null);
 }
 
 export async function getCohort(procedure) {
