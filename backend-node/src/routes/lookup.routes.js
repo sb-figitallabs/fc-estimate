@@ -90,6 +90,27 @@ router.post('/package-gate', async (req, res, next) => {
 });
 
 /**
+ * POST /api/lookup/ask  body: { question, history?, context?, screenshot? }
+ * Ask-AI over the engine's data: Gemini with a READ-ONLY SQL tool (single
+ * SELECT statements inside READ ONLY transactions, 12s timeout, 50-row cap).
+ * Answers questions the page context can't — package catalogs, past billed
+ * cases, tariffs, cohort history. Never writes.
+ */
+router.post('/ask', async (req, res, next) => {
+  try {
+    const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
+    if (!question) return res.status(400).json({ error: 'question is required' });
+    const { askData } = await import('../modules/ai/askData.js');
+    res.json(await askData({
+      question,
+      history: Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [],
+      context: req.body?.context,
+      screenshot: req.body?.screenshot,
+    }));
+  } catch (err) { next(err); }
+});
+
+/**
  * GET /api/lookup/stay-stats?procedure=&payor_bucket=
  * Lightweight cohort stay stats (LOS / ward / ICU day + OT hour quartiles) for the
  * resolved payer basis — lets the UI show the typical stay before a full build.
