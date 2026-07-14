@@ -1,7 +1,7 @@
 import { query } from '../../db/pool.js';
 import { geminiJson } from '../ai/gemini.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
-import { aliasCandidates } from './packages.service.js';
+import { aliasCandidates, deriveRoomAmounts } from './packages.service.js';
 import { listFamilies } from '../engine/cohort.js';
 
 /**
@@ -64,6 +64,34 @@ async function billedActuals(packageName) {
     [packageName]
   );
   return rows;
+}
+
+/**
+ * Related billed package history — the manager's "widen to related patterns"
+ * view (URSL + DJ STENTING, CYSTOSCOPY URS…, PCNL…, DJ STENT REMOVAL for a
+ * "dj stenting" intake): every billed package whose name shares meaningful
+ * words with the treatment, with case counts and actual-bill percentiles.
+ */
+const RELATED_STOPWORDS = new Set(['AND', 'WITH', 'THE', 'FOR', 'OF', 'LEFT', 'RIGHT', 'UNILATERAL', 'BILATERAL', 'PA', 'PB']);
+async function relatedBilledHistory(treatment) {
+  const words = (treatment || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ')
+    .split(/\s+/).filter((w) => w.length >= 3 && !RELATED_STOPWORDS.has(w));
+  if (!words.length) return { total_cases: 0, cash_like_cases: 0, groups: [] };
+  const cond = words.map((_, i) => `upper(package_name) LIKE $${i + 1}`).join(' OR ');
+  const params = words.map((w) => `%${w}%`);
+  const { rows } = await query(
+    `SELECT package_name, p_tariff_cd, payer_type, count(*)::int n,
+            round(percentile_cont(0.5) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50
+     FROM fc.package_bill_admissions
+     WHERE package_name IS NOT NULL AND (${cond})
+     GROUP BY 1, 2, 3 ORDER BY 4 DESC LIMIT 40`,
+    params
+  );
+  const total = rows.reduce((t, r) => t + r.n, 0);
+  const cashLike = rows
+    .filter((r) => (r.p_tariff_cd || '').trim().toUpperCase() === 'TR1' || /GENERAL|PRIVATE/i.test(r.payer_type || ''))
+    .reduce((t, r) => t + r.n, 0);
+  return { total_cases: total, cash_like_cases: cashLike, groups: rows };
 }
 
 /** Does any tariff at all carry a package matching this text? (context when this tariff has none) */
@@ -130,24 +158,35 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
   }
 
   // ── 3. package details usable? ───────────────────────────────────────────
+  // The scalar package_amount can be a ₹10 TR1 placeholder while
+  // room_rates_jsonb still carries the REAL per-room prices (URO5443: general
+  // ₹70k … suite ₹1.01L) — so per-room rates rescue an unusable scalar price.
   const top = candidates[0] ?? null;
   let priceUsable = false;
   let inclusionsPresent = false;
   if (top) {
     const amount = Number(top.package_amount ?? 0);
-    priceUsable = amount >= PLACEHOLDER_PRICE_MAX;
+    const scalarUsable = amount >= PLACEHOLDER_PRICE_MAX;
+    const roomAmounts = deriveRoomAmounts(top.room_rates_jsonb);
+    const roomUsable = !!roomAmounts && Object.values(roomAmounts).some((v) => Number(v) >= PLACEHOLDER_PRICE_MAX);
+    priceUsable = scalarUsable || roomUsable;
     inclusionsPresent = !!(top.inclusions_text_clean || top.inclusions_text);
     steps.push(step(
       'package_details', 'Package details usable', priceUsable && inclusionsPresent ? 'ok' : 'warn',
       [
-        priceUsable ? `Price ₹${amount.toLocaleString('en-IN')}` : `Price ₹${amount} is a placeholder — NOT usable`,
+        scalarUsable ? `Price ₹${amount.toLocaleString('en-IN')}`
+          : roomUsable ? `Scalar price ₹${amount} is a placeholder — but per-room package rates exist`
+            : `Price ₹${amount} is a placeholder — NOT usable`,
         inclusionsPresent ? 'inclusions documented' : 'inclusions missing',
       ].join(' · '),
       {
         package_amount: top.package_amount, price_usable: priceUsable,
+        scalar_price_usable: scalarUsable,
+        room_amounts: roomAmounts ?? null,
         inclusions_present: inclusionsPresent,
+        inclusions_preview: (top.inclusions_text_clean || top.inclusions_text || '').slice(0, 600) || null,
+        exclusions_preview: (top.exclusions_text_clean || top.exclusions_text || '').slice(0, 600) || null,
         documentation_status: top.documentation_status ?? null,
-        room_rates_present: !!top.room_rates_jsonb,
       }
     ));
   } else {
@@ -194,6 +233,10 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
     { matches: families }
   ));
 
+  // related billed history (the manager's "widen to related patterns" block) —
+  // computed for every gate run; the UI shows it behind a button.
+  const related = await relatedBilledHistory(treatment).catch(() => ({ total_cases: 0, cash_like_cases: 0, groups: [] }));
+
   // ── route decision ────────────────────────────────────────────────────────
   let decision, reason;
   if (!tariffOk) {
@@ -214,5 +257,5 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
       : `Package exists with a usable price but only ${actualCasesThisTariff} billed case(s) on ${tariff.tariff_cd} — review against related history.`;
   }
 
-  return { inputs, steps, route: { decision, reason }, generated_at: new Date().toISOString() };
+  return { inputs, steps, route: { decision, reason }, related, generated_at: new Date().toISOString() };
 }
