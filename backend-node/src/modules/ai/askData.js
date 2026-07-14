@@ -115,9 +115,12 @@ ${SCHEMA_DOC}
 
 ${LOGIC_DOC}
 
-Answer rules: ground every figure in the context or your query results — never invent. Amounts in Indian format (₹1,24,500).
-Keep answers short and concrete (2–6 sentences or a short list). If the data genuinely isn't there, say so plainly.
-Never mention SQL or table names in the answer — speak in product terms (packages, past cases, tariffs).`;
+Answer rules:
+- Answer EVERY part of the question. How/why questions are answered from the engine-logic notes above; data questions from queries. A multi-part question gets a multi-part answer.
+- Names in the catalog are formal: expand abbreviations before searching (TKR → TOTAL KNEE REPLACEMENT, THR → TOTAL HIP REPLACEMENT, LSCS → CAESAREAN, URSL → URETEROSCOPIC LITHOTRIPSY, PCNL → PERCUTANEOUS NEPHROLITHOTOMY, CAG → coronary angiogram, D&C → dilatation curettage). If a search returns nothing, RETRY with broader single-word ILIKE patterns before concluding something does not exist — never conclude absence from one narrow query.
+- Ground every figure in the context or your query results — never invent. Round amounts to whole rupees in Indian format (₹1,24,500).
+- Keep answers short and concrete (2–6 sentences or a short list). If the data genuinely isn't there after broad retries, say so plainly.
+- Never mention SQL or table names in the answer — speak in product terms (packages, past cases, tariffs).`;
 
   const contents = [];
   if (context) {
