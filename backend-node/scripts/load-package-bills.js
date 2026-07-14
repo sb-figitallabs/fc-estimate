@@ -4,7 +4,8 @@
  * so that for admissions we already track in mart.main_table we know the
  * FINAL PACKAGE BILL amount + full line detail, excluding food & beverage.
  *
- * Sources (downloaded via `aws s3 cp` using the EC2 instance role):
+ * Sources (downloaded via a built-in SigV4-signed HTTPS GET — no aws CLI —
+ * using env credentials or the EC2 instance role over IMDSv2):
  *   s3://hospital-os-prod/fc-data/records/bills_may_dec25.csv.gz  (~265k line rows)
  *   s3://hospital-os-prod/fc-data/records/bills_jan26.csv.gz      (~250k line rows)
  *   s3://hospital-os-prod/fc-data/records/pkg_detl.csv.gz         (12,648 admission rows)
@@ -53,10 +54,13 @@
  * F&B share, line-vs-declared reconciliation).
  */
 import 'dotenv/config';
-import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import zlib from 'node:zlib';
 import { pool, query } from '../src/db/pool.js';
 
@@ -207,11 +211,138 @@ async function streamCsvGz(filePath, expectedHeader, onDataRow) {
   return delivered;
 }
 
-/* ------------------------------------------------------------ S3 download */
+/* ---------------------------------- S3 download (dependency-free SigV4) --- */
 
-/** @returns {{ dir: string, isTemp: boolean }} isTemp=true ONLY for the S3
- *  tempdir — cleanup must never touch the repo-local data/records dir. */
-function downloadAll() {
+const S3_HOST = 'hospital-os-prod.s3.ap-south-1.amazonaws.com';
+const S3_KEY_PREFIX = '/fc-data/records/';
+const AWS_REGION = 'ap-south-1';
+/** SHA-256 of the empty string — the payload hash for a bodiless GET. */
+const EMPTY_SHA256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+
+const sha256Hex = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
+const hmac = (key, s) => crypto.createHmac('sha256', key).update(s, 'utf8').digest();
+
+/** Tiny HTTP helper used ONLY for IMDSv2 (link-local, plain HTTP). */
+function imdsRequest(method, reqPath, headers = {}, timeoutMs = 1500) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      { host: '169.254.169.254', method, path: reqPath, headers, timeout: timeoutMs },
+      (res) => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c) => { body += c; });
+        res.on('end', () => {
+          if (res.statusCode === 200) resolve(body);
+          else reject(new Error(`IMDS ${method} ${reqPath} → HTTP ${res.statusCode}`));
+        });
+      }
+    );
+    req.on('timeout', () => req.destroy(new Error(`IMDS ${method} ${reqPath} timed out after ${timeoutMs}ms`)));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+/**
+ * Credential chain: explicit env vars → EC2 instance role via IMDSv2.
+ * IMDS calls use short timeouts so a non-EC2 box fails fast with a clear hint.
+ * @returns {Promise<{accessKeyId: string, secretAccessKey: string, sessionToken: string|null}>}
+ */
+async function resolveAwsCredentials() {
+  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    console.log('[aws] using credentials from environment variables');
+    return {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      sessionToken: process.env.AWS_SESSION_TOKEN || null,
+    };
+  }
+  try {
+    const token = await imdsRequest('PUT', '/latest/api/token', {
+      'X-aws-ec2-metadata-token-ttl-seconds': '21600',
+    });
+    const authed = { 'X-aws-ec2-metadata-token': token };
+    const role = (await imdsRequest('GET', '/latest/meta-data/iam/security-credentials/', authed))
+      .trim().split('\n')[0];
+    if (!role) throw new Error('instance has no IAM role attached');
+    const creds = JSON.parse(
+      await imdsRequest('GET', `/latest/meta-data/iam/security-credentials/${role}`, authed)
+    );
+    if (!creds.AccessKeyId || !creds.SecretAccessKey) {
+      throw new Error(`IMDS returned no keys for role ${role} (Code=${creds.Code ?? '?'})`);
+    }
+    console.log(`[aws] using EC2 instance-role credentials (role: ${role})`);
+    return { accessKeyId: creds.AccessKeyId, secretAccessKey: creds.SecretAccessKey, sessionToken: creds.Token || null };
+  } catch (e) {
+    return fail(
+      'no AWS credentials available. Set AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY ' +
+      '(and AWS_SESSION_TOKEN if temporary), or run on an EC2 instance whose IAM role ' +
+      `grants s3:GetObject on s3://hospital-os-prod/fc-data/*. IMDSv2 lookup failed: ${e.message}`
+    );
+  }
+}
+
+/**
+ * AWS Signature V4 signed GET for one object, streaming the body straight to
+ * `destPath` (no buffering). Non-200 → reject with status + body snippet.
+ * @returns {Promise<number>} bytes written
+ */
+function s3Download(creds, file, destPath) {
+  // Canonical URI: URI-encode each path segment, but not the slashes.
+  // (Our keys are [A-Za-z0-9_.-] only, so this is defensive.)
+  const objectPath = S3_KEY_PREFIX + file;
+  const canonicalUri = objectPath.split('/').map(encodeURIComponent).join('/');
+
+  const amzDate = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); // YYYYMMDDTHHMMSSZ
+  const dateStamp = amzDate.slice(0, 8);
+
+  const headers = {
+    host: S3_HOST,
+    'x-amz-content-sha256': EMPTY_SHA256,
+    'x-amz-date': amzDate,
+  };
+  if (creds.sessionToken) headers['x-amz-security-token'] = creds.sessionToken;
+
+  // Canonical request → string to sign → signature (per the SigV4 spec).
+  const signedNames = Object.keys(headers).sort();
+  const canonicalHeaders = signedNames.map((h) => `${h}:${String(headers[h]).trim()}\n`).join('');
+  const signedHeaders = signedNames.join(';');
+  const canonicalRequest = ['GET', canonicalUri, '', canonicalHeaders, signedHeaders, EMPTY_SHA256].join('\n');
+  const scope = `${dateStamp}/${AWS_REGION}/s3/aws4_request`;
+  const stringToSign = ['AWS4-HMAC-SHA256', amzDate, scope, sha256Hex(canonicalRequest)].join('\n');
+  const kDate = hmac(`AWS4${creds.secretAccessKey}`, dateStamp);
+  const kRegion = hmac(kDate, AWS_REGION);
+  const kService = hmac(kRegion, 's3');
+  const kSigning = hmac(kService, 'aws4_request');
+  const signature = hmac(kSigning, stringToSign).toString('hex');
+  headers.authorization =
+    `AWS4-HMAC-SHA256 Credential=${creds.accessKeyId}/${scope}, ` +
+    `SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  return new Promise((resolve, reject) => {
+    const req = https.get({ host: S3_HOST, path: canonicalUri, headers, timeout: 60000 }, (res) => {
+      if (res.statusCode !== 200) {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c) => { if (body.length < 2048) body += c; });
+        res.on('end', () =>
+          reject(new Error(`S3 GET ${objectPath} → HTTP ${res.statusCode}\n${body.slice(0, 500)}`))
+        );
+        return;
+      }
+      pipeline(res, fs.createWriteStream(destPath)).then(
+        () => resolve(fs.statSync(destPath).size),
+        reject
+      );
+    });
+    req.on('timeout', () => req.destroy(new Error(`S3 GET ${objectPath} timed out (idle > 60s)`)));
+    req.on('error', reject);
+  });
+}
+
+/** @returns {Promise<{ dir: string, isTemp: boolean }>} isTemp=true ONLY for
+ *  the S3 tempdir — cleanup must never touch the repo-local data/records dir. */
+async function downloadAll() {
   // Prefer the repo-shipped copies (data/records/, delivered by the dev deploy)
   // — no AWS credentials needed on the box. S3 remains the fallback source.
   const localDir = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data', 'records');
@@ -219,21 +350,12 @@ function downloadAll() {
     console.log(`[local] using repo data at ${localDir}`);
     return { dir: localDir, isTemp: false };
   }
+  const creds = await resolveAwsCredentials();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pkg-bills-'));
   for (const f of [...BILL_FILES, DETL_FILE]) {
-    const dest = path.join(dir, f);
     console.log(`[s3] downloading ${S3_PREFIX}${f}`);
-    const res = spawnSync('aws', ['s3', 'cp', `${S3_PREFIX}${f}`, dest], {
-      stdio: ['ignore', 'inherit', 'pipe'],
-      encoding: 'utf8',
-    });
-    if (res.error && res.error.code === 'ENOENT') {
-      fail('aws CLI not found. This script is meant to run on the EC2 maintenance runner, whose instance role grants read access to s3://hospital-os-prod. Install/configure the AWS CLI to run elsewhere.');
-    }
-    if (res.error) fail(`aws s3 cp failed to spawn: ${res.error.message}`);
-    if (res.status !== 0) {
-      fail(`aws s3 cp exited ${res.status} for ${f} — check that the instance role / credentials can read s3://hospital-os-prod/fc-data/records/.\n${res.stderr || ''}`);
-    }
+    const bytes = await s3Download(creds, f, path.join(dir, f));
+    console.log(`[s3] ${f}: ${bytes.toLocaleString('en-US')} bytes`);
   }
   return { dir, isTemp: true };
 }
@@ -350,7 +472,7 @@ async function main() {
     console.warn('WARNING: --limit without --dry-run TRUNCATEs and loads PARTIAL data. Re-run without --limit for a full load.');
   }
 
-  const { dir, isTemp } = downloadAll();
+  const { dir, isTemp } = await downloadAll();
 
   // Non-dry-run: open the transaction BEFORE parsing so line batches can be
   // inserted mid-stream (bounded memory) inside the same TRUNCATE-and-reload
