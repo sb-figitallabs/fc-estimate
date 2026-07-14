@@ -16,8 +16,8 @@ q1.rows.forEach((r) => console.log(' ', r.template, '->', r.n));
 
 const q2 = await c.query(`
   SELECT count(*) n,
-         round(avg(total_amount_excluding_food_and_beverage_and_returns_plus_drug_admin)) avg_bill,
-         round(percentile_cont(0.5) WITHIN GROUP (ORDER BY total_amount_excluding_food_and_beverage_and_returns_plus_drug_admin)::numeric) p50
+         round(avg(fc_actual_total_excluding_fnb_and_returns_plus_cash_drug_admin)) avg_bill,
+         round(percentile_cont(0.5) WITHIN GROUP (ORDER BY fc_actual_total_excluding_fnb_and_returns_plus_cash_drug_admin)::numeric) p50
   FROM mart.main_table WHERE curated_template_names_jsonb ? 'Minor Endourological Procedure'`);
 console.log('Minor Endourological Procedure cohort:', JSON.stringify(q2.rows[0]));
 
@@ -30,7 +30,7 @@ q3.rows.forEach((r) => console.log(' ', r.n, 'x', String(r.s).slice(0, 100)));
 
 const q4 = await c.query(`
   SELECT coalesce(surgery_names,'-') s, count(*) n,
-         round(avg(total_amount_excluding_food_and_beverage_and_returns_plus_drug_admin)) avg_bill
+         round(avg(fc_actual_total_excluding_fnb_and_returns_plus_cash_drug_admin)) avg_bill
   FROM mart.main_table
   WHERE surgery_names ILIKE '%dj sten%' OR surgery_names ILIKE '%double j%' OR surgery_names ILIKE '%djs%'
   GROUP BY 1 ORDER BY 2 DESC LIMIT 15`);
