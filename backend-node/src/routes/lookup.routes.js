@@ -202,6 +202,51 @@ async function bucketAuditContext(req) {
 router.get('/bucket-provenance', async (req, res, next) => {
   try {
     const ctx = await bucketAuditContext(req);
+
+    // Package bills — converted actuals (manager i16): the P25/P50/P75 of the
+    // ACTUAL final package-bill amounts (package + exclusions, excl. F&B) for
+    // this family cohort, per payor group, so a quoted package amount can be
+    // validated against what converted bills really closed at. Value per case:
+    // final_pkg_bill_excl_fnb (line-derived) when present, else pkg_gross_amount.
+    // whereSql references unqualified mart columns (package_name also exists on
+    // the actuals table), so it is applied inside a subquery over the bare
+    // mart.main_table — same trusted-registry-literal interpolation as above.
+    // Additive + fail-open: environments without fc.package_bill_admissions
+    // simply omit the block; this must never break bucket-provenance.
+    let packageBills = null;
+    try {
+      const { rows } = await query(
+        `SELECT payor_bucket, count(*)::int AS cases,
+                percentile_cont(0.25) WITHIN GROUP (ORDER BY final_amt) AS p25,
+                percentile_cont(0.5)  WITHIN GROUP (ORDER BY final_amt) AS p50,
+                percentile_cont(0.75) WITHIN GROUP (ORDER BY final_amt) AS p75
+         FROM (
+           SELECT m.payor_bucket,
+                  COALESCE(NULLIF(a.final_pkg_bill_excl_fnb, 0), a.pkg_gross_amount) AS final_amt
+           FROM fc.package_bill_admissions a
+           JOIN (SELECT admission_no, payor_bucket FROM mart.main_table WHERE ${ctx.def.whereSql}) m
+             ON m.admission_no = a.ip_no
+           WHERE a.open_bill_or_pkg_bill = 'Package Bill'
+         ) t
+         WHERE final_amt > 0
+         GROUP BY payor_bucket
+         ORDER BY cases DESC`,
+        ctx.def.params
+      );
+      packageBills = {
+        total_cases: rows.reduce((s, r) => s + r.cases, 0),
+        groups: rows.map((r) => ({
+          payor_bucket: r.payor_bucket,
+          cases: r.cases,
+          p25: round2(Number(r.p25)),
+          p50: round2(Number(r.p50)),
+          p75: round2(Number(r.p75)),
+        })),
+      };
+    } catch {
+      // actuals table absent on this environment — omit the block
+    }
+
     const buckets = AUDIT_BUCKETS.map((b) => {
       const basisInfo = ctx.bases[basisKeyOf(b.component)];
       const basis = basisInfo.selected_basis;
@@ -230,6 +275,7 @@ router.get('/bucket-provenance', async (req, res, next) => {
       cohort_total_cases: ctx.rows.length,
       bases: { ...ctx.bases, counts: ctx.counts },
       buckets,
+      ...(packageBills ? { package_bills: packageBills } : {}),
     });
   } catch (err) { next(err); }
 });
