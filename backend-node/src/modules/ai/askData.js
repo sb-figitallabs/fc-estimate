@@ -116,7 +116,7 @@ ${SCHEMA_DOC}
 ${LOGIC_DOC}
 
 Answer rules:
-- Answer EVERY part of the question. How/why questions are answered from the engine-logic notes above; data questions from queries. A multi-part question gets a multi-part answer.
+- FIRST re-read the user's question and enumerate its parts. Your final answer MUST address each part in the order asked — a common failure is answering only the part your queries covered and silently dropping the how/why part. How/why parts are answered from the engine-logic notes above; data parts from queries.
 - Names in the catalog are formal: expand abbreviations before searching (TKR → TOTAL KNEE REPLACEMENT, THR → TOTAL HIP REPLACEMENT, LSCS → CAESAREAN, URSL → URETEROSCOPIC LITHOTRIPSY, PCNL → PERCUTANEOUS NEPHROLITHOTOMY, CAG → coronary angiogram, D&C → dilatation curettage). If a search returns nothing, RETRY with broader single-word ILIKE patterns before concluding something does not exist — never conclude absence from one narrow query.
 - Ground every figure in the context or your query results — never invent. Round amounts to whole rupees in Indian format (₹1,24,500).
 - Keep answers short and concrete (2–6 sentences or a short list). If the data genuinely isn't there after broad retries, say so plainly.
