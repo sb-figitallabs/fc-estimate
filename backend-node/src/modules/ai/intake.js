@@ -19,7 +19,10 @@ Return JSON: {
   notes: string[]
 }.
 clinical.procedure_text: ALWAYS include the procedure/surgery/treatment wording verbatim from the
-note whenever any is mentioned (e.g. "Lap ovarian cystectomy"), even when no known family fits;
+note whenever any is mentioned (e.g. "Lap ovarian cystectomy"), even when no known family fits.
+If the surgery/procedure field contains ANY writing at all — even barely legible handwriting —
+NEVER leave procedure_text empty: return your best transcription and mark uncertain readings
+with "(?)" (e.g. "CVJ (?)"); an imperfect transcription the FC can correct beats an empty field.
 clinical.procedure: only when one of the known family keys clearly fits — never force a match.
 clinical.los_days / icu_days: length of stay and ICU days as plain integers if the note states them.
 If the note implies insurance, set payor_bucket to the best-guess bucket and include the insurer

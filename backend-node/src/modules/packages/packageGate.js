@@ -148,18 +148,51 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
   ));
 
   // ── 2. package exists for this tariff? ──────────────────────────────────
+  // Non-surgical admissions ("Medical Management for TBI") must not package-
+  // match — the alias scorer would dredge up unrelated surgical packages.
+  const isMedicalManagement = /\b(medical\s+management|conservative\s+(management|treatment)|observation|medical\s+care)\b/i.test(treatment);
   let candidates = [];
   let elsewhere = [];
-  if (tariffOk) {
+  let ranking = null;
+  if (!tariffOk) {
+    steps.push(step('package_match', 'Package in master catalog', 'skipped', 'Skipped — no tariff resolved'));
+  } else if (isMedicalManagement) {
+    steps.push(step('package_match', 'Package in master catalog', 'skipped',
+      'Skipped — medical-management admission (non-surgical): packages do not apply, use the cohort flow'));
+  } else {
     candidates = await aliasCandidates({ text: treatment, tariff_code: tariff.tariff_cd, organization_cd: organizationCd, limit: 5 });
+    // The word-overlap scorer has no clinical sense (appendicectomy→myomectomy
+    // class of misses) — when several candidates surface, let the AI pick and
+    // demote the rest; a null pick means nothing genuinely fits.
+    if (candidates.length > 1) {
+      try {
+        const pick = await geminiJson(
+          `Raw treatment text: "${treatment}" (tariff ${tariff.tariff_cd}).
+Candidate hospital packages:
+${candidates.map((c, i) => `${i}: [${c.package_code}] ${c.package_name}`).join('\n')}
+Return JSON {"best_index": <int or null if none genuinely matches clinically>, "confidence": "high"|"medium"|"low", "reason": "..."}`,
+          { system: 'You match raw treatment descriptions to hospital package catalog rows. Prefer exact clinical matches; return null when nothing genuinely fits. Never invent packages.' }
+        );
+        ranking = { method: 'ai', confidence: pick?.confidence ?? 'low', reason: pick?.reason ?? '' };
+        if (pick?.best_index == null) {
+          ranking.no_clinical_match = true;
+          candidates = []; // alias hits were noise — treat as no package
+        } else if (candidates[pick.best_index]) {
+          const best = candidates[pick.best_index];
+          candidates = [best, ...candidates.filter((c) => c !== best)];
+        }
+      } catch { ranking = { method: 'alias_score_only' }; }
+    }
     if (!candidates.length) elsewhere = await existsOnOtherTariffs(treatment, tariff.tariff_cd);
     steps.push(step(
       'package_match', 'Package in master catalog', candidates.length ? 'ok' : (elsewhere.length ? 'warn' : 'missing'),
       candidates.length
-        ? `${candidates.length} candidate package${candidates.length === 1 ? '' : 's'} on ${tariff.tariff_cd} — best: [${candidates[0].package_code}] ${candidates[0].package_name}`
-        : elsewhere.length
-          ? `No package on ${tariff.tariff_cd}, but similar packages exist on ${[...new Set(elsewhere.map((e) => e.tariff_code))].join(', ')}`
-          : 'No matching package on any tariff',
+        ? `${candidates.length} candidate package${candidates.length === 1 ? '' : 's'} on ${tariff.tariff_cd} — best: [${candidates[0].package_code}] ${candidates[0].package_name}${ranking?.method === 'ai' ? ` (AI-ranked, ${ranking.confidence})` : ''}`
+        : ranking?.no_clinical_match
+          ? `Alias search found packages but none genuinely matches "${treatment}" clinically — treated as no package`
+          : elsewhere.length
+            ? `No package on ${tariff.tariff_cd}, but similar packages exist on ${[...new Set(elsewhere.map((e) => e.tariff_code))].join(', ')}`
+            : 'No matching package on any tariff',
       {
         candidates: candidates.map((c) => ({
           package_code: c.package_code, package_name: c.package_name,
@@ -169,11 +202,10 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
           fc_template_package_code: c.fc_template_package_code,
           fc_case_count_total: c.fc_case_count_total,
         })),
+        ...(ranking ? { ranking } : {}),
         exists_on_other_tariffs: elsewhere,
       }
     ));
-  } else {
-    steps.push(step('package_match', 'Package in master catalog', 'skipped', 'Skipped — no tariff resolved'));
   }
 
   // ── 3. package details usable? ───────────────────────────────────────────
@@ -262,11 +294,16 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
   if (!tariffOk) {
     decision = 'blocked_no_tariff';
     reason = 'Cannot classify without a tariff — the payor needs an organization mapping first.';
+  } else if (isMedicalManagement) {
+    decision = 'non_package_cohort';
+    reason = 'Medical-management admission — packages do not apply; price from the procedure-family cohort.';
   } else if (!top) {
     decision = 'non_package_cohort';
-    reason = elsewhere.length
-      ? `No package on ${tariff.tariff_cd} (similar packages exist on ${[...new Set(elsewhere.map((e) => e.tariff_code))].join(', ')}) — treat as non-package for this payor.`
-      : 'No matching package on any tariff — non-package flow.';
+    reason = ranking?.no_clinical_match
+      ? `Alias hits on ${tariff.tariff_cd} were not clinically genuine matches — non-package flow.`
+      : elsewhere.length
+        ? `No package on ${tariff.tariff_cd} (similar packages exist on ${[...new Set(elsewhere.map((e) => e.tariff_code))].join(', ')}) — treat as non-package for this payor.`
+        : 'No matching package on any tariff — non-package flow.';
   } else if (priceUsable && actualCasesThisTariff >= HISTORY_MIN_CASES) {
     decision = 'exact_package';
     reason = `Package [${top.package_code}] has a usable price and ${actualCasesThisTariff} billed cases on ${tariff.tariff_cd}.`;
