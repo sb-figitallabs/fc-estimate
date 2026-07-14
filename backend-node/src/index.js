@@ -9,7 +9,9 @@ import lookupRoutes from './routes/lookup.routes.js';
 import packagesRoutes from './routes/packages.routes.js';
 
 const app = express();
-app.use(express.json({ limit: '2mb' }));
+// 20mb (matches the Hospital_OS proxy): admission-note photos and Ask-AI page
+// screenshots ride in as base64 — 2mb silently 413'd real phone photos.
+app.use(express.json({ limit: '20mb' }));
 
 // API docs: Swagger UI at /docs, raw spec at /openapi.json
 const openapi = JSON.parse(fs.readFileSync(new URL('../openapi.json', import.meta.url), 'utf8'));
