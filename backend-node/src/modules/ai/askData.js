@@ -27,6 +27,10 @@ mart.main_table — one row per past admission (the historical cohort base).
   curated_template_names_jsonb (jsonb array of procedure-template names — match with: curated_template_names_jsonb ? 'Template Name',
   or unnest via jsonb_array_elements_text), fc_actual_total_excluding_fnb_and_returns_plus_cash_drug_admin (the bill total used everywhere),
   is_daycare_broad (boolean), los_days, icu_days, ot_hours numeric columns may vary — discover with information_schema when unsure.
+  Template names are FORMAL (e.g. 'TOTAL KNEE REPLACEMENT (TKR) - BILATERAL', 'Robotic TKR Bilateral'). You NEVER know the
+  exact spelling in advance — ALWAYS start with a discovery query, e.g.:
+  SELECT DISTINCT t FROM mart.main_table, jsonb_array_elements_text(curated_template_names_jsonb) t WHERE t ILIKE '%KNEE%' LIMIT 30
+  then use the exact names it returns.
 
 fc.package_master — hospital package catalog per tariff. tariff_code (TR1=cash/KIMS, TR290=GIPSA, TR285/TR287/TR288/TR201/TR289…=insurer tariffs),
   package_code, package_name, package_amount (⚠ ₹10/₹0 = placeholder, not a real price), package_atl_amount, department_name,
@@ -163,7 +167,7 @@ Answer rules:
               { role: 'model', parts: [{ text: answer }] },
               {
                 role: 'user',
-                parts: [{ text: `Audit your answer against the user's question: "${question}". If it already addresses EVERY part (including any how/why part — use the engine-logic notes for those), reply with exactly: SAME. Otherwise reply with the complete corrected answer and nothing else.` }],
+                parts: [{ text: `Audit your answer against the user's question: "${question}". If it already addresses EVERY part (including any how/why part — use the engine-logic notes for those) AND contains no meta commentary (nothing about queries, tools, or instructions), reply with exactly: SAME. Otherwise reply with the complete corrected answer — the polished final text for the user, no meta commentary — and nothing else.` }],
               },
             ],
             config: { systemInstruction: system, temperature: 0.2, maxOutputTokens: 2048 },
@@ -182,9 +186,6 @@ Answer rules:
       queries.push({ sql: String(sql).slice(0, 500), row_count: result.row_count, ...(result.error ? { error: result.error } : {}) });
       responses.push({ functionResponse: { name: 'run_sql', response: result } });
     }
-    // The tool results tend to eclipse the original question — restate it so
-    // multi-part questions (data + how/why) get answered in full.
-    responses.push({ text: `Query results above. When you have what you need, answer the user's FULL question — every part of: "${question}"` });
     contents.push({ role: 'user', parts: responses });
   }
   return { answer: 'I could not produce an answer from the data.', queries };
