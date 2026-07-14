@@ -247,14 +247,46 @@ export async function packageOfferForEstimate({ cohortRows, tariff_cd, organizat
   return await finishOffer(pkg, tariff_cd, organization_cd, 'cohort_dominant');
 }
 
+/**
+ * ACTUAL converted package bills for this package (13-Jul todo: "estimate
+ * range from actual package-bill amounts, excl. F&B"). final_pkg_bill_excl_fnb
+ * = package + billed exclusions minus F&B — what patients really ended up
+ * paying. Fail-open: engines without fc.package_bill_admissions get null.
+ */
+async function billedActualsForPackage(packageName, tariff_code) {
+  try {
+    const { rows } = await query(
+      `SELECT (upper(btrim(p_tariff_cd)) = upper(btrim($2))) AS this_tariff,
+              count(*)::int cases,
+              round(percentile_cont(0.25) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p25,
+              round(percentile_cont(0.5)  WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50,
+              round(percentile_cont(0.75) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p75
+       FROM fc.package_bill_admissions
+       WHERE upper(btrim(package_name)) = upper(btrim($1)) AND final_pkg_bill_excl_fnb IS NOT NULL
+       GROUP BY 1`,
+      [packageName, tariff_code || '']
+    );
+    if (!rows.length) return null;
+    const mine = rows.find((r) => r.this_tariff) ?? null;
+    const all = rows.reduce((t, r) => t + r.cases, 0);
+    return {
+      basis: 'converted package bills (excl. F&B)',
+      this_tariff: mine ? { cases: mine.cases, p25: Number(mine.p25), p50: Number(mine.p50), p75: Number(mine.p75) } : null,
+      all_tariffs_cases: all,
+    };
+  } catch { return null; }
+}
+
 async function finishOffer(pkg, tariff_code, organization_cd, source, candidates) {
   if (!pkg) return { status: 'no_package_exists', source, package: null, ...(candidates ? { candidates } : {}) };
   const history = await packageHistory({ tariff_code, package_code: pkg.package_code, organization_cd });
+  const billed_actuals = await billedActualsForPackage(pkg.package_name, tariff_code);
   return {
     status: pkg.readiness.can_generate_estimate ? 'resolved' : 'not_ready',
     source,
     package: pkg,
     history,
+    ...(billed_actuals ? { billed_actuals } : {}),
     ...(candidates ? { candidates } : {}),
   };
 }
