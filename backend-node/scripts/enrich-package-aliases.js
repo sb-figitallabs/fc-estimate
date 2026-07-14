@@ -19,7 +19,8 @@ async function addAlias(tariff, code, name, aliasText, source, confidence, note)
      SELECT $1, $2, $3, $4, 'name', $5, $6, $7, $8
      WHERE NOT EXISTS (
        SELECT 1 FROM fc.package_alias
-       WHERE tariff_code = $1 AND package_code = $2 AND normalized_alias_text = $7)`,
+       WHERE tariff_code = $1 AND package_code = $2 AND normalized_alias_text = $7)
+     ON CONFLICT (tariff_code, package_code, alias_text, alias_type) DO NOTHING`,
     [tariff, code, name, aliasText, source, confidence, norm(aliasText), note]
   );
   return rowCount;
