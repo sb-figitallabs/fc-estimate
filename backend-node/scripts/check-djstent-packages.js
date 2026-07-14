@@ -1,44 +1,40 @@
-// One-off audit: verify manager's 14-Jul claims about DJ stenting.
-// 1) Does a cash DJ-stenting package exist in the master (with details)?
-// 2) How many package-billed admissions are DJ-stenting-related, and their payor split?
-// 3) Does 'URSL + DJ STENTING' exist as a curated display name, with what counts?
+// One-off audit round 2: DJ-stenting packages + actual package-bill payor split.
 import 'dotenv/config';
 import pg from 'pg';
 
 const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await c.connect();
 
-const tabs = await c.query(`
-  SELECT table_schema || '.' || table_name t FROM information_schema.tables
-  WHERE table_schema IN ('fc','mart') ORDER BY 1`);
-console.log('TABLES:', tabs.rows.map((r) => r.t).join(', '));
+const pm = await c.query(`
+  SELECT tariff_code, package_code, package_name, package_amount
+  FROM fc.package_master
+  WHERE package_name ILIKE '%DJ%STENT%' OR package_code ILIKE 'URO544%'
+  ORDER BY package_code, tariff_code LIMIT 30`);
+console.log('fc.package_master DJ-stent rows (' + pm.rowCount + '):');
+pm.rows.forEach((r) => console.log(' ', r.tariff_code, r.package_code, '|', r.package_name, '| Rs', r.package_amount));
 
-const pkgTables = tabs.rows.map((r) => r.t).filter((t) => /packag/i.test(t) && !/bill/.test(t));
-for (const t of pkgTables) {
-  const cols = await c.query(
-    `SELECT column_name FROM information_schema.columns WHERE table_schema=$1 AND table_name=$2`,
-    t.split('.')
-  );
-  const nameCol = cols.rows.map((r) => r.column_name).find((cn) => /name/i.test(cn));
-  if (!nameCol) continue;
-  const r = await c.query(`SELECT * FROM ${t} WHERE ${nameCol}::text ILIKE '%DJ%STENT%' LIMIT 5`);
-  console.log(`\n${t} rows matching DJ STENT (${r.rowCount}):`);
-  r.rows.forEach((row) => console.log(' ', JSON.stringify(row).slice(0, 400)));
-}
+const cols = await c.query(`
+  SELECT column_name FROM information_schema.columns
+  WHERE table_schema='fc' AND table_name='package_bill_admissions' ORDER BY ordinal_position`);
+console.log('\npackage_bill_admissions columns:', cols.rows.map((r) => r.column_name).join(', '));
+const payorCol = cols.rows.map((r) => r.column_name).find((n) => /payor|payer|tariff/i.test(n));
 
 const pb = await c.query(`
-  SELECT payor_bucket, count(*) n,
+  SELECT ${payorCol} grp, count(*) n,
          round(percentile_cont(0.5) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50
   FROM fc.package_bill_admissions
   WHERE p_tariff_cd ILIKE '%DJ%STENT%' OR p_tariff_cd ILIKE '%URSL%'
-  GROUP BY 1 ORDER BY 2 DESC`);
-console.log('\npackage_bill_admissions where package name mentions DJ STENT / URSL:');
-pb.rows.forEach((r) => console.log(' ', r.payor_bucket, '->', r.n, 'p50', r.p50));
+  GROUP BY 1 ORDER BY 2 DESC LIMIT 15`);
+console.log(`\npackage_bill_admissions DJ-stent/URSL split by ${payorCol}:`);
+pb.rows.forEach((r) => console.log(' ', r.grp, '->', r.n, 'p50', r.p50));
 
-const pbCols = await c.query(`
-  SELECT column_name FROM information_schema.columns
-  WHERE table_schema='fc' AND table_name='package_bill_admissions'`);
-console.log('\npackage_bill_admissions columns:', pbCols.rows.map((r) => r.column_name).join(', '));
+const names = await c.query(`
+  SELECT p_tariff_cd, count(*) n
+  FROM fc.package_bill_admissions
+  WHERE p_tariff_cd ILIKE '%DJ%STENT%' OR p_tariff_cd ILIKE '%URSL%'
+  GROUP BY 1 ORDER BY 2 DESC LIMIT 15`);
+console.log('\ntop billed package names (p_tariff_cd) DJ-stent/URSL:');
+names.rows.forEach((r) => console.log(' ', r.n, 'x', r.p_tariff_cd));
 
 const ursl = await c.query(`
   SELECT t.template, m.payor_bucket, count(*) n
