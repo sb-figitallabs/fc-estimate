@@ -24,6 +24,24 @@ function step(key, title, status, summary, detail) {
   return { key, title, status, summary, ...(detail ? { detail } : null) };
 }
 
+/**
+ * Room prices often live only in the tariff_information markdown table
+ * ("| GENERAL WARD | 70,000 |") while room_rates_jsonb is empty and
+ * package_amount is a ₹10 placeholder — parse them out as the real prices.
+ */
+function parseTariffInfoRooms(text) {
+  const out = {};
+  for (const line of String(text || '').split('\n')) {
+    const m = line.match(/^\s*\|\s*([^|]+?)\s*\|\s*([\d,]+)\s*\|/);
+    if (!m) continue;
+    const label = m[1].trim();
+    const amount = Number(m[2].replace(/,/g, ''));
+    if (/room|category|tariff|detail|---/i.test(label) && !/ward|twin|single|deluxe|suite|general/i.test(label)) continue; // header rows
+    if (Number.isFinite(amount) && amount >= PLACEHOLDER_PRICE_MAX) out[label] = amount;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 /** Same family matcher as /lookup/resolve-treatment — the non-package route. */
 async function familyMatches(text) {
   const families = listFamilies();
@@ -74,8 +92,9 @@ async function billedActuals(packageName) {
  */
 const RELATED_STOPWORDS = new Set(['AND', 'WITH', 'THE', 'FOR', 'OF', 'LEFT', 'RIGHT', 'UNILATERAL', 'BILATERAL', 'PA', 'PB']);
 async function relatedBilledHistory(treatment) {
+  // length >= 2: short clinical tokens ("DJ", "OT") are exactly the meaningful ones
   const words = (treatment || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ')
-    .split(/\s+/).filter((w) => w.length >= 3 && !RELATED_STOPWORDS.has(w));
+    .split(/\s+/).filter((w) => w.length >= 2 && !RELATED_STOPWORDS.has(w));
   if (!words.length) return { total_cases: 0, cash_like_cases: 0, groups: [] };
   const cond = words.map((_, i) => `upper(package_name) LIKE $${i + 1}`).join(' OR ');
   const params = words.map((w) => `%${w}%`);
@@ -167,7 +186,8 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
   if (top) {
     const amount = Number(top.package_amount ?? 0);
     const scalarUsable = amount >= PLACEHOLDER_PRICE_MAX;
-    const roomAmounts = deriveRoomAmounts(top.room_rates_jsonb);
+    // per-room prices: structured jsonb first, else the tariff_information markdown table
+    const roomAmounts = deriveRoomAmounts(top.room_rates_jsonb) ?? parseTariffInfoRooms(top.tariff_information);
     const roomUsable = !!roomAmounts && Object.values(roomAmounts).some((v) => Number(v) >= PLACEHOLDER_PRICE_MAX);
     priceUsable = scalarUsable || roomUsable;
     inclusionsPresent = !!(top.inclusions_text_clean || top.inclusions_text);
