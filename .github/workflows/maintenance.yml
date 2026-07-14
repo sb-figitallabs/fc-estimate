@@ -29,5 +29,8 @@ jobs:
           command_timeout: 120m
           script_stop: true
           script: |
+            export PATH=$PATH:$HOME/.local/bin
+            command -v aws >/dev/null 2>&1 || (curl -s https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip && unzip -qo /tmp/awscliv2.zip -d /tmp && (sudo /tmp/aws/install --update 2>/dev/null || /tmp/aws/install -i $HOME/.local/aws-cli -b $HOME/.local/bin))
+            aws --version
             cd ~/fc-estimate-dev/backend-node
             node scripts/${{ inputs.script }}
