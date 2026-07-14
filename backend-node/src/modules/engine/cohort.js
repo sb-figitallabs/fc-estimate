@@ -225,6 +225,7 @@ export function listFamilies() {
     label: f.templateName,
     family_kind: f.familyKind,
     daycare: f.daycare === true,     // daycare ⇒ room selection not applicable
+    cath_lab: f.rows?.cathLab === true, // cath-lab family ⇒ Cath Lab hours input applies
     validated: f.family === 'robotic_tkr_unilateral_right', // exact workbook parity
     sublimit_risk: SUBLIMIT_RISK[f.family] ?? { level: 'low', groups: [] },
   }));

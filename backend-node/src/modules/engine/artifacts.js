@@ -13,6 +13,21 @@ export const BASIS_LABELS = [
 
 const FNB_KEYWORDS = ['FOOD', 'BEVERAGE', 'FOOD AND BEVERAGES', 'TEA', 'COFFEE', 'JUICE', 'SOUP'];
 
+/**
+ * Parse an hour count out of a slot-style service name ("OT - 2 HOURS",
+ * "OT-E - 1 1/2 HOURS", "CATH LAB - 1/2 HOUR"). Shared by the OT slot matrix
+ * and the cath-lab billed-hours metric. Returns null when no hour token exists.
+ */
+export function parseSlotHours(name) {
+  const s = String(name || '').toUpperCase();
+  const frac = s.match(/(\d+)\s+(\d+)\s*\/\s*(\d+)\s*HOURS?/);
+  if (frac) return +frac[1] + +frac[2] / +frac[3];
+  const half = s.match(/(?:^|\s)(\d+)\s*\/\s*(\d+)\s*HOURS?/);
+  if (half) return +half[1] / +half[2];
+  const dec = s.match(/(\d+(?:\.\d+)?)\s*HOURS?/);
+  return dec ? parseFloat(dec[1]) : null;
+}
+
 /** Fetch the cohort case rows (everything the artifact builder needs). */
 export async function fetchCohortRows(whereSql, params) {
   const { rows } = await query(
@@ -78,6 +93,20 @@ export function buildBasisSummary(cohorts) {
       }
       return t;
     }));
+    // cath-lab billed HOURS: parsed from the same slot-family row names the
+    // amounts above come from ("CATH LAB ... N HOURS" wording), qty-weighted.
+    // Admissions with no parseable cath-hour row are excluded (null), mirroring
+    // the ot_hours null handling — so families whose cath rows carry no hour
+    // token simply report 0/0/0 and the hours control stays inert.
+    const cathHours = q(rows.map((r) => {
+      let t = 0, seen = false;
+      for (const s of (Array.isArray(r.services_json) ? r.services_json : [])) {
+        if (!/CATH ?LAB/i.test(s.service_name || '')) continue;
+        const h = parseSlotHours(s.service_name);
+        if (h != null) { t += h * (Number(s.quantity ?? 1) || 1); seen = true; }
+      }
+      return seen ? t : null;
+    }).filter((v) => v != null));
     return {
       basis_label: label,
       cohort_size: n,
@@ -98,6 +127,7 @@ export function buildBasisSummary(cohorts) {
       ip_drugs_day_p25: ipDrugsDay.p25, ip_drugs_day_p50: ipDrugsDay.p50, ip_drugs_day_p75: ipDrugsDay.p75,
       ip_consumables_day_p25: ipConsDay.p25, ip_consumables_day_p50: ipConsDay.p50, ip_consumables_day_p75: ipConsDay.p75,
       cath_lab_p25: cath.p25, cath_lab_p50: cath.p50, cath_lab_p75: cath.p75,
+      cath_hours_p25: cathHours.p25, cath_hours_p50: cathHours.p50, cath_hours_p75: cathHours.p75,
     };
   });
 }
@@ -469,18 +499,9 @@ export async function buildOtSlotMatrix(tariffCds = ['TR1']) {
      FROM fc.service_tariff_rate_matrix
      WHERE tariff_cd = ANY($1) AND service_name ~* '^OT(-E)? - .*HOURS?'`, [tariffCds]
   );
-  const parseHours = (name) => {
-    const s = name.toUpperCase();
-    const frac = s.match(/(\d+)\s+(\d+)\s*\/\s*(\d+)\s*HOURS?/);
-    if (frac) return +frac[1] + +frac[2] / +frac[3];
-    const half = s.match(/(?:^|\s)(\d+)\s*\/\s*(\d+)\s*HOURS?/);
-    if (half) return +half[1] / +half[2];
-    const dec = s.match(/(\d+(?:\.\d+)?)\s*HOURS?/);
-    return dec ? parseFloat(dec[1]) : null;
-  };
   const map = new Map();
   for (const r of rows) {
-    const hours = parseHours(r.service_name);
+    const hours = parseSlotHours(r.service_name);
     if (hours == null) continue;
     const mode = r.service_name.toUpperCase().startsWith('OT-E') ? 'emergency' : 'normal';
     const key = `${r.tariff_cd}|${mode}|${hours}`;

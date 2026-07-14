@@ -62,7 +62,17 @@ export function resolveDrivers(basisRow, controls, otLadder) {
     p25: snap(basisRow.ot_p25), p50: snap(basisRow.ot_p50), p75: snap(basisRow.ot_p75),
   };
   ot.selected = snap(sel(controls.ot_hours_basis, ot.p25, ot.p50, ot.p75, controls.ot_hours_manual));
-  return { los, icu, ward, ot };
+  // Cath-lab hours driver (mirrors ot_hours). No tariff ladder snap: cath lab
+  // is priced from the billed historical slot-family amounts, not per-hour
+  // tariff slots — hours stay as entered (decimals allowed).
+  const cath = {
+    p25: basisRow.cath_hours_p25 ?? 0, p50: basisRow.cath_hours_p50 ?? 0, p75: basisRow.cath_hours_p75 ?? 0,
+  };
+  cath.selected = sel(controls.cath_hours_basis, cath.p25, cath.p50, cath.p75, controls.cath_hours_manual);
+  cath.basis = isPct(controls.cath_hours_basis) ? controls.cath_hours_basis : 'manual';
+  cath.manual = !isPct(controls.cath_hours_basis) && controls.cath_hours_manual != null
+    ? controls.cath_hours_manual : null;
+  return { los, icu, ward, ot, cath };
 }
 
 /**
@@ -250,13 +260,35 @@ export function computeLineItems(ctx) {
     if (famRows.cathLab !== false) {
       const c = cathLab || { p25: 0, p50: 0, p75: 0 };
       const cells = [c.p25 ?? 0, c.p50 ?? 0, c.p75 ?? 0];
+      // Cath-lab hours control (mirrors OT hours): manual hours price at the
+      // cohort's historical ₹/hour (typical amount ÷ typical billed hours —
+      // derived from the SAME slot-family rows the amounts come from); a P25/P75
+      // basis picks that percentile's historical amount. Default (P50, no
+      // manual) keeps the mode-picked cell — identical to the untouched row.
+      const ch = drivers.cath ?? {};
+      const cathHoursP50 = basisRow.cath_hours_p50 ?? 0;
+      const hourly = cathHoursP50 > 0 ? (c.p50 ?? 0) / cathHoursP50 : 0;
+      const manualAmt = ch.manual != null && hourly > 0 ? Math.max(0, ch.manual) * hourly : null;
+      const selV = manualAmt != null ? manualAmt
+        : ch.basis === 'P25' ? cells[0]
+        : ch.basis === 'P75' ? cells[2]
+        : null;
       push({
         name: 'Cath Lab Charges', bucket: 'Procedure / OT Charges', sub: 'Cath Lab Hours',
         source: 'Historical Cath Lab Family',
-        how: 'Actual billed cath-lab slot-family P25 / P50 / P75 from the selected historical payer basis.',
+        how: manualAmt != null
+          ? 'Manual cath-lab hours x historical cath-lab rate per hour (typical billed amount / typical billed hours on the selected payer basis).'
+          : 'Actual billed cath-lab slot-family P25 / P50 / P75 from the selected historical payer basis.',
         code: null,
+        ...(cathHoursP50 > 0 ? {
+          cathHours: {
+            hours: ch.selected ?? cathHoursP50, p25: ch.p25, p50: ch.p50, p75: ch.p75,
+            manual: ch.manual ?? null, rate_per_hour: hourly,
+          },
+        } : {}),
         qty: { selected: 1, low: 1, typ: 1, high: 1 }, rate: {},
         cells: { general: cells, twin: [...cells], single: [...cells] },
+        ...(selV != null ? { selectedCells: { general: selV, twin: selV, single: selV } } : {}),
       });
     }
     driver('Intensivist Per Day', 'Room Charges', 'Critical Care', 'ICC0002', drivers.icu, { icuRate: true, how: 'ICU days x rate' });

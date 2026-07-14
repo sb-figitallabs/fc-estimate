@@ -75,6 +75,12 @@ router.get('/stay-stats', async (req, res, next) => {
       ward: { p25: b?.ward_p25, p50: b?.ward_p50, p75: b?.ward_p75 },
       icu: { p25: b?.icu_p25, p50: b?.icu_p50, p75: b?.icu_p75 },
       ot: { p25: b?.ot_p25, p50: b?.ot_p50, p75: b?.ot_p75 },
+      // cath-lab families only: typical billed cath-lab hours (parsed from the
+      // cohort's cath-lab slot-family rows). 0s when the wording carries no
+      // hour token — the UI treats a falsy p50 as "no typical available".
+      ...(def.rows?.cathLab === true
+        ? { cath: { p25: b?.cath_hours_p25, p50: b?.cath_hours_p50, p75: b?.cath_hours_p75 } }
+        : {}),
     });
   } catch (err) { next(err); }
 });

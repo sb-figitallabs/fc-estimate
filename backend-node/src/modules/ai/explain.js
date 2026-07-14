@@ -17,6 +17,7 @@ export async function explainEstimate(estimate) {
       icu: estimate.drivers?.icu?.selected,
       ward: estimate.drivers?.ward?.selected,
       ot_hours: estimate.drivers?.ot?.selected,
+      cath_lab_hours: estimate.drivers?.cath?.selected || undefined,
     },
     service_line_alert: estimate.service_line_count?.status,
     warnings: estimate.warnings,

@@ -141,7 +141,17 @@ export async function buildEstimate(input) {
     icu_basis: controls.icu_basis ?? 'P50', icu_manual: controls.icu_manual,
     ward_basis: controls.ward_basis ?? 'P50', ward_manual: controls.ward_manual,
     ot_hours_basis: controls.ot_hours_basis ?? 'P50', ot_hours_manual: controls.ot_hours_manual,
+    cath_hours_basis: controls.cath_hours_basis ?? 'P50', cath_hours_manual: controls.cath_hours_manual,
   }, otLadder);
+  // Manual cath-lab hours only apply to cath-lab families with parseable billed
+  // hours history — surface why the override was ignored instead of silently dropping it.
+  if (controls.cath_hours_manual != null) {
+    if (cohortDef.rows?.cathLab !== true) {
+      warnings.push('Cath Lab hours ignored — this procedure family has no cath-lab charge row.');
+    } else if (!(svcBasisRow.cath_hours_p50 > 0) && !(pharmBasisRow.cath_hours_p50 > 0)) {
+      warnings.push('Cath Lab hours ignored — no billed cath-lab hour history in this cohort basis; the historical cath-lab amount is used instead.');
+    }
+  }
 
   // 9. cleaned services / add-ons / robotic
   const autoTemplate = cohortDef.coreTemplate === 'auto';
@@ -328,6 +338,8 @@ export async function buildEstimate(input) {
         basis: svcBasis,
       },
       ot_slot: lineItems.rows.find((r) => r.name === 'OT Charges')?.otSlot,
+      // cath-lab families only: selected/typical billed cath-lab hours + ₹/hour
+      cath_lab: lineItems.rows.find((r) => r.name === 'Cath Lab Charges')?.cathHours ?? null,
     },
     drivers,
     line_items: lineItems.rows,
