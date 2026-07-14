@@ -159,6 +159,9 @@ Answer rules:
       queries.push({ sql: String(sql).slice(0, 500), row_count: result.row_count, ...(result.error ? { error: result.error } : {}) });
       responses.push({ functionResponse: { name: 'run_sql', response: result } });
     }
+    // The tool results tend to eclipse the original question — restate it so
+    // multi-part questions (data + how/why) get answered in full.
+    responses.push({ text: `Query results above. When you have what you need, answer the user's FULL question — every part of: "${question}"` });
     contents.push({ role: 'user', parts: responses });
   }
   return { answer: 'I could not produce an answer from the data.', queries };
