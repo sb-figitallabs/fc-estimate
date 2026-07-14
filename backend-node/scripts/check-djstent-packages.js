@@ -13,28 +13,25 @@ const pm = await c.query(`
 console.log('fc.package_master DJ-stent rows (' + pm.rowCount + '):');
 pm.rows.forEach((r) => console.log(' ', r.tariff_code, r.package_code, '|', r.package_name, '| Rs', r.package_amount));
 
-const cols = await c.query(`
-  SELECT column_name FROM information_schema.columns
-  WHERE table_schema='fc' AND table_name='package_bill_admissions' ORDER BY ordinal_position`);
-console.log('\npackage_bill_admissions columns:', cols.rows.map((r) => r.column_name).join(', '));
-const payorCol = cols.rows.map((r) => r.column_name).find((n) => /payor|payer|tariff/i.test(n));
-
 const pb = await c.query(`
-  SELECT ${payorCol} grp, count(*) n,
+  SELECT payer_type grp, count(*) n,
          round(percentile_cont(0.5) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50
   FROM fc.package_bill_admissions
-  WHERE p_tariff_cd ILIKE '%DJ%STENT%' OR p_tariff_cd ILIKE '%URSL%'
+  WHERE package_name ILIKE '%DJ%STENT%' OR package_name ILIKE '%URSL%'
+     OR surgery_name ILIKE '%DJ%STENT%' OR surgery_name ILIKE '%URSL%'
   GROUP BY 1 ORDER BY 2 DESC LIMIT 15`);
-console.log(`\npackage_bill_admissions DJ-stent/URSL split by ${payorCol}:`);
+console.log('\npackage_bill_admissions DJ-stent/URSL split by payer_type:');
 pb.rows.forEach((r) => console.log(' ', r.grp, '->', r.n, 'p50', r.p50));
 
 const names = await c.query(`
-  SELECT p_tariff_cd, count(*) n
+  SELECT package_name, p_tariff_cd, count(*) n,
+         round(percentile_cont(0.5) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50
   FROM fc.package_bill_admissions
-  WHERE p_tariff_cd ILIKE '%DJ%STENT%' OR p_tariff_cd ILIKE '%URSL%'
-  GROUP BY 1 ORDER BY 2 DESC LIMIT 15`);
-console.log('\ntop billed package names (p_tariff_cd) DJ-stent/URSL:');
-names.rows.forEach((r) => console.log(' ', r.n, 'x', r.p_tariff_cd));
+  WHERE package_name ILIKE '%DJ%STENT%' OR package_name ILIKE '%URSL%'
+     OR surgery_name ILIKE '%DJ%STENT%' OR surgery_name ILIKE '%URSL%'
+  GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 15`);
+console.log('\ntop billed DJ-stent/URSL package names:');
+names.rows.forEach((r) => console.log(' ', r.n, 'x', r.package_name, '[', r.p_tariff_cd, '] p50', r.p50));
 
 const ursl = await c.query(`
   SELECT t.template, m.payor_bucket, count(*) n
