@@ -4,6 +4,7 @@ import { geminiJson } from '../modules/ai/gemini.js';
 import { listFamilies, getCohort, applyCareControls } from '../modules/engine/cohort.js';
 import { fetchCohortRows, basisCohorts, buildBasisSummary } from '../modules/engine/artifacts.js';
 import { payorBucketCounts, resolveBasis, resolveComponentBases } from '../modules/resolve/payerBasis.js';
+import { quartilesInclusive, round2 } from '../modules/engine/stats.js';
 
 const router = Router();
 
@@ -145,6 +146,175 @@ router.get('/provenance', async (req, res, next) => {
       // same framework — all three keys emitted for forward-compat)
       bases: { ...resolveComponentBases(payorBucket, counts, def.familyKind), counts },
     });
+  } catch (err) { next(err); }
+});
+
+// ——— Bucket-level audit (admin) ——————————————————————————————————————————
+// Registry of auditable estimate buckets + drivers. `component` picks which
+// resolved payer basis applies (doc 14: service / pharmacy / PF resolve
+// independently; LOS/OT-hour drivers ride the SERVICE basis — resolveDrivers
+// reads the service-basis summary row in buildEstimate). `valueOf` extracts
+// the per-case value exactly the way artifacts.js buildBasisSummary /
+// buildActualBasisMetrics compute the basis stats the estimate is priced on.
+const bucketAmt = (r, key) => Number(r.buckets?.[key] ?? 0);
+const stayOf = (r) => r.normalized_billable_stay_days ?? Math.ceil(r.los_days);
+const AUDIT_BUCKETS = [
+  { key: 'pharmacy_total', label: 'Pharmacy (total)', component: 'pharmacy', valueOf: (r) => bucketAmt(r, 'pharmacy_total') },
+  { key: 'ip_drugs', label: 'IP Drugs', component: 'pharmacy', valueOf: (r) => bucketAmt(r, 'ip_drugs') },
+  { key: 'ip_consumables', label: 'IP Consumables', component: 'pharmacy', valueOf: (r) => bucketAmt(r, 'ip_consumables') },
+  { key: 'ot_drugs', label: 'OT Drugs', component: 'pharmacy', valueOf: (r) => bucketAmt(r, 'ot_drugs') },
+  { key: 'ot_consumables', label: 'OT Consumables', component: 'pharmacy', valueOf: (r) => bucketAmt(r, 'ot_consumables') },
+  { key: 'implants', label: 'Implants', component: 'pharmacy', valueOf: (r) => bucketAmt(r, 'implants') },
+  { key: 'professional_fees', label: 'Professional Fees', component: 'pf', valueOf: (r) => bucketAmt(r, 'professional_fees') },
+  { key: 'investigations', label: 'Investigations', component: 'service', valueOf: (r) => bucketAmt(r, 'investigations') },
+  { key: 'procedure_ot_charges', label: 'Procedure / OT Charges', component: 'service', valueOf: (r) => bucketAmt(r, 'procedure_ot_charges') },
+  { key: 'room_charges', label: 'Room Charges', component: 'service', valueOf: (r) => bucketAmt(r, 'room_charges') },
+  { key: 'bedside_services', label: 'Bedside Services', component: 'service', valueOf: (r) => bucketAmt(r, 'bedside_services') },
+  // drivers — null OT hours are dropped by quartilesInclusive, matching buildBasisSummary;
+  // LOS = normalized billable stay days (ceil-style), per the reviewed builder
+  { key: 'ot_hours', label: 'OT hours (driver)', component: 'driver', unit: 'hours', valueOf: (r) => r.ot_hours },
+  { key: 'los_days', label: 'Length of stay (driver)', component: 'driver', unit: 'days', valueOf: (r) => stayOf(r) },
+];
+const basisKeyOf = (component) =>
+  component === 'pharmacy' ? 'pharmacy_basis' : component === 'pf' ? 'pf_basis' : 'service_basis';
+
+/** Shared audit context for bucket-provenance / bucket-cases.csv: cohort rows,
+ *  basis cohorts and the resolved per-component bases for the target payor. */
+async function bucketAuditContext(req) {
+  const procedure = String(req.query.procedure || '');
+  const payorBucket = String(req.query.payor_bucket || 'Cash');
+  const base = await getCohort(procedure); // throws 400 for unknown family
+  const careType = ['Surgical', 'Medical'].includes(req.query.care_type) ? req.query.care_type : null;
+  const setting = ['Daycare', 'Inpatient'].includes(req.query.setting) ? req.query.setting : null;
+  const def = applyCareControls(base, { care_type: careType, setting });
+  const rows = await fetchCohortRows(def.whereSql, def.params);
+  const counts = await payorBucketCounts(def.whereSql, def.params);
+  const bases = resolveComponentBases(payorBucket, counts, def.familyKind);
+  return { payorBucket, careType, setting, def, rows, counts, bases, cohorts: basisCohorts(rows) };
+}
+
+/**
+ * GET /api/lookup/bucket-provenance?procedure=&payor_bucket=&care_type=&setting=
+ * Admin audit: for every estimate bucket + driver, which payer basis it is
+ * priced on, how many cohort cases back it, and the P25/P50/P75 the engine
+ * derives from them. Companion to /provenance (cohort-level view).
+ */
+router.get('/bucket-provenance', async (req, res, next) => {
+  try {
+    const ctx = await bucketAuditContext(req);
+    const buckets = AUDIT_BUCKETS.map((b) => {
+      const basisInfo = ctx.bases[basisKeyOf(b.component)];
+      const basis = basisInfo.selected_basis;
+      const basisRows = ctx.cohorts[basis] ?? [];
+      const vals = basisRows.map(b.valueOf);
+      const q = quartilesInclusive(vals);
+      return {
+        bucket: b.key,
+        label: b.label,
+        component: b.component,
+        unit: b.unit ?? 'inr',
+        basis,
+        basis_status: basisInfo.status,
+        confidence: basisInfo.confidence,
+        case_count: basisRows.length,
+        cases_with_value: vals.filter((v) => Number(v) > 0).length,
+        p25: round2(q.p25), p50: round2(q.p50), p75: round2(q.p75),
+      };
+    });
+    res.json({
+      family: ctx.def.family,
+      template_name: ctx.def.templateName,
+      family_kind: ctx.def.familyKind,
+      payor_bucket: ctx.payorBucket,
+      applied_controls: { care_type: ctx.careType, setting: ctx.setting },
+      cohort_total_cases: ctx.rows.length,
+      bases: { ...ctx.bases, counts: ctx.counts },
+      buckets,
+    });
+  } catch (err) { next(err); }
+});
+
+// Admission/discharge date columns are not part of fetchCohortRows; different
+// mart builds name them differently (or lack them). Discover once via
+// information_schema and cache — the CSV simply omits date columns when the
+// mart has none, instead of failing at runtime.
+const DATE_COL_CANDIDATES = [
+  'admission_date', 'discharge_date', 'admission_dt', 'discharge_dt',
+  'date_of_admission', 'date_of_discharge', 'admission_datetime', 'discharge_datetime',
+  'doa', 'dod',
+];
+let admissionDateColsPromise = null;
+function admissionDateColumns() {
+  admissionDateColsPromise ??= query(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_schema = 'mart' AND table_name = 'main_table' AND column_name = ANY($1)`,
+    [DATE_COL_CANDIDATES]
+  ).then(
+    ({ rows }) => DATE_COL_CANDIDATES.filter((c) => rows.some((r) => r.column_name === c)),
+    () => { admissionDateColsPromise = null; return []; } // transient DB error: retry next request
+  );
+  return admissionDateColsPromise;
+}
+
+/**
+ * GET /api/lookup/bucket-cases.csv?procedure=&payor_bucket=&bucket=&care_type=&setting=
+ * Downloads the underlying cohort cases behind one audit bucket as CSV:
+ * one row per admission of the basis cohort the bucket is priced on, with the
+ * bucket's per-case value. `bucket` must be an AUDIT_BUCKETS key.
+ */
+router.get('/bucket-cases.csv', async (req, res, next) => {
+  try {
+    const bucketKey = String(req.query.bucket || '');
+    const spec = AUDIT_BUCKETS.find((b) => b.key === bucketKey);
+    if (!spec) {
+      return res.status(400).json({
+        error: `Unknown bucket '${bucketKey}'`,
+        valid_buckets: AUDIT_BUCKETS.map((b) => b.key),
+      });
+    }
+    const ctx = await bucketAuditContext(req);
+    const basisInfo = ctx.bases[basisKeyOf(spec.component)];
+    const basis = basisInfo.selected_basis;
+    const cases = ctx.cohorts[basis] ?? [];
+
+    const dateCols = await admissionDateColumns();
+    const dates = new Map();
+    if (dateCols.length && cases.length) {
+      // dateCols come from the fixed DATE_COL_CANDIDATES whitelist (never user
+      // input); def.whereSql is a trusted registry literal, as in /provenance.
+      const sel = dateCols.map((c) => `${c}::text AS ${c}`).join(', ');
+      const { rows } = await query(
+        `SELECT admission_no, ${sel} FROM mart.main_table WHERE ${ctx.def.whereSql}`, ctx.def.params
+      );
+      for (const r of rows) dates.set(r.admission_no, r);
+    }
+
+    const esc = (v) => {
+      const s = v == null ? '' : String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = [
+      'admission_no', 'payor_bucket', 'organization_name', 'package_name',
+      ...dateCols, 'los_days', 'normalized_stay_days', 'ot_hours',
+      'bucket', 'basis', 'value',
+    ];
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="bucket_cases_${ctx.def.family}_${spec.key}_${basis.replace(/\s+/g, '_')}.csv"`
+    );
+    res.write(header.join(',') + '\n');
+    for (const r of cases) {
+      const d = dates.get(r.admission_no) ?? {};
+      const v = spec.valueOf(r);
+      res.write([
+        r.admission_no, r.payor_bucket, r.organization_name, r.package_name,
+        ...dateCols.map((c) => d[c]),
+        r.los_days, stayOf(r), r.ot_hours,
+        spec.key, basis, v == null ? '' : round2(Number(v)),
+      ].map(esc).join(',') + '\n');
+    }
+    res.end();
   } catch (err) { next(err); }
 });
 
