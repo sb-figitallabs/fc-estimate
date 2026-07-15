@@ -2,7 +2,7 @@ import { query } from '../../db/pool.js';
 import { geminiJson } from '../ai/gemini.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
 import { aliasCandidates, deriveRoomAmounts } from './packages.service.js';
-import { listFamilies, familyPayorCounts } from '../engine/cohort.js';
+import { listFamilies, familyPayorCounts, roboticBaseOf } from '../engine/cohort.js';
 
 /**
  * Intake package-gate (manager, 14-Jul evening call): BEFORE any estimate,
@@ -295,7 +295,18 @@ Return JSON {"best_index": <int or null if none genuinely matches clinically>, "
       const best = families[0];
       if (best && best.payor_cases === 0) {
         const withCases = families.find((m) => m.payor_cases > 0);
-        if (withCases) {
+        // Robotic family with no payor history ⇒ its BASE family + robotic
+        // add-on is the correct cohort (robotic families are Cash-only).
+        const baseKey = roboticBaseOf(best.family);
+        const baseCases = baseKey ? counts[baseKey]?.[payorBucket] ?? 0 : 0;
+        if (baseKey && baseCases > 0) {
+          const baseLabel = listFamilies().find((f) => f.family === baseKey)?.label ?? baseKey;
+          families = [
+            { family: baseKey, label: baseLabel, confidence: best.confidence, payor_cases: baseCases, reason: `Base family of ${best.label} — apply the robotic add-on on top`, robotic_addon: true },
+            ...families,
+          ];
+          payorNote = `"${best.label}" has NO ${payorBucket} history (robotic cohorts are Cash-only) — use "${baseLabel}" (${baseCases} ${payorBucket} cases) + robotic add-on`;
+        } else if (withCases) {
           families = [withCases, ...families.filter((m) => m !== withCases)];
           payorNote = `"${best.label}" matched but has NO ${payorBucket} history — preferring "${withCases.label}" (${withCases.payor_cases} ${payorBucket} cases)`;
         } else {
