@@ -2,7 +2,7 @@ import { query } from '../../db/pool.js';
 import { geminiJson } from '../ai/gemini.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
 import { aliasCandidates, deriveRoomAmounts } from './packages.service.js';
-import { listFamilies } from '../engine/cohort.js';
+import { listFamilies, familyPayorCounts } from '../engine/cohort.js';
 
 /**
  * Intake package-gate (manager, 14-Jul evening call): BEFORE any estimate,
@@ -69,8 +69,13 @@ and an empty array if nothing fits. Never invent family keys not in the list.`;
     }));
 }
 
-/** ACTUAL billed package cases for this package name (converted actuals). */
-async function billedActuals(packageName) {
+/**
+ * ACTUAL billed package cases (converted actuals) — matched by PACKAGE CODE
+ * first: the same code carries different names across tariffs ("name does not
+ * define if they are separate packages — it is the package code"), so we
+ * collect every master name that shares the code, plus the literal name.
+ */
+async function billedActuals(packageName, packageCode) {
   const { rows } = await query(
     `SELECT p_tariff_cd, payer_type, count(*)::int n,
             round(percentile_cont(0.25) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p25,
@@ -78,8 +83,10 @@ async function billedActuals(packageName) {
             round(percentile_cont(0.75) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p75
      FROM fc.package_bill_admissions
      WHERE upper(btrim(package_name)) = upper(btrim($1))
+        OR ($2 <> '' AND upper(btrim(package_name)) IN (
+             SELECT DISTINCT upper(btrim(package_name)) FROM fc.package_master WHERE package_code = $2))
      GROUP BY 1, 2 ORDER BY 3 DESC`,
-    [packageName]
+    [packageName, packageCode || '']
   );
   return rows;
 }
@@ -249,7 +256,7 @@ Return JSON {"best_index": <int or null if none genuinely matches clinically>, "
   let actualCasesThisTariff = 0;
   let actuals = [];
   if (top) {
-    actuals = await billedActuals(top.package_name).catch(() => []);
+    actuals = await billedActuals(top.package_name, top.package_code).catch(() => []);
     actualCasesThisTariff = actuals
       .filter((a) => (a.p_tariff_cd || '').trim().toUpperCase() === tariff.tariff_cd)
       .reduce((t, a) => t + a.n, 0);
@@ -275,14 +282,35 @@ Return JSON {"best_index": <int or null if none genuinely matches clinically>, "
   }
 
   // ── 5. non-package cohort route (always computed — it is the fallback) ──
-  const families = await familyPromise;
+  // Payor-aware family selection (15-Jul flow doc): a match with NO cases for
+  // this payor group must not win over one that has them — the robotic-TKR
+  // example: robotic families are Cash-only, so GIPSA belongs on the plain
+  // family (+ robotic add-on), never the robotic cohort.
+  let families = await familyPromise;
+  let payorNote = null;
+  try {
+    const counts = await familyPayorCounts();
+    if (counts) {
+      families = families.map((m) => ({ ...m, payor_cases: counts[m.family]?.[payorBucket] ?? 0 }));
+      const best = families[0];
+      if (best && best.payor_cases === 0) {
+        const withCases = families.find((m) => m.payor_cases > 0);
+        if (withCases) {
+          families = [withCases, ...families.filter((m) => m !== withCases)];
+          payorNote = `"${best.label}" matched but has NO ${payorBucket} history — preferring "${withCases.label}" (${withCases.payor_cases} ${payorBucket} cases)`;
+        } else {
+          payorNote = `No matched family has ${payorBucket} history — falling back to the closest match across all payors`;
+        }
+      }
+    }
+  } catch { /* counts unavailable — keep the AI order */ }
   steps.push(step(
     'family_flow', 'Procedure-family cohort (non-package route)',
-    families.length ? 'ok' : 'missing',
+    families.length ? (payorNote && !families[0].payor_cases ? 'warn' : 'ok') : 'missing',
     families.length
-      ? `Best family: ${families[0].label} (${families[0].confidence} confidence)`
+      ? payorNote ?? `Best family: ${families[0].label} (${families[0].confidence} confidence, ${families[0].payor_cases ?? '?'} ${payorBucket} cases)`
       : 'No onboarded procedure family matches this wording',
-    { matches: families }
+    { matches: families, ...(payorNote ? { payor_note: payorNote } : {}) }
   ));
 
   // related billed history (the manager's "widen to related patterns" block) —
