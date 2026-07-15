@@ -1,0 +1,1183 @@
+[
+  {
+    "file": "IMG_6791.jpg",
+    "procedure_text": "LSCS",
+    "matched_family": "lscs_caesarean",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "OBG & Gynae",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: LSCS (Caesarean Section) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "lscs_caesarean",
+        "label": "LSCS (Caesarean Section)",
+        "confidence": "high",
+        "reason": "LSCS directly matches 'LSCS (Caesarean Section)' procedure family."
+      },
+      "related_total": 158
+    },
+    "ms": 8952,
+    "cash_gate": {
+      "route": "exact_package",
+      "reason": "Package [GYN5322] has a usable price and 3 billed cases on TR1.",
+      "top_package": "[GYN5322] LSCS (CAESAREAN SECTION) - EMERGENCY ₹10",
+      "family": "LSCS (Caesarean Section) (high)",
+      "history": "3 billed cases on TR1 · 3 across all tariffs · FC template mapped (GYN5219)",
+      "related_total": 158,
+      "details": "Scalar price ₹10 is a placeholder — but per-room package rates exist · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6792.jpg",
+    "procedure_text": "LSCS",
+    "matched_family": "lscs_caesarean",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Obstetrics & Gynecology",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: LSCS (Caesarean Section) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "lscs_caesarean",
+        "label": "LSCS (Caesarean Section)",
+        "confidence": "high",
+        "reason": "LSCS is a direct acronym match for LSCS (Caesarean Section)."
+      },
+      "related_total": 158
+    },
+    "ms": 8717,
+    "cash_gate": {
+      "route": "exact_package",
+      "reason": "Package [GYN5322] has a usable price and 3 billed cases on TR1.",
+      "top_package": "[GYN5322] LSCS (CAESAREAN SECTION) - EMERGENCY ₹10",
+      "family": "LSCS (Caesarean Section) (high)",
+      "history": "3 billed cases on TR1 · 3 across all tariffs · FC template mapped (GYN5219)",
+      "related_total": 158,
+      "details": "Scalar price ₹10 is a placeholder — but per-room package rates exist · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6793.jpg",
+    "procedure_text": "NVD / LSCS",
+    "matched_family": "lscs_caesarean",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Obstetrics & Gynaecology",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: LSCS (Caesarean Section) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "lscs_caesarean",
+        "label": "LSCS (Caesarean Section)",
+        "confidence": "high",
+        "reason": "Direct match for 'LSCS' (Caesarean Section)."
+      },
+      "related_total": 158
+    },
+    "ms": 12494,
+    "cash_gate": {
+      "route": "exact_package",
+      "reason": "Package [GYN5322] has a usable price and 3 billed cases on TR1.",
+      "top_package": "[GYN5322] LSCS (CAESAREAN SECTION) - EMERGENCY ₹10",
+      "family": "LSCS (Caesarean Section) (high)",
+      "history": "3 billed cases on TR1 · 3 across all tariffs · FC template mapped (GYN5219)",
+      "related_total": 158,
+      "details": "Scalar price ₹10 is a placeholder — but per-room package rates exist · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6794.jpg",
+    "procedure_text": "Lap ovarian cystectomy",
+    "matched_family": "laparoscopic_gynecological_surgery_adnexal_tubal",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": null,
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Laparoscopic Gynecological Surgery (Adnexal/Tubal) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "laparoscopic_gynecological_surgery_adnexal_tubal",
+        "label": "Laparoscopic Gynecological Surgery (Adnexal/Tubal)",
+        "confidence": "high",
+        "reason": "Laparoscopic ovarian cystectomy is a laparoscopic gynecological surgery specifically involving the adnexa (ovary)."
+      },
+      "related_total": 365
+    },
+    "ms": 16586,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[GYN5499] LAP. OVARIAN CYSTECTOMY - DC ₹124000",
+      "family": "Laparoscopic Gynecological Surgery (Adnexal/Tubal) (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · FC template mapped (GYN5093)",
+      "related_total": 365,
+      "details": "Price ₹1,24,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6795.jpg",
+    "procedure_text": null,
+    "matched_family": null,
+    "payor_bucket": null,
+    "organization": null,
+    "department": null,
+    "gate": null,
+    "note": "no procedure text extracted",
+    "ms": 1246
+  },
+  {
+    "file": "IMG_6796.jpg",
+    "procedure_text": "Hys. D&C.",
+    "matched_family": null,
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "OBG",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: D&C / Surgical Evacuation (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "d_and_c_surgical_evacuation",
+        "label": "D&C / Surgical Evacuation",
+        "confidence": "high",
+        "reason": "Direct match for 'D&C' (Dilation and Curettage)."
+      },
+      "related_total": 102
+    },
+    "ms": 17230,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[GYN5133] LAVH (LAP. ASSISTED VAGINAL HYSTERECTOMY) - PA ₹10",
+      "family": "D&C / Surgical Evacuation (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · FC template mapped (GYN5218)",
+      "related_total": 102,
+      "details": "Scalar price ₹10 is a placeholder — but per-room package rates exist · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6798.jpg",
+    "procedure_text": "B/L TRR",
+    "matched_family": "total_knee_replacement_bilateral",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Orthopedics",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Total Knee Replacement (TKR) — Bilateral (Conventional) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "total_knee_replacement_bilateral",
+        "label": "Total Knee Replacement (TKR) — Bilateral (Conventional)",
+        "confidence": "high",
+        "reason": "B/L indicates Bilateral, and TRR is highly likely a typo or abbreviation for TKR (Total Knee Replacement)."
+      },
+      "related_total": 0
+    },
+    "ms": 12129,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[URO5371] TURBT (TRANS URETHRAL RESECTION BLADDER TUMOR) - PA ₹20000",
+      "family": "Robotic TKR Bilateral (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · no FC template mapping",
+      "related_total": 0,
+      "details": "Price ₹20,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6799.jpg",
+    "procedure_text": "B/L RA TKR",
+    "matched_family": "total_knee_replacement_bilateral",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": "Bajaj",
+    "department": "Ortho",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Robotic TKR Bilateral (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "robotic_tkr_bilateral",
+        "label": "Robotic TKR Bilateral",
+        "confidence": "high",
+        "reason": "'B/L' means bilateral, 'TKR' means Total Knee Replacement, and 'RA' commonly refers to Robotic Assisted in this context."
+      },
+      "related_total": 1442
+    },
+    "ms": 12521,
+    "second_pass": {
+      "organization_cd": "ORG57",
+      "organization_name": "BAJAJ GENERAL INSURANCE LIMITED",
+      "tariff": "Non-GIPSA Insurance → TR289 (BAJA_HYD_23(C))",
+      "route": {
+        "decision": "non_package_cohort",
+        "reason": "No package on TR289 (similar packages exist on TR1) — treat as non-package for this payor."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "ok",
+          "summary": "Non-GIPSA Insurance → TR289 (BAJA_HYD_23(C))"
+        },
+        {
+          "key": "package_match",
+          "status": "warn",
+          "summary": "No package on TR289, but similar packages exist on TR1"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Total Knee Replacement (TKR) — Bilateral (Conventional) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "related_total": 1442
+    },
+    "cash_gate": {
+      "route": "exact_package",
+      "reason": "Package [ORT5531] has a usable price and 14 billed cases on TR1.",
+      "top_package": "[ORT5531] TOTAL KNEE REPLACEMENT (TKR) - BILATERAL ₹490000",
+      "family": "Robotic TKR Bilateral (high)",
+      "history": "14 billed cases on TR1 · 80 across all tariffs · FC template mapped (ORT5531)",
+      "related_total": 1442,
+      "details": "Price ₹4,90,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6801.jpg",
+    "procedure_text": "Laparoscopic Appendectomy",
+    "matched_family": "general_surgical_procedure",
+    "payor_bucket": "Cash",
+    "organization": null,
+    "department": "Surgical Gastroenterology",
+    "gate": {
+      "route": {
+        "decision": "exact_package",
+        "reason": "Package [SGA5162] has a usable price and 15 billed cases on TR1."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "ok",
+          "summary": "Cash → TR1 (KIMS)"
+        },
+        {
+          "key": "package_match",
+          "status": "ok",
+          "summary": "5 candidate packages on TR1 — best: [SGA5162] LAP. APPENDECTOMY - PA"
+        },
+        {
+          "key": "package_details",
+          "status": "ok",
+          "summary": "Price ₹93,000 · inclusions documented"
+        },
+        {
+          "key": "fc_history",
+          "status": "ok",
+          "summary": "15 billed cases on TR1 · 15 across all tariffs · FC template mapped (SGA5162)"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: General Surgical Procedure (high confidence)"
+        }
+      ],
+      "top_candidate": {
+        "package_code": "SGA5162",
+        "package_name": "LAP. APPENDECTOMY - PA",
+        "package_amount": "93000",
+        "matched_alias": "APPENDECTOMY LAPAROSCOPIC",
+        "alias_confidence": "High",
+        "fc_template_package_code": "SGA5162",
+        "fc_case_count_total": null
+      },
+      "family": {
+        "family": "general_surgical_procedure",
+        "label": "General Surgical Procedure",
+        "confidence": "high",
+        "reason": "Laparoscopic Appendectomy is a common and standard general surgical procedure."
+      },
+      "related_total": 189
+    },
+    "ms": 15365,
+    "cash_gate": {
+      "route": "exact_package",
+      "reason": "Package [SGA5162] has a usable price and 15 billed cases on TR1.",
+      "top_package": "[SGA5162] LAP. APPENDECTOMY - PA ₹93000",
+      "family": "General Surgical Procedure (high)",
+      "history": "15 billed cases on TR1 · 15 across all tariffs · FC template mapped (SGA5162)",
+      "related_total": 189,
+      "details": "Price ₹93,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6802.jpg",
+    "procedure_text": "LAP TEP / Robotic TAPP",
+    "matched_family": "inguinal_hernia_repair",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Surgical gastro",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Inguinal Hernia Repair (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "inguinal_hernia_repair",
+        "label": "Inguinal Hernia Repair",
+        "confidence": "high",
+        "reason": "TEP (Total Extraperitoneal) and TAPP (Transabdominal Preperitoneal) are common laparoscopic/robotic surgical approaches specifically for inguinal hernia repair."
+      },
+      "related_total": 525
+    },
+    "ms": 10000,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[GYN5498] LAP. MYOMECTOMY WITH ADENOMYOMETRY ₹180000",
+      "family": "Inguinal Hernia Repair (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · no FC template mapping",
+      "related_total": 525,
+      "details": "Price ₹1,80,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6803.jpg",
+    "procedure_text": "CAG",
+    "matched_family": "coronary_angio_cag_cat_1_daycare",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Cardiology",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Coronary Angiogram (CAG) CAT-1 — Daycare (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "coronary_angio_cag_cat_1_daycare",
+        "label": "Coronary Angiogram (CAG) CAT-1 — Daycare",
+        "confidence": "high",
+        "reason": "CAG is a direct acronym for Coronary Angiogram, explicitly mentioned in the family description."
+      },
+      "related_total": 602
+    },
+    "ms": 7820,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[CAT0469] CAG+PERIPHERAL ANGIOGRAM (PAG) ₹20000",
+      "family": "Coronary Angiogram (CAG) CAT-1 — Daycare (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · FC template mapped (CAR0122)",
+      "related_total": 602,
+      "details": "Price ₹20,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6804.jpg",
+    "procedure_text": "Posterior decompression & Disectomy & lamentomy Anterior lateral Bout Baje graft & spithe Stabilization. Spine Stabilization.",
+    "matched_family": "spine_surgery_decompression_fusion",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Neuro Surgery",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Spine Surgery (Decompression / Fusion) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "spine_surgery_decompression_fusion",
+        "label": "Spine Surgery (Decompression / Fusion)",
+        "confidence": "high",
+        "reason": "The wording explicitly mentions 'decompression' (Posterior decompression, Discectomy, Laminectomy) and 'stabilization' with a 'graft', which indicates fusion."
+      },
+      "related_total": 651
+    },
+    "ms": 18142,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[NES5278] SPINE FIXATION 2ND LEVEL ₹165000",
+      "family": "Spine Surgery (Decompression / Fusion) (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · no FC template mapping",
+      "related_total": 651,
+      "details": "Price ₹1,65,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6805.jpg",
+    "procedure_text": "Emergency lap appendicectomy",
+    "matched_family": "general_surgical_procedure",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": null,
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Surgical Gastroenterology / General Surgery (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "surgical_gastroenterology_general_surgery",
+        "label": "Surgical Gastroenterology / General Surgery",
+        "confidence": "high",
+        "reason": "Laparoscopic appendicectomy is a common general surgical procedure involving the gastrointestinal system."
+      },
+      "related_total": 363
+    },
+    "ms": 18675,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[GYN5498] LAP. MYOMECTOMY WITH ADENOMYOMETRY ₹180000",
+      "family": "Surgical Gastroenterology / General Surgery (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · no FC template mapping",
+      "related_total": 363,
+      "details": "Price ₹1,80,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6806.jpg",
+    "procedure_text": "Hys. D&C +mileu",
+    "matched_family": "hysterectomy",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "OBG",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: D&C / Surgical Evacuation (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "d_and_c_surgical_evacuation",
+        "label": "D&C / Surgical Evacuation",
+        "confidence": "high",
+        "reason": "Explicit mention of 'D&C' (Dilation and Curettage)."
+      },
+      "related_total": 102
+    },
+    "ms": 14713,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[GYN5133] LAVH (LAP. ASSISTED VAGINAL HYSTERECTOMY) - PA ₹10",
+      "family": "D&C / Surgical Evacuation (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · FC template mapped (GYN5218)",
+      "related_total": 102,
+      "details": "Scalar price ₹10 is a placeholder — but per-room package rates exist · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6807.jpg",
+    "procedure_text": "Lap. Ovarian Cystectomy",
+    "matched_family": "laparoscopic_gynecological_surgery_adnexal_tubal",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Obstetrics & Gynecology",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Laparoscopic Gynecological Surgery (Adnexal/Tubal) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "laparoscopic_gynecological_surgery_adnexal_tubal",
+        "label": "Laparoscopic Gynecological Surgery (Adnexal/Tubal)",
+        "confidence": "high",
+        "reason": "Ovarian cystectomy is a laparoscopic gynecological procedure involving adnexal structures (ovaries)."
+      },
+      "related_total": 365
+    },
+    "ms": 16065,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[GYN5499] LAP. OVARIAN CYSTECTOMY - DC ₹124000",
+      "family": "Laparoscopic Gynecological Surgery (Adnexal/Tubal) (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · FC template mapped (GYN5093)",
+      "related_total": 365,
+      "details": "Price ₹1,24,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6808.jpg",
+    "procedure_text": "Lap. Ovarian Cystectomy",
+    "matched_family": "laparoscopic_gynecological_surgery_adnexal_tubal",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "OBG",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Laparoscopic Gynecological Surgery (Adnexal/Tubal) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "laparoscopic_gynecological_surgery_adnexal_tubal",
+        "label": "Laparoscopic Gynecological Surgery (Adnexal/Tubal)",
+        "confidence": "high",
+        "reason": "Laparoscopic Ovarian Cystectomy is a laparoscopic gynecological surgery involving adnexal structures (ovaries)."
+      },
+      "related_total": 365
+    },
+    "ms": 12722,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[GYN5499] LAP. OVARIAN CYSTECTOMY - DC ₹124000",
+      "family": "Laparoscopic Gynecological Surgery (Adnexal/Tubal) (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · FC template mapped (GYN5093)",
+      "related_total": 365,
+      "details": "Price ₹1,24,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6809.jpg",
+    "procedure_text": "URSL + DJ Stenting",
+    "matched_family": "ursl_ureteroscopic_lithotripsy",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Urology",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: URSL (Ureteroscopic Lithotripsy) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "ursl_ureteroscopic_lithotripsy",
+        "label": "URSL (Ureteroscopic Lithotripsy)",
+        "confidence": "high",
+        "reason": "Direct match for 'URSL'."
+      },
+      "related_total": 232
+    },
+    "ms": 11624,
+    "cash_gate": {
+      "route": "exact_package",
+      "reason": "Package [URO5011] has a usable price and 16 billed cases on TR1.",
+      "top_package": "[URO5011] URSL (URETEROSCOPIC LITHOTRIPSY) AND DJ STENTING - PA ₹58000",
+      "family": "URSL (Ureteroscopic Lithotripsy) (high)",
+      "history": "16 billed cases on TR1 · 16 across all tariffs · FC template mapped (URO5379)",
+      "related_total": 232,
+      "details": "Price ₹58,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6810.jpg",
+    "procedure_text": "URSL + DJ stenting",
+    "matched_family": "ursl_ureteroscopic_lithotripsy",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Urology",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: URSL (Ureteroscopic Lithotripsy) (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "ursl_ureteroscopic_lithotripsy",
+        "label": "URSL (Ureteroscopic Lithotripsy)",
+        "confidence": "high",
+        "reason": "The input directly mentions 'URSL' which stands for Ureteroscopic Lithotripsy."
+      },
+      "related_total": 232
+    },
+    "ms": 9245,
+    "cash_gate": {
+      "route": "exact_package",
+      "reason": "Package [URO5011] has a usable price and 16 billed cases on TR1.",
+      "top_package": "[URO5011] URSL (URETEROSCOPIC LITHOTRIPSY) AND DJ STENTING - PA ₹58000",
+      "family": "URSL (Ureteroscopic Lithotripsy) (high)",
+      "history": "16 billed cases on TR1 · 16 across all tariffs · FC template mapped (URO5379)",
+      "related_total": 232,
+      "details": "Price ₹58,000 · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6811.jpg",
+    "procedure_text": "Medical Management for TBI and hemiplegia",
+    "matched_family": "traumatic_brain_injury_tbi_head_trauma_management",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": "ALCU",
+    "department": "Neurosurgery",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Traumatic Brain Injury (TBI) / Head Trauma Management (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "traumatic_brain_injury_tbi_head_trauma_management",
+        "label": "Traumatic Brain Injury (TBI) / Head Trauma Management",
+        "confidence": "high",
+        "reason": "The doctor's wording explicitly mentions 'TBI' (Traumatic Brain Injury) and 'Medical Management', which perfectly aligns with this family. Hemiplegia is often a consequence of TBI."
+      },
+      "related_total": 0
+    },
+    "ms": 17661,
+    "second_pass": {
+      "note": "org \"ALCU\" not in mapping"
+    },
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[CTH5201] CAROTID ENDARTERECTOMY (FOR CVA PT'S) CAT-II ₹10",
+      "family": "Traumatic Brain Injury (TBI) / Head Trauma Management (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · no FC template mapping",
+      "related_total": 0,
+      "details": "Scalar price ₹10 is a placeholder — but per-room package rates exist · inclusions documented"
+    }
+  },
+  {
+    "file": "IMG_6812.jpg",
+    "procedure_text": "CAG",
+    "matched_family": "coronary_angio_cag_cat_1_daycare",
+    "payor_bucket": "Non-GIPSA Insurance",
+    "organization": null,
+    "department": "Cardiology",
+    "gate": {
+      "route": {
+        "decision": "blocked_no_tariff",
+        "reason": "Cannot classify without a tariff — the payor needs an organization mapping first."
+      },
+      "steps": [
+        {
+          "key": "tariff",
+          "status": "blocked",
+          "summary": "Non-cash payor \"Non-GIPSA Insurance\" requires organization_cd for tariff resolution"
+        },
+        {
+          "key": "package_match",
+          "status": "skipped",
+          "summary": "Skipped — no tariff resolved"
+        },
+        {
+          "key": "package_details",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "fc_history",
+          "status": "skipped",
+          "summary": "Skipped — no package matched"
+        },
+        {
+          "key": "family_flow",
+          "status": "ok",
+          "summary": "Best family: Coronary Angiogram (CAG) CAT-1 — Daycare (high confidence)"
+        }
+      ],
+      "top_candidate": null,
+      "family": {
+        "family": "coronary_angio_cag_cat_1_daycare",
+        "label": "Coronary Angiogram (CAG) CAT-1 — Daycare",
+        "confidence": "high",
+        "reason": "The doctor's wording 'CAG' is an exact abbreviation for Coronary Angiogram, which is explicitly mentioned in this family."
+      },
+      "related_total": 602
+    },
+    "ms": 13735,
+    "cash_gate": {
+      "route": "package_with_review",
+      "reason": "Package exists with a usable price but only 0 billed case(s) on TR1 — review against related history.",
+      "top_package": "[CAT0469] CAG+PERIPHERAL ANGIOGRAM (PAG) ₹20000",
+      "family": "Coronary Angiogram (CAG) CAT-1 — Daycare (high)",
+      "history": "0 billed cases on TR1 · 0 across all tariffs · FC template mapped (CAR0122)",
+      "related_total": 602,
+      "details": "Price ₹20,000 · inclusions documented"
+    }
+  }
+]
