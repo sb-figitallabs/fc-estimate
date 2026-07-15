@@ -137,28 +137,33 @@ morning before the doc landed** — verified live. The "Feedback to AI" ask is
 - [x] **23. Send him the flow AI prompts + input format** — he wants to refine
   them himself ("prompt de do, input batao kaise jata hai, main refine karta
   hu"). Doc prepared: `todo_and_helpers/ai-prompts-15jul.md`.
-- [ ] **24. Show the package code in the UI** — package matches display name
+- [x] **24. Show the package code in the UI** — DONE 15-Jul night: PkgCode chip on every package display (offer banner, review box, bucket row, preview table, FC-history caption, related rows, provenance); engine gate/lookup responses carry package_code.
+  Original ask: — package matches display name
   only (his NES5011/NES 5281 check needed the DB); show `[code] name` on the
   Flow view, package offer and historic panels — code, not name, is package
   identity.
-- [ ] **25. Robotic visibility in the UI** — "how do I even tell if robotic is
+- [x] **25. Robotic visibility in the UI** — DONE 15-Jul night: RoboticBadge on workbench + preview (included / add-on available with per-payor presence % / absent). Also fixed dead code: the sub-90% convert prompt checked selection==='auto' but the engine sends '' — it never rendered before.
+  Original ask: — "how do I even tell if robotic is
   included? it's shown nowhere". Surface the robotic state (included /
   add-on available / not applicable) + presence % on the estimate & Flow
   views without needing a trigger.
-- [ ] **26. Drop Procedure from stage 1 (Simple flow)** — stage 1 currently
+- [x] **26. Drop Procedure from stage 1 (Simple flow)** — DONE 15-Jul night (HO e26c2ed): stage 1 = note wording + patient; payor next; then payor-aware resolution (family + payor cases + payor_note + [CODE] package hint) confirmed by the FC; stay/LOS derive only from the resolved cohort; payer change re-resolves.
+  Original ask: — stage 1 currently
   forces a pick from ~170 families BEFORE payer context, and LOS/stay derive
   from that too-early pick; changing payer later doesn't re-derive it. His
   ask: stage 1 captures ONLY admission-note text + payer; the payor-aware
   gate resolves the procedure at the next stage (both inputs first, then the
   flow decides — matches the flow doc philosophy).
-- [ ] **27. Robotic add-on charges missing from the built estimate** — GIPSA +
+- [x] **27. Robotic add-on charges missing from the built estimate** — DONE 15-Jul night: robotic rows now render as line items; gate robotic_addon flag threaded (clinical.robotic_addon); pricing tariff_contracted→cohort_history→tr1_fallback; never clause-swallowed. GIPSA Robotic TKR: ₹3.12L→₹4.32L with contracted OTI0098 ₹1,20,000; parity 1042/1042.
+  Original ask: — GIPSA +
   Robotic TKR: gate correctly resolved base TKR + robotic add-on, but the
   estimate applied NO robotic charge anywhere (implants present, add-on
   absent; ₹6.11L total). GIPSA tariff carries a contracted "CHARGES FOR
   ROBOTIC TKR" ₹1,20,000 under Other Services — the add-on must price from
   the payor's contracted rate, and default per the per-payor 90%/flag rule
   (#9), not stay invisible.
-- [ ] **28. DB-level robotic classification** — persist per package/surgery
+- [x] **28. DB-level robotic classification** — DONE 15-Jul night: migration 001 + backfill RUN on dev: 680 family×payor rows (15 robotic-capable families), 1145 packages (905 capable), 16048 admissions (911 billed robotic, ₹20.5Cr), 74 contracted (tariff,item) rates. #9 parity table reproduced (0/61/69, 0/0/23). Note: robotic families show 0% for insurers because those cohorts have zero insurer cases — read with cohort_cases.
+  Original ask: — persist per package/surgery
   whether a robotic add-on exists (and the contracted rate), and per IP
   admission whether robotic was actually billed. He is sending a review doc
   from his side; align with it.
