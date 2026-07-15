@@ -1,8 +1,7 @@
 import { query } from '../../db/pool.js';
-import { geminiJson } from '../ai/gemini.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
-import { aliasCandidates, deriveRoomAmounts } from './packages.service.js';
-import { listFamilies, familyPayorCounts, roboticBaseOf } from '../engine/cohort.js';
+import { deriveRoomAmounts } from './packages.service.js';
+import { familyMatches, payorAwareFamilies, rankPackageCandidates } from '../resolve/familyResolve.js';
 
 /**
  * Intake package-gate (manager, 14-Jul evening call): BEFORE any estimate,
@@ -40,33 +39,6 @@ function parseTariffInfoRooms(text) {
     if (Number.isFinite(amount) && amount >= PLACEHOLDER_PRICE_MAX) out[label] = amount;
   }
   return Object.keys(out).length ? out : null;
-}
-
-/** Same family matcher as /lookup/resolve-treatment — the non-package route. */
-async function familyMatches(text) {
-  const families = listFamilies();
-  const system = `You map a doctor's free-text treatment/surgery wording to a hospital's
-known procedure families for cost estimation.
-
-Known procedure families (use the exact key):
-${families.map((f) => `- ${f.family}: ${f.label}`).join('\n')}
-
-Return STRICT JSON: { "matches": [{ "family": "<exact key from the list>",
-"confidence": "high"|"medium"|"low", "reason": "<one line why it matches>" }] }.
-Return at most the top 3 matches ordered best-first; fewer if fewer plausibly fit,
-and an empty array if nothing fits. Never invent family keys not in the list.`;
-  const out = await geminiJson(`Doctor's wording: ${text}`, { system });
-  const byKey = new Map(families.map((f) => [f.family, f]));
-  const seen = new Set();
-  return (Array.isArray(out?.matches) ? out.matches : [])
-    .filter((m) => m && byKey.has(m.family) && !seen.has(m.family) && seen.add(m.family))
-    .slice(0, 3)
-    .map((m) => ({
-      family: m.family,
-      label: byKey.get(m.family).label,
-      confidence: ['high', 'medium', 'low'].includes(m.confidence) ? m.confidence : 'low',
-      reason: typeof m.reason === 'string' ? m.reason : '',
-    }));
 }
 
 /**
@@ -167,29 +139,7 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
     steps.push(step('package_match', 'Package in master catalog', 'skipped',
       'Skipped — medical-management admission (non-surgical): packages do not apply, use the cohort flow'));
   } else {
-    candidates = await aliasCandidates({ text: treatment, tariff_code: tariff.tariff_cd, organization_cd: organizationCd, limit: 5 });
-    // The word-overlap scorer has no clinical sense (appendicectomy→myomectomy
-    // class of misses) — when several candidates surface, let the AI pick and
-    // demote the rest; a null pick means nothing genuinely fits.
-    if (candidates.length > 1) {
-      try {
-        const pick = await geminiJson(
-          `Raw treatment text: "${treatment}" (tariff ${tariff.tariff_cd}).
-Candidate hospital packages:
-${candidates.map((c, i) => `${i}: [${c.package_code}] ${c.package_name}`).join('\n')}
-Return JSON {"best_index": <int or null if none genuinely matches clinically>, "confidence": "high"|"medium"|"low", "reason": "..."}`,
-          { system: 'You match raw treatment descriptions to hospital package catalog rows. Prefer exact clinical matches; return null when nothing genuinely fits. Never invent packages.' }
-        );
-        ranking = { method: 'ai', confidence: pick?.confidence ?? 'low', reason: pick?.reason ?? '' };
-        if (pick?.best_index == null) {
-          ranking.no_clinical_match = true;
-          candidates = []; // alias hits were noise — treat as no package
-        } else if (candidates[pick.best_index]) {
-          const best = candidates[pick.best_index];
-          candidates = [best, ...candidates.filter((c) => c !== best)];
-        }
-      } catch { ranking = { method: 'alias_score_only' }; }
-    }
+    ({ candidates, ranking } = await rankPackageCandidates({ treatment, tariff_code: tariff.tariff_cd, organization_cd: organizationCd }));
     if (!candidates.length) elsewhere = await existsOnOtherTariffs(treatment, tariff.tariff_cd);
     steps.push(step(
       'package_match', 'Package in master catalog', candidates.length ? 'ok' : (elsewhere.length ? 'warn' : 'missing'),
@@ -286,35 +236,7 @@ Return JSON {"best_index": <int or null if none genuinely matches clinically>, "
   // this payor group must not win over one that has them — the robotic-TKR
   // example: robotic families are Cash-only, so GIPSA belongs on the plain
   // family (+ robotic add-on), never the robotic cohort.
-  let families = await familyPromise;
-  let payorNote = null;
-  try {
-    const counts = await familyPayorCounts();
-    if (counts) {
-      families = families.map((m) => ({ ...m, payor_cases: counts[m.family]?.[payorBucket] ?? 0 }));
-      const best = families[0];
-      if (best && best.payor_cases === 0) {
-        const withCases = families.find((m) => m.payor_cases > 0);
-        // Robotic family with no payor history ⇒ its BASE family + robotic
-        // add-on is the correct cohort (robotic families are Cash-only).
-        const baseKey = roboticBaseOf(best.family);
-        const baseCases = baseKey ? counts[baseKey]?.[payorBucket] ?? 0 : 0;
-        if (baseKey && baseCases > 0) {
-          const baseLabel = listFamilies().find((f) => f.family === baseKey)?.label ?? baseKey;
-          families = [
-            { family: baseKey, label: baseLabel, confidence: best.confidence, payor_cases: baseCases, reason: `Base family of ${best.label} — apply the robotic add-on on top`, robotic_addon: true },
-            ...families,
-          ];
-          payorNote = `"${best.label}" has NO ${payorBucket} history (robotic cohorts are Cash-only) — use "${baseLabel}" (${baseCases} ${payorBucket} cases) + robotic add-on`;
-        } else if (withCases) {
-          families = [withCases, ...families.filter((m) => m !== withCases)];
-          payorNote = `"${best.label}" matched but has NO ${payorBucket} history — preferring "${withCases.label}" (${withCases.payor_cases} ${payorBucket} cases)`;
-        } else {
-          payorNote = `No matched family has ${payorBucket} history — falling back to the closest match across all payors`;
-        }
-      }
-    }
-  } catch { /* counts unavailable — keep the AI order */ }
+  const { matches: families, payor_note: payorNote } = await payorAwareFamilies(await familyPromise, payorBucket);
   steps.push(step(
     'family_flow', 'Procedure-family cohort (non-package route)',
     families.length ? (payorNote && !families[0].payor_cases ? 'warn' : 'ok') : 'missing',
@@ -353,5 +275,40 @@ Return JSON {"best_index": <int or null if none genuinely matches clinically>, "
       : `Package exists with a usable price but only ${actualCasesThisTariff} billed case(s) on ${tariff.tariff_cd} — review against related history.`;
   }
 
-  return { inputs, steps, route: { decision, reason }, related, generated_at: new Date().toISOString() };
+  // ── fallback ladder (15-Jul flow doc) — which rung the match came from ────
+  // Package-classified: pkg-with-payor → non-pkg-family-with-payor → strong
+  // match without payor → no match. Non-package: family-with-payor →
+  // family-without-payor → pkg-with-payor → pkg-without-payor → no match.
+  const isPackageClassified = !!top;
+  const famWithPayor = families.find((m) => (m.payor_cases ?? 0) > 0) ?? null;
+  const rungs = isPackageClassified
+    ? [
+      { rung: 1, label: `Package with ${payorBucket} billed history`, available: actualCasesThisTariff > 0 },
+      { rung: 2, label: `Non-package family with ${payorBucket} history`, available: !!famWithPayor },
+      { rung: 3, label: `Strong match without ${payorBucket} history`, available: families.length > 0 || actuals.length > 0 },
+      { rung: 4, label: 'No match in the FC historic dataset', available: true },
+    ]
+    : [
+      { rung: 1, label: `Non-package family with ${payorBucket} history`, available: !!famWithPayor },
+      { rung: 2, label: `Non-package family without ${payorBucket} history`, available: families.length > 0 },
+      { rung: 3, label: `Package with ${payorBucket} history`, available: false },
+      { rung: 4, label: `Package without ${payorBucket} history`, available: elsewhere.length > 0 },
+      { rung: 5, label: 'No match in the FC historic dataset', available: true },
+    ];
+  const used = rungs.find((r) => r.available);
+  const fallback_ladder = {
+    classification: isPackageClassified ? 'package' : 'non_package',
+    rungs: rungs.map((r) => ({ ...r, used: r === used })),
+    used_rung: used?.rung ?? null,
+  };
+  steps.push(step(
+    'fallback_ladder', 'Matching ladder',
+    used && used.rung === 1 ? 'ok' : used && used.rung < rungs.length ? 'warn' : 'missing',
+    used
+      ? `${isPackageClassified ? 'Package' : 'Non-package'} classification — using rung ${used.rung}: ${used.label}`
+      : 'No rung available',
+    fallback_ladder
+  ));
+
+  return { inputs, steps, route: { decision, reason }, related, fallback_ladder, generated_at: new Date().toISOString() };
 }

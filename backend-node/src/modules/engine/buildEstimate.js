@@ -255,15 +255,35 @@ export async function buildEstimate(input) {
     status: serviceLineCountAlert({ current: currentCount, p25: svcBasisRow.service_line_p25, p75: svcBasisRow.service_line_p75 }),
   };
 
-  // 15. side-by-side package offer (never replaces the itemized estimate)
+  // 15. side-by-side package offer (never replaces the itemized estimate).
+  // Gate-driven selection (15-Jul flow doc): when the doctor's raw wording is
+  // available and no explicit package was chosen, the package comes from the
+  // gate brain (alias + AI clinical ranking on this tariff) — same choice the
+  // flow view makes. Cohort-dominant stays as the fallback.
   let packageOffer;
   try {
+    let inputPackage = input.package;
+    let gatePicked = false;
+    const treatmentText = input.clinical.treatment_text?.trim();
+    if (!inputPackage?.package_code && !inputPackage?.package_name && !inputPackage?.text && treatmentText) {
+      try {
+        const { rankPackageCandidates } = await import('../resolve/familyResolve.js');
+        const { candidates } = await rankPackageCandidates({
+          treatment: treatmentText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
+        });
+        if (candidates[0]) {
+          inputPackage = { package_code: candidates[0].package_code, package_name: candidates[0].package_name };
+          gatePicked = true;
+        }
+      } catch { /* gate match unavailable — cohort-dominant fallback below */ }
+    }
     packageOffer = await packageOfferForEstimate({
       cohortRows,
       tariff_cd: tariff.tariff_cd,
       organization_cd: input.payment.organization_cd,
-      inputPackage: input.package,
+      inputPackage,
     });
+    if (gatePicked && packageOffer) packageOffer.source = 'gate_match';
   } catch (err) {
     packageOffer = { status: 'lookup_error', error: err.message, package: null };
   }

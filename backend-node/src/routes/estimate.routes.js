@@ -65,6 +65,11 @@ export const EstimateInput = z.object({
   }).default({}),
   clinical: z.object({
     procedure: z.string().default('robotic_tkr_unilateral_right'),
+    /** Raw doctor's wording (intake note / treatment search). When present and
+     *  no explicit package is given, package selection goes through the gate
+     *  brain (alias + AI clinical ranking on the payor's tariff) instead of
+     *  the cohort-dominant heuristic. */
+    treatment_text: z.string().optional(),
     department_name: z.string().optional(),
     doctor_name: z.string().optional(),
     doctor_cd: z.string().optional(),

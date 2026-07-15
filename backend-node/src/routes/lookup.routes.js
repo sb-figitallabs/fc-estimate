@@ -6,6 +6,8 @@ import { fetchCohortRows, basisCohorts, buildBasisSummary } from '../modules/eng
 import { payorBucketCounts, resolveBasis, resolveComponentBases } from '../modules/resolve/payerBasis.js';
 import { quartilesInclusive, round2 } from '../modules/engine/stats.js';
 import { packageGate } from '../modules/packages/packageGate.js';
+import { familyMatches, payorAwareFamilies, rankPackageCandidates } from '../modules/resolve/familyResolve.js';
+import { resolveTariff } from '../modules/resolve/payorTariff.js';
 
 const router = Router();
 
@@ -39,34 +41,33 @@ router.post('/resolve-treatment', async (req, res, next) => {
   try {
     const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
     if (!text) return res.status(400).json({ error: 'text is required' });
+    const payorBucket = typeof req.body?.payor_bucket === 'string' ? req.body.payor_bucket.trim() : '';
+    const organizationCd = typeof req.body?.organization_cd === 'string' && req.body.organization_cd.trim()
+      ? req.body.organization_cd.trim() : undefined;
 
-    const families = listFamilies();
-    const system = `You map a doctor's free-text treatment/surgery wording to a hospital's
-known procedure families for cost estimation.
+    // family matching + (when the payor's tariff is resolvable) the package
+    // hint run concurrently — the gate brain drives BOTH, so the builder's
+    // suggestions match the flow view's classification exactly.
+    const familyP = familyMatches(text);
+    const hintP = (async () => {
+      if (!payorBucket) return null;
+      const tariff = await resolveTariff({ payorBucket, organizationCd }).catch(() => null);
+      if (!tariff?.tariff_cd) return null;
+      const { candidates, ranking } = await rankPackageCandidates({ treatment: text, tariff_code: tariff.tariff_cd, organization_cd: organizationCd });
+      const top = candidates[0];
+      if (!top) return null;
+      return {
+        tariff_cd: tariff.tariff_cd,
+        package_code: top.package_code,
+        package_name: top.package_name,
+        package_amount: top.package_amount,
+        ...(ranking?.method === 'ai' ? { confidence: ranking.confidence } : {}),
+      };
+    })().catch(() => null);
 
-Known procedure families (use the exact key):
-${families.map((f) => `- ${f.family}: ${f.label}`).join('\n')}
-
-Return STRICT JSON: { "matches": [{ "family": "<exact key from the list>",
-"confidence": "high"|"medium"|"low", "reason": "<one line why it matches>" }] }.
-Return at most the top 3 matches ordered best-first; fewer if fewer plausibly fit,
-and an empty array if nothing fits. Never invent family keys not in the list.`;
-
-    const out = await geminiJson(`Doctor's wording: ${text}`, { system });
-
-    const byKey = new Map(families.map((f) => [f.family, f]));
-    const seen = new Set();
-    const matches = (Array.isArray(out?.matches) ? out.matches : [])
-      .filter((m) => m && byKey.has(m.family) && !seen.has(m.family) && seen.add(m.family))
-      .slice(0, 3)
-      .map((m) => ({
-        family: m.family,
-        label: byKey.get(m.family).label,
-        confidence: ['high', 'medium', 'low'].includes(m.confidence) ? m.confidence : 'low',
-        reason: typeof m.reason === 'string' ? m.reason : '',
-      }));
-
-    res.json({ text, matches });
+    const { matches, payor_note } = await payorAwareFamilies(await familyP, payorBucket);
+    const package_hint = await hintP;
+    res.json({ text, matches, ...(payor_note ? { payor_note } : {}), ...(package_hint ? { package_hint } : {}) });
   } catch (err) { next(err); }
 });
 
