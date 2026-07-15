@@ -287,6 +287,49 @@ export async function buildEstimate(input) {
     }
   }
 
+  // 13c. Historical backfill for empty buckets on medical families (15-Jul
+  // answers, Q3 — "could be a good fallback for now"): the itemized template
+  // for medical/infusion cohorts often carries NO investigation lines and no
+  // drug line (Immunotherapy Pharmacy ₹0 vs actual ₹45k–₹2.3L). When a money
+  // bucket is empty but the cohort's history isn't, add ONE clearly-annotated
+  // row at the historical P25/P50/P75.
+  if (cohortDef.familyKind === 'medical') {
+    const BACKFILL = [
+      ['investigations', 'Investigations'],
+      ['pharmacy_total', 'Pharmacy'],
+    ];
+    const modeVal = (p25, p50, p75) => (mode === 'Low' ? p25 : mode === 'Typical' ? p50 : p75);
+    for (const [field, bucket] of BACKFILL) {
+      const bucketNow = lineItems.rows
+        .filter((r) => r.bucket === bucket)
+        .reduce((t, r) => t + (r.selected?.single ?? 0), 0);
+      const m = actualMetricsEarly.find((r) => r.basis_label === svcBasis && r.field_key === field);
+      if (bucketNow > 0 || !(m?.p50 > 0)) continue;
+      const cells = [m.p25 ?? m.p50, m.p50, m.p75 ?? m.p50];
+      const sel = modeVal(...cells);
+      lineItems.rows.push({
+        index: lineItems.rows.length,
+        name: `${bucket} — historical estimate`,
+        bucket, sub: bucket, source: 'Historical',
+        how: `No ${bucket.toLowerCase()} lines in this cohort's template — filled from the ${svcBasis} basis P25/P50/P75 of actual bills.`,
+        code: null, historical_estimate: true,
+        qty: { selected: 1, low: 1, typ: 1, high: 1 }, rate: {},
+        cells: { general: cells, twin: [...cells], single: [...cells] },
+        selected: { general: sel, twin: sel, single: sel },
+      });
+      for (const rk of ['general', 'twin', 'single']) {
+        if (Array.isArray(lineItems.grandTotal[rk])) {
+          lineItems.grandTotal[rk] = lineItems.grandTotal[rk].map((v, i) => Math.round((v + cells[i]) * 100) / 100);
+        }
+        if (lineItems.grandTotal.selected?.[rk] != null) {
+          lineItems.grandTotal.selected[rk] = Math.round((lineItems.grandTotal.selected[rk] + sel) * 100) / 100;
+        }
+      }
+      lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
+      warnings.push(`${bucket} had no template lines — filled from historical actuals (P50 ₹${Math.round(m.p50).toLocaleString('en-IN')}, basis ${svcBasis}).`);
+    }
+  }
+
   // 14. service line count alert
   const baseCount = cohortDef.baseServiceCount ?? (autoIncluded.length + 10);
   const roboticCount = roboticSelection === 'Yes' ? 1 + roboticRows.length : 0;
