@@ -531,6 +531,32 @@ export async function buildEstimate(input) {
     }
   }
 
+  // 18b. conversion alert (15-Jul flow doc): the open→package conversion is
+  // driven by inclusion/exclusion text parsing — when the converted total
+  // lands outside the ACTUAL billed range for this package, the parsing (or
+  // the package price) is suspect and must be checked, not trusted.
+  {
+    const ba = packageOffer?.billed_actuals?.this_tariff;
+    const converted = packageOffer?.coverage?.totals?.with_package;
+    if (ba && ba.cases >= 5 && Number.isFinite(converted) && converted > 0) {
+      const lo = ba.p25 * 0.75;
+      const hi = ba.p75 * 1.25;
+      const out = converted < lo || converted > hi;
+      packageOffer.conversion_check = {
+        status: out ? 'out_of_range' : 'ok',
+        converted_total: converted,
+        actual_band: { p25: ba.p25, p50: ba.p50, p75: ba.p75, cases: ba.cases },
+      };
+      if (out) {
+        warnings.push(
+          `Package conversion check: the converted total ₹${Math.round(converted).toLocaleString('en-IN')} is outside the actual billed range ` +
+          `₹${Math.round(ba.p25).toLocaleString('en-IN')}–₹${Math.round(ba.p75).toLocaleString('en-IN')} (${ba.cases} cases) — ` +
+          'check this package\'s inclusion/exclusion parsing and price before quoting.'
+        );
+      }
+    }
+  }
+
   // 19. per-room side-by-side data (manager: show all room types at once).
   // Line-item and grand totals already carry all rooms; only the cheap tail —
   // package coverage and insurance settlement — is room-specific, so we replay
