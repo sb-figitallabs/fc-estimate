@@ -1,4 +1,27 @@
-# Auto-verification harness — first run (15-Jul)
+# Auto-verification harness (15-Jul)
+
+## Re-run AFTER the Q1/Q3/Q4 fixes — every fixed class cleared
+
+| failure class | before | after |
+|---|---|---|
+| GIPSA PF at token ~₹740 (Q1) | 34 | **0** |
+| Investigations ₹0 on medical families (Q3) | 31 | **10** |
+| Pharmacy ₹0 on infusion families (Q3) | 6 | **1** |
+| Dialysis/newborn room-charge inflation (Q4) | 2 | **0** (GIPSA dialysis went from gross ₹2.04L vs ₹22–48k to a trivial ₹1.3k bedside flag) |
+| Gross total out of band | 41 | **15** |
+| Token ₹0/₹1 OT rows (Q2 — awaiting sign-off on `token-rate-items-15jul.md`) | 54 | 54 |
+| Conversion alerts (real inclusion/exclusion gaps) | 3 | 3 |
+| Fully in-band builds | 25 | **32** |
+
+The row count (182→175) undersells it: most remaining rows carry only the
+token-OT flag (₹1-vs-₹2k class — pending the Q2 decision) or small bedside
+noise. The big money errors — insurer PF, missing drug/investigation buckets,
+fabricated room charges — are gone. Applying the proposed Q2 rule would clear
+the bulk of the remaining 54.
+
+---
+
+# First run (baseline, before fixes)
 
 `scripts/verify-estimates.js` on dev: every procedure family built with **zero
 manual input** (Cash for all 170 families + GIPSA where the family has ≥15

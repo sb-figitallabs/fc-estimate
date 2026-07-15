@@ -104,10 +104,13 @@ morning before the doc landed** — verified live. The "Feedback to AI" ask is
   is loaded but unused; drug-admin (12.5% of pharmacy) is itself one of the
   7. Flag to the manager — likely needs a real NME master or the billed
   nme_amount wired in.
-- [ ] **19. (Daksh) FC Scribe → Estimate Builder auto-redirect** — when a
-  scribe session starts recording and its type is Counselling (NOT
-  re-counselling), auto-redirect to the FC Estimate Builder with an on-screen
-  countdown ("redirecting in 5, 4, 3…"). Details to be discussed when picked up.
+- [x] **19. (Daksh) FC Scribe ↔ Estimate Builder joining** — DONE 15-Jul:
+  counselling (not re-counselling) session starts recording → 5-4-3 countdown
+  overlay ("Go now" / "Stay on FC Scribe") → Estimate Builder opens with
+  patient name/age/gender/UHID prefilled; the app-global recorder keeps the
+  session recording through the redirect; the estimate preview shows a
+  live-recording banner linking back to /fc-scribe/sessions/:id to stop the
+  session and review the report.
 - [ ] **21. Harness follow-ups (from verification-report-15jul.md)** — the
   ranked fix list the first run produced: (a) GIPSA Professional Fees priced
   at token ~₹740 — one rule, 34 rows, the biggest insurer-path money error;
