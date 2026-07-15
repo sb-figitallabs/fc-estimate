@@ -26,13 +26,70 @@ const orgClause = (org, i) => (org
   ? `organization_cd = $${i}`
   : `(organization_cd IS NULL OR organization_cd = '')`);
 
+/**
+ * Map one room_rates_jsonb tier label to the engine's room key.
+ * Observed room_category_code / source_field variants per tariff:
+ *  - TR287 Star / TR290 GIPSA: multi_sharing_general_ward,
+ *    twin_sharing_ac_single_room_non_ac, deluxe_single_room_ac_private
+ *  - TR289 Bajaj: general, twin, single_deluxe
+ *  - TR285 Medi Assist: general, twin, single (+ general_ward_add_on /
+ *    twin_sharing_add_on / single_room_add_on per-day add-ons — skipped)
+ *  - TR201 ICICI: general, triple, twin, single_ac (triple ignored)
+ * ICCU / suite / standalone-deluxe tiers are ignored — the engine only
+ * prices general/twin/single today. Order matters: TWIN before SINGLE
+ * (twin_sharing_ac_single_room_non_ac), SEMI before PRIVATE (Semi Private).
+ */
+function roomKeyForTier(label) {
+  const k = String(label || '').toUpperCase();
+  if (!k) return null;
+  if (/ADD[\s_-]?ON|PER[\s_-]?DAY/.test(k)) return null; // per-day room add-ons, not tier prices
+  if (/ICCU|SUITE|TRIPLE/.test(k)) return null;          // tiers the engine doesn't price yet
+  if (/TWIN|SEMI/.test(k)) return 'twin';
+  if (/SINGLE|PRIVATE/.test(k)) return 'single';         // single_deluxe, single_ac, deluxe_single_room_ac_private
+  if (/GENERAL|MULTI|WARD|\bGW\b/.test(k)) return 'general';
+  return null;
+}
+
+/**
+ * Additive per-room package amounts derived from room_rates_jsonb
+ * (fc.package_master → fc.v_package_runtime_lookup). Only tiers that are
+ * present and > 0 appear; returns null (field omitted) when the jsonb is
+ * missing, empty, or unmappable — callers fall back to scalar package_amount.
+ */
+export function deriveRoomAmounts(raw) {
+  let rates = raw;
+  if (typeof rates === 'string') { try { rates = JSON.parse(rates); } catch { return null; } }
+  if (!rates) return null;
+  const out = {};
+  const put = (roomKey, amount) => {
+    const amt = Number(amount);
+    if (roomKey && Number.isFinite(amt) && amt > 0 && out[roomKey] == null) out[roomKey] = amt;
+  };
+  if (Array.isArray(rates)) {
+    for (const rr of rates) {
+      if (!rr || typeof rr !== 'object') continue;
+      const roomKey = [rr.room_category_code, rr.source_field, rr.room_category_label, rr.room_category, rr.category]
+        .map(roomKeyForTier).find(Boolean);
+      put(roomKey, rr.amount ?? rr.rate);
+    }
+  } else if (typeof rates === 'object') {
+    // defensive: plain { "GENERAL WARD": 103084, ... } map form
+    for (const [k, v] of Object.entries(rates)) {
+      put(roomKeyForTier(k), (v && typeof v === 'object') ? (v.amount ?? v.rate) : v);
+    }
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 function shape(row) {
   if (!row) return null;
   const {
     runtime_status, can_generate_estimate, primary_blocker, warning_reason, ...pkg
   } = row;
+  const room_amounts = deriveRoomAmounts(row.room_rates_jsonb);
   return {
     ...pkg,
+    ...(room_amounts ? { room_amounts } : {}), // additive — absent when jsonb missing/empty
     readiness: {
       runtime_status,
       can_generate_estimate,
@@ -40,6 +97,40 @@ function shape(row) {
       warning_reason: (warning_reason && warning_reason !== 'None') ? warning_reason : null,
     },
   };
+}
+
+/**
+ * Additive patient-facing rewrite columns. They live on fc.package_master
+ * (base table of the runtime view; populated by scripts/rewrite-inclusions.js)
+ * and are fetched separately + defensively so lookups keep working before the
+ * columns are bootstrapped. Originals stay untouched as the audit copy.
+ */
+async function withCleanTexts(pkg) {
+  if (!pkg) return pkg;
+  // Widest column set first; fall back to the older set so lookups keep
+  // working when inclusions_clean_variants has not been bootstrapped yet.
+  const attempts = [
+    'inclusions_text_clean, exclusions_text_clean, inclusions_clean_variants',
+    'inclusions_text_clean, exclusions_text_clean',
+  ];
+  for (const cols of attempts) {
+    try {
+      const { rows } = await query(
+        `SELECT ${cols}
+         FROM fc.package_master WHERE tariff_code = $1 AND package_code = $2`,
+        [pkg.tariff_code, pkg.package_code]);
+      if (rows[0]) {
+        pkg.inclusions_text_clean = rows[0].inclusions_text_clean;
+        pkg.exclusions_text_clean = rows[0].exclusions_text_clean;
+        // per-variant clean texts (JSONB array aligned with inclusions_variants)
+        if (rows[0].inclusions_clean_variants != null) {
+          pkg.inclusions_clean_variants = rows[0].inclusions_clean_variants;
+        }
+      }
+      break;
+    } catch { /* columns not bootstrapped yet — try narrower set / omit */ }
+  }
+  return pkg;
 }
 
 /** Direct lookup by code, then exact name. Returns runtime row or null. */
@@ -51,7 +142,7 @@ export async function lookupPackage({ tariff_code, package_code, package_name, o
       `SELECT ${RUNTIME_COLS} FROM fc.v_package_runtime_lookup
        WHERE tariff_code = $1 AND package_code = $2 AND ${orgClause(organization_cd, 3)}
        LIMIT 1`, params);
-    if (rows[0]) return shape(rows[0]);
+    if (rows[0]) return withCleanTexts(shape(rows[0]));
   }
   if (package_name) {
     const params = [tariff_code, package_name, ...(organization_cd ? [organization_cd] : [])];
@@ -59,7 +150,7 @@ export async function lookupPackage({ tariff_code, package_code, package_name, o
       `SELECT ${RUNTIME_COLS} FROM fc.v_package_runtime_lookup
        WHERE tariff_code = $1 AND upper(package_name) = upper($2) AND ${orgClause(organization_cd, 3)}
        LIMIT 1`, params);
-    if (rows[0]) return shape(rows[0]);
+    if (rows[0]) return withCleanTexts(shape(rows[0]));
   }
   return null;
 }
@@ -156,14 +247,62 @@ export async function packageOfferForEstimate({ cohortRows, tariff_cd, organizat
   return await finishOffer(pkg, tariff_cd, organization_cd, 'cohort_dominant');
 }
 
+/**
+ * ACTUAL converted package bills for this package (13-Jul todo: "estimate
+ * range from actual package-bill amounts, excl. F&B"). final_pkg_bill_excl_fnb
+ * = package + billed exclusions minus F&B — what patients really ended up
+ * paying. Fail-open: engines without fc.package_bill_admissions get null.
+ */
+async function billedActualsForPackage(packageName, tariff_code) {
+  try {
+    // three quartile sets per the 15-Jul flow doc: the gross (final bill),
+    // the package amount itself, and what rode on top as billed exclusions.
+    const q3 = (col) => `
+      round(percentile_cont(0.25) WITHIN GROUP (ORDER BY ${col})::numeric) ${col.replace(/[^a-z_]/g, '')}_p25,
+      round(percentile_cont(0.5)  WITHIN GROUP (ORDER BY ${col})::numeric) ${col.replace(/[^a-z_]/g, '')}_p50,
+      round(percentile_cont(0.75) WITHIN GROUP (ORDER BY ${col})::numeric) ${col.replace(/[^a-z_]/g, '')}_p75`;
+    const { rows } = await query(
+      `SELECT (upper(btrim(p_tariff_cd)) = upper(btrim($2))) AS this_tariff,
+              count(*)::int cases,
+              ${q3('final_pkg_bill_excl_fnb')},
+              ${q3('pkg_gross_amount')},
+              round(percentile_cont(0.25) WITHIN GROUP (ORDER BY greatest(final_pkg_bill_excl_fnb - pkg_gross_amount, 0))::numeric) excl_p25,
+              round(percentile_cont(0.5)  WITHIN GROUP (ORDER BY greatest(final_pkg_bill_excl_fnb - pkg_gross_amount, 0))::numeric) excl_p50,
+              round(percentile_cont(0.75) WITHIN GROUP (ORDER BY greatest(final_pkg_bill_excl_fnb - pkg_gross_amount, 0))::numeric) excl_p75
+       FROM fc.package_bill_admissions
+       WHERE upper(btrim(package_name)) = upper(btrim($1)) AND final_pkg_bill_excl_fnb IS NOT NULL
+         AND package_name NOT LIKE '%,%' -- multi-package combo bills (e.g. "CAG - CAT - 1,PTCA…") would inflate a single package's band
+       GROUP BY 1`,
+      [packageName, tariff_code || '']
+    );
+    if (!rows.length) return null;
+    const mine = rows.find((r) => r.this_tariff) ?? null;
+    const all = rows.reduce((t, r) => t + r.cases, 0);
+    const set = (r, prefix) => ({ p25: Number(r[`${prefix}_p25`]), p50: Number(r[`${prefix}_p50`]), p75: Number(r[`${prefix}_p75`]) });
+    return {
+      basis: 'converted package bills (excl. F&B)',
+      this_tariff: mine ? {
+        cases: mine.cases,
+        // gross final bill (kept flat for existing consumers)
+        ...set(mine, 'final_pkg_bill_excl_fnb'),
+        package_amount: set(mine, 'pkg_gross_amount'),
+        exclusions_over_package: set(mine, 'excl'),
+      } : null,
+      all_tariffs_cases: all,
+    };
+  } catch { return null; }
+}
+
 async function finishOffer(pkg, tariff_code, organization_cd, source, candidates) {
   if (!pkg) return { status: 'no_package_exists', source, package: null, ...(candidates ? { candidates } : {}) };
   const history = await packageHistory({ tariff_code, package_code: pkg.package_code, organization_cd });
+  const billed_actuals = await billedActualsForPackage(pkg.package_name, tariff_code);
   return {
     status: pkg.readiness.can_generate_estimate ? 'resolved' : 'not_ready',
     source,
     package: pkg,
     history,
+    ...(billed_actuals ? { billed_actuals } : {}),
     ...(candidates ? { candidates } : {}),
   };
 }

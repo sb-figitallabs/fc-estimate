@@ -9,9 +9,11 @@ const ai = process.env.VERTEX_AI_PROJECT
     location: process.env.VERTEX_AI_LOCATION || 'global',
   })
   : new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview';
 
-/** Call Gemini and parse a JSON response. */
+/** Call Gemini and parse a JSON response. temperature 0: matching must be
+ * deterministic — the same intake wording has to resolve to the same
+ * family/package on every run (15-Jul call, todo #22). */
 export async function geminiJson(prompt, { system } = {}) {
   const res = await ai.models.generateContent({
     model: MODEL,
@@ -19,6 +21,7 @@ export async function geminiJson(prompt, { system } = {}) {
     config: {
       ...(system ? { systemInstruction: system } : {}),
       responseMimeType: 'application/json',
+      temperature: 0,
     },
   });
   const text = res.text;

@@ -1,0 +1,42 @@
+name: Deploy DEV to EC2
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy dev instance over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            # Bootstrap the dev checkout on first run (sibling of the prod ~/fc-estimate)
+            if [ ! -d ~/fc-estimate-dev ]; then
+              git clone --branch dev "$(cd ~/fc-estimate && git remote get-url origin)" ~/fc-estimate-dev
+            fi
+            cd ~/fc-estimate-dev
+            git fetch origin dev
+            git reset --hard origin/dev
+            cd backend-node
+            # First run: copy the prod env, only the port differs
+            if [ ! -f .env ]; then
+              cp ~/fc-estimate/backend-node/.env .env
+              if grep -q '^PORT=' .env; then sed -i 's/^PORT=.*/PORT=4200/' .env; else echo 'PORT=4200' >> .env; fi
+            fi
+            npm ci --omit=dev
+            pm2 restart fc-builder-api-dev --update-env || pm2 start src/index.js --name fc-builder-api-dev
+            pm2 save || true
+            sleep 3
+            curl -sf localhost:4200/health || (pm2 logs fc-builder-api-dev --lines 30 --nostream; exit 1)
+            echo "dev deploy OK"

@@ -13,6 +13,21 @@ export const BASIS_LABELS = [
 
 const FNB_KEYWORDS = ['FOOD', 'BEVERAGE', 'FOOD AND BEVERAGES', 'TEA', 'COFFEE', 'JUICE', 'SOUP'];
 
+/**
+ * Parse an hour count out of a slot-style service name ("OT - 2 HOURS",
+ * "OT-E - 1 1/2 HOURS", "CATH LAB - 1/2 HOUR"). Shared by the OT slot matrix
+ * and the cath-lab billed-hours metric. Returns null when no hour token exists.
+ */
+export function parseSlotHours(name) {
+  const s = String(name || '').toUpperCase();
+  const frac = s.match(/(\d+)\s+(\d+)\s*\/\s*(\d+)\s*HOURS?/);
+  if (frac) return +frac[1] + +frac[2] / +frac[3];
+  const half = s.match(/(?:^|\s)(\d+)\s*\/\s*(\d+)\s*HOURS?/);
+  if (half) return +half[1] / +half[2];
+  const dec = s.match(/(\d+(?:\.\d+)?)\s*HOURS?/);
+  return dec ? parseFloat(dec[1]) : null;
+}
+
 /** Fetch the cohort case rows (everything the artifact builder needs). */
 export async function fetchCohortRows(whereSql, params) {
   const { rows } = await query(
@@ -78,6 +93,20 @@ export function buildBasisSummary(cohorts) {
       }
       return t;
     }));
+    // cath-lab billed HOURS: parsed from the same slot-family row names the
+    // amounts above come from ("CATH LAB ... N HOURS" wording), qty-weighted.
+    // Admissions with no parseable cath-hour row are excluded (null), mirroring
+    // the ot_hours null handling — so families whose cath rows carry no hour
+    // token simply report 0/0/0 and the hours control stays inert.
+    const cathHours = q(rows.map((r) => {
+      let t = 0, seen = false;
+      for (const s of (Array.isArray(r.services_json) ? r.services_json : [])) {
+        if (!/CATH ?LAB/i.test(s.service_name || '')) continue;
+        const h = parseSlotHours(s.service_name);
+        if (h != null) { t += h * (Number(s.quantity ?? 1) || 1); seen = true; }
+      }
+      return seen ? t : null;
+    }).filter((v) => v != null));
     return {
       basis_label: label,
       cohort_size: n,
@@ -98,6 +127,7 @@ export function buildBasisSummary(cohorts) {
       ip_drugs_day_p25: ipDrugsDay.p25, ip_drugs_day_p50: ipDrugsDay.p50, ip_drugs_day_p75: ipDrugsDay.p75,
       ip_consumables_day_p25: ipConsDay.p25, ip_consumables_day_p50: ipConsDay.p50, ip_consumables_day_p75: ipConsDay.p75,
       cath_lab_p25: cath.p25, cath_lab_p50: cath.p50, cath_lab_p75: cath.p75,
+      cath_hours_p25: cathHours.p25, cath_hours_p50: cathHours.p50, cath_hours_p75: cathHours.p75,
     };
   });
 }
@@ -163,6 +193,8 @@ export async function buildServiceStats(cohorts, tariffCd = 'TR1') {
         item_name: m?.item_name || list[0].name,
         fc_estimate_bucket: m?.fc_estimate_bucket || 'unmapped',
         grouping: m?.grouping || '',
+        case_count: list.length,        // admissions (this basis) where the item appears
+        basis_case_count: n,            // total admissions in this basis cohort
         case_presence_rate: n ? (list.length / n) * 100 : 0,
         quantity_p25: qq.p25, quantity_p50: qq.p50, quantity_p75: qq.p75,
         amount_cash_typical: aq.p50,
@@ -241,12 +273,11 @@ export function buildPharmacyStats(cohorts, _unused = new Map()) {
   return out;
 }
 
-/** TR-tariff rate lookup: item_code -> {general,twin,single,icu} (+ daycare/deluxe if present). */
-export async function tariffRateLookup(tariffCd) {
-  const { rows } = await query(
-    `SELECT service_cd, service_name, ward_group_name, charge::float
-     FROM fc.service_tariff_rate_matrix WHERE tariff_cd = $1`, [tariffCd]
-  );
+/** Room keys carried on each tariff-rate entry. */
+const TARIFF_ROOM_KEYS = ['general', 'twin', 'single', 'icu', 'deluxe', 'daycare'];
+
+/** Fold raw tariff matrix rows into a Map: service_cd -> {name, general, twin, ...}. */
+function foldTariffRows(rows) {
   const map = new Map();
   for (const r of rows) {
     const cur = map.get(r.service_cd) || { name: r.service_name };
@@ -259,6 +290,63 @@ export async function tariffRateLookup(tariffCd) {
     else if (w.includes('DAY')) cur.daycare = r.charge;
     map.set(r.service_cd, cur);
   }
+  return map;
+}
+
+/**
+ * TR-tariff rate lookup: item_code -> {general,twin,single,icu} (+ daycare/deluxe if present).
+ *
+ * Insurer tariffs (e.g. TR287 Star, TR286 HDFC, TR289 Bajaj) often carry empty or ₹0
+ * service-rate matrices. For any tariff other than TR1 (cash), missing/zero room rates
+ * are filled per-item from TR1 and flagged `tr1_fallback: true` on the entry.
+ * Conservative rule: an org rate of exactly 1 (₹1 token, usually "inside package") is a
+ * REAL value and is never overridden — only null/undefined or <= 0 rates are filled.
+ * The returned Map additionally carries `tr1FallbackCount` and `tr1FallbackCodes`
+ * (capped at 200) so callers can surface fallback usage.
+ */
+export async function tariffRateLookup(tariffCd) {
+  if (tariffCd === 'TR1') {
+    const { rows } = await query(
+      `SELECT service_cd, service_name, ward_group_name, charge::float
+       FROM fc.service_tariff_rate_matrix WHERE tariff_cd = $1`, [tariffCd]
+    );
+    return foldTariffRows(rows);
+  }
+
+  // One query for both the org tariff and the TR1 (cash) baseline, then partition.
+  const { rows } = await query(
+    `SELECT tariff_cd, service_cd, service_name, ward_group_name, charge::float
+     FROM fc.service_tariff_rate_matrix WHERE tariff_cd IN ($1, 'TR1')`, [tariffCd]
+  );
+  const map = foldTariffRows(rows.filter((r) => r.tariff_cd === tariffCd));
+  const tr1 = foldTariffRows(rows.filter((r) => r.tariff_cd === 'TR1'));
+
+  const fallbackCodes = [];
+  for (const [code, base] of tr1) {
+    const cur = map.get(code);
+    if (!cur) {
+      // Service exists only in TR1 — whole-entry fallback.
+      map.set(code, { ...base, tr1_fallback: true });
+      fallbackCodes.push(code);
+      continue;
+    }
+    let filled = false;
+    for (const k of TARIFF_ROOM_KEYS) {
+      const v = cur[k];
+      // Fill only when the org tariff has no value or a non-positive value.
+      // An org rate of exactly 1 (₹1 token) is > 0, hence kept as-is.
+      if ((v == null || v <= 0) && base[k] != null && base[k] > 0) {
+        cur[k] = base[k];
+        filled = true;
+      }
+    }
+    if (filled) {
+      cur.tr1_fallback = true;
+      fallbackCodes.push(code);
+    }
+  }
+  map.tr1FallbackCount = fallbackCodes.length;
+  map.tr1FallbackCodes = fallbackCodes.slice(0, 200);
   return map;
 }
 
@@ -411,18 +499,9 @@ export async function buildOtSlotMatrix(tariffCds = ['TR1']) {
      FROM fc.service_tariff_rate_matrix
      WHERE tariff_cd = ANY($1) AND service_name ~* '^OT(-E)? - .*HOURS?'`, [tariffCds]
   );
-  const parseHours = (name) => {
-    const s = name.toUpperCase();
-    const frac = s.match(/(\d+)\s+(\d+)\s*\/\s*(\d+)\s*HOURS?/);
-    if (frac) return +frac[1] + +frac[2] / +frac[3];
-    const half = s.match(/(?:^|\s)(\d+)\s*\/\s*(\d+)\s*HOURS?/);
-    if (half) return +half[1] / +half[2];
-    const dec = s.match(/(\d+(?:\.\d+)?)\s*HOURS?/);
-    return dec ? parseFloat(dec[1]) : null;
-  };
   const map = new Map();
   for (const r of rows) {
-    const hours = parseHours(r.service_name);
+    const hours = parseSlotHours(r.service_name);
     if (hours == null) continue;
     const mode = r.service_name.toUpperCase().startsWith('OT-E') ? 'emergency' : 'normal';
     const key = `${r.tariff_cd}|${mode}|${hours}`;

@@ -11,6 +11,7 @@
  */
 
 import { quartilesInclusive } from '../engine/stats.js';
+import { roboticProvenance } from './dynamicSheets.js';
 
 const round2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100;
 const round4 = (x) => Math.round((x + Number.EPSILON) * 10000) / 10000;
@@ -272,6 +273,18 @@ export function buildBands(estimate, input, template) {
     // writes non-template band cells as static values.
     put(S, 'L12', { v: 'Historical Cases (All Payers)' });
     put(S, 'M12', { v: cohortN });
+    // Robotic Data provenance (manager i14) — robotic-relevant estimates only.
+    // NOT below L12: the template has "Pharmacy P50 by Basis" at L13 and the
+    // PF-mix block through L34. Rows 36+ carry only columns A:F in the
+    // template, so L36:M41 is collision-free (verified against template.json).
+    const robo = roboticProvenance(estimate);
+    if (robo) {
+      put(S, 'L36', { v: 'Robotic Data' });
+      robo.rows.forEach(([label, v], i) => {
+        put(S, `L${37 + i}`, { v: label });
+        put(S, `M${37 + i}`, { v });
+      });
+    }
   }
 
   // =========================================================== Advanced Controls

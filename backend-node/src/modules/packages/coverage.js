@@ -239,10 +239,14 @@ export function applyCoverage(estimate, coverage) {
 
   // ---- clause-format packages: whole categories included in the package price ----
   // (implants are deliberately never category-matched — they ride the exclusion
-  // text, or stay payable when the text is silent)
+  // text, or stay payable when the text is silent. Same for the robotic add-on
+  // row (15-Jul #27): the contracted robotic charge is a separate Other
+  // Services tariff item that rides ON TOP of the conventional package price —
+  // a generic "OT charges" inclusion clause must never swallow it.)
   if (coverage.categories) {
     const catOf = (r) => {
       if (/^Implants$/i.test(r.name)) return null;
+      if (r.robotic_addon) return null;
       if (r.bucket === 'Room Charges') return 'room';
       if (r.bucket === 'Pharmacy') return 'pharmacy';
       if (r.bucket === 'Investigations') return 'investigations';
@@ -266,6 +270,7 @@ export function applyCoverage(estimate, coverage) {
     const amt = sel(r);
     if (amt === 0) return set(i, 'not_included', 0, null, 'not selected / zero');
     if (r.addOn) return set(i, 'not_included', amt, null, 'optional add-on — payable');
+    if (r.robotic_addon) return set(i, 'not_included', amt, null, 'robotic add-on — contracted charge on top of the package');
     set(i, 'review', amt, null, 'not found in curated inclusions — payable pending review');
   });
 

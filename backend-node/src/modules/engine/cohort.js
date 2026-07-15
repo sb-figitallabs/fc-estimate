@@ -4,6 +4,7 @@
  * export_robotic_tkr_fc_estimate_builder.py (see spec/BUILD_SPEC.md).
  */
 import GENERATED_FAMILIES from './generatedFamilies.js';
+import { query } from '../../db/pool.js';
 
 const FAMILIES = {
   robotic_tkr_unilateral_right: {
@@ -200,6 +201,48 @@ const SUBLIMIT_RISK = {
   lscs_caesarean: { level: 'high', groups: ['maternity'] },
 };
 
+/**
+ * Robotic family → conventional base family (manager-approved robotic redirect).
+ * Insurers (GIPSA / Non-GIPSA) historically price robotic procedures as the
+ * conventional base package + a robotic add-on charge, so when the robotic
+ * cohort is insurance-thin the engine suggests switching to the base family
+ * with robotic='yes'.
+ */
+export const ROBOTIC_BASE_FAMILY = {
+  robotic_tkr_unilateral_right: 'total_knee_replacement_unilateral',
+  robotic_tkr_unilateral_left: 'total_knee_replacement_unilateral',
+  robotic_tkr_bilateral: 'total_knee_replacement_bilateral',
+};
+
+/** Conventional base family key for a robotic family, or null if not robotic. */
+export function roboticBaseOf(family) {
+  return ROBOTIC_BASE_FAMILY[family] ?? null;
+}
+
+/**
+ * Contracted robotic add-on tariff items per conventional base family
+ * (15-Jul #27): insurer tariffs carry a contracted "ROBO (…)" charge row
+ * (e.g. TR290 GIPSA: OTI0098 ROBO (TKR) - UNILATERAL ₹1,20,000) that prices
+ * the robotic add-on when the payor takes base package + robotic on top.
+ * Codes are the same procedure codes the robotic families bill (OTI0098 /
+ * OTI0099) plus the THR robotic-equipment variants seen in billed history.
+ * Ordered best-first; the pricer also considers the cohort's own billed
+ * robotic rows, so this map only needs the known curated families.
+ */
+const ROBOTIC_ADDON_ITEMS = {
+  total_knee_replacement_unilateral: [{ code: 'OTI0098', label: 'ROBO (TKR) - UNILATERAL' }],
+  total_knee_replacement_bilateral: [{ code: 'OTI0099', label: 'ROBO (TKR) - BILATERAL' }],
+  total_hip_replacement_thr_hemiarthroplasty: [
+    { code: 'EQP0001', label: 'ROBO (THR) - UNILATERAL' },
+    { code: 'EQP0002', label: 'ROBO (THR) - BILATERAL' },
+  ],
+};
+
+/** Known contracted robotic add-on tariff items for a family ([] when none registered). */
+export function roboticAddonItemsOf(family) {
+  return ROBOTIC_ADDON_ITEMS[family] ?? [];
+}
+
 /** Public registry view for UI/API consumers. */
 export function listFamilies() {
   return Object.values(FAMILIES).map((f) => ({
@@ -207,9 +250,85 @@ export function listFamilies() {
     label: f.templateName,
     family_kind: f.familyKind,
     daycare: f.daycare === true,     // daycare ⇒ room selection not applicable
+    cath_lab: f.rows?.cathLab === true, // cath-lab family ⇒ Cath Lab hours input applies
     validated: f.family === 'robotic_tkr_unilateral_right', // exact workbook parity
     sublimit_risk: SUBLIMIT_RISK[f.family] ?? { level: 'low', groups: [] },
   }));
+}
+
+// ——— Per-family payor-bucket case counts (dropdown hints) ————————————————
+// Powers the additive `payor_counts` field on GET /api/lookup/families so the
+// UI can show "· 248 Cash cases" / "· no GIPSA Insurance history" per option.
+//
+// Efficiency: ~170 families would mean ~170 GROUP BYs per request if done
+// naively. Instead:
+//  (a) every family whose whereSql is EXACTLY the curated-template pattern
+//      `curated_template_names_jsonb ? '<Template>'` (all 158 generated
+//      families + general_medical_management) is covered by ONE scan that
+//      unnests the jsonb array and groups by (template, payor_bucket);
+//  (b) the ~11 hand-written families with custom whereSql run their own
+//      grouped count once (in parallel).
+// The whole result is cached module-level with a TTL: computed lazily on the
+// first /families request, served stale while a background refresh runs.
+const TEMPLATE_WHERE_RE = /^curated_template_names_jsonb \? '([^']+)'$/;
+const PAYOR_COUNTS_TTL_MS = 15 * 60 * 1000;
+let payorCountsCache = null;    // { at: epoch-ms, data: { [family]: { [bucket]: n } } }
+let payorCountsInflight = null; // de-dupes concurrent refreshes
+
+async function computeFamilyPayorCounts() {
+  const byTemplate = new Map(); // template string → [family keys]
+  const customDefs = [];
+  for (const def of Object.values(FAMILIES)) {
+    const m = (def.params ?? []).length === 0 ? TEMPLATE_WHERE_RE.exec(def.whereSql) : null;
+    if (m) byTemplate.set(m[1], [...(byTemplate.get(m[1]) ?? []), def.family]);
+    else customDefs.push(def);
+  }
+
+  // Every registered family gets an entry — an empty object means "counts are
+  // known and this family has NO history in any bucket" (amber hint in the UI).
+  const data = {};
+  for (const def of Object.values(FAMILIES)) data[def.family] = {};
+  const add = (family, bucket, n) => { if (bucket) data[family][bucket] = n; };
+
+  const [tmpl, ...custom] = await Promise.all([
+    // one scan covers all curated-template families
+    query(
+      `SELECT t.template, m.payor_bucket, count(*)::int AS n
+       FROM mart.main_table m, jsonb_array_elements_text(m.curated_template_names_jsonb) t(template)
+       GROUP BY 1, 2`
+    ),
+    // custom whereSql values are trusted server-side registry literals (never
+    // user input) — interpolated exactly the way artifacts.js does.
+    ...customDefs.map((def) =>
+      query(
+        `SELECT payor_bucket, count(*)::int AS n
+         FROM mart.main_table WHERE ${def.whereSql} GROUP BY payor_bucket`,
+        def.params
+      ).then(({ rows }) => ({ family: def.family, rows }))
+    ),
+  ]);
+  for (const r of tmpl.rows) {
+    for (const fam of byTemplate.get(r.template) ?? []) add(fam, r.payor_bucket, r.n);
+  }
+  for (const c of custom) for (const r of c.rows) add(c.family, r.payor_bucket, r.n);
+  return data;
+}
+
+/**
+ * Cached per-family payor-bucket counts, or null when no computation has ever
+ * succeeded (e.g. DB down) — callers must treat null as "omit payor_counts".
+ * Stale-while-refresh: an expired cache is still served while the refresh runs.
+ */
+export function familyPayorCounts() {
+  const fresh = payorCountsCache && Date.now() - payorCountsCache.at < PAYOR_COUNTS_TTL_MS;
+  if (!fresh && !payorCountsInflight) {
+    payorCountsInflight = computeFamilyPayorCounts()
+      .then((data) => { payorCountsCache = { at: Date.now(), data }; return data; })
+      .catch(() => null) // fail-open: next request retries
+      .finally(() => { payorCountsInflight = null; });
+  }
+  if (payorCountsCache) return Promise.resolve(payorCountsCache.data);
+  return payorCountsInflight ?? Promise.resolve(null);
 }
 
 export async function getCohort(procedure) {

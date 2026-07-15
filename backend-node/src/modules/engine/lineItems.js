@@ -33,6 +33,7 @@ const roomPick = (room, g, t, s) => (room === 'General' ? g : room === 'Twin' ? 
 export function resolveDrivers(basisRow, controls, otLadder) {
   const sel = (basis, p25, p50, p75, manual) =>
     basis === 'P25' ? p25 : basis === 'P50' ? p50 : basis === 'P75' ? p75 : (manual ?? p50);
+  const isPct = (b) => b === 'P25' || b === 'P50' || b === 'P75';
 
   const icu = {
     p25: dayRound(basisRow.icu_p25), p50: dayRound(basisRow.icu_p50), p75: dayRound(basisRow.icu_p75),
@@ -42,6 +43,16 @@ export function resolveDrivers(basisRow, controls, otLadder) {
     p25: dayRound(basisRow.ward_p25), p50: dayRound(basisRow.ward_p50), p75: dayRound(basisRow.ward_p75),
   };
   ward.selected = dayRound(sel(controls.ward_basis, ward.p25, ward.p50, ward.p75, controls.ward_manual));
+  // Manual total-LOS without a manual ward/icu split: keep the ICU basis days
+  // (capped at the stated LOS) and give the remaining days to the ward, so a
+  // partial payload {los_basis:'manual', los_manual:N} still drives the stay.
+  // When ward/icu are themselves manual they define the split and LOS follows.
+  if (!isPct(controls.los_basis) && controls.los_manual != null
+      && isPct(controls.ward_basis) && isPct(controls.icu_basis)) {
+    const t = Math.max(0, dayRound(controls.los_manual));
+    icu.selected = Math.min(icu.selected, t);
+    ward.selected = Math.max(0, t - icu.selected);
+  }
   const los = {
     p25: icu.p25 + ward.p25, p50: icu.p50 + ward.p50, p75: icu.p75 + ward.p75,
     selected: icu.selected + ward.selected,
@@ -51,7 +62,17 @@ export function resolveDrivers(basisRow, controls, otLadder) {
     p25: snap(basisRow.ot_p25), p50: snap(basisRow.ot_p50), p75: snap(basisRow.ot_p75),
   };
   ot.selected = snap(sel(controls.ot_hours_basis, ot.p25, ot.p50, ot.p75, controls.ot_hours_manual));
-  return { los, icu, ward, ot };
+  // Cath-lab hours driver (mirrors ot_hours). No tariff ladder snap: cath lab
+  // is priced from the billed historical slot-family amounts, not per-hour
+  // tariff slots — hours stay as entered (decimals allowed).
+  const cath = {
+    p25: basisRow.cath_hours_p25 ?? 0, p50: basisRow.cath_hours_p50 ?? 0, p75: basisRow.cath_hours_p75 ?? 0,
+  };
+  cath.selected = sel(controls.cath_hours_basis, cath.p25, cath.p50, cath.p75, controls.cath_hours_manual);
+  cath.basis = isPct(controls.cath_hours_basis) ? controls.cath_hours_basis : 'manual';
+  cath.manual = !isPct(controls.cath_hours_basis) && controls.cath_hours_manual != null
+    ? controls.cath_hours_manual : null;
+  return { los, icu, ward, ot, cath };
 }
 
 /**
@@ -84,6 +105,9 @@ export function computeLineItems(ctx) {
   const rows = [];
   const rateOf = (code) => rates.get(code) || {};
   const svcOf = (code) => svc.get(code) || {};
+  // Rate entry was back-filled from the TR1 (cash) tariff because the insurer's
+  // org tariff had no usable rate — surface it on the row so the UI can mark it.
+  const tr1Flag = (r) => (r && r.tr1_fallback ? { tr1_rate: true } : {});
 
   /** template row: qty percentiles × per-room rate */
   const template = (name, bucket, sub, code, { roboticControlled = false, how = 'Auto-Included', source = 'Template' } = {}) => {
@@ -96,7 +120,7 @@ export function computeLineItems(ctx) {
       return guard(code, v);
     };
     return push({
-      name, bucket, sub, source, how, code,
+      name, bucket, sub, source, how, code, ...tr1Flag(r),
       qty: { selected: modePick(mode, q.low, q.typ, q.high), ...q },
       rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
       cells: {
@@ -115,13 +139,20 @@ export function computeLineItems(ctx) {
       : { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 };
     const mk = (days, rate) => guard(code, days * (rate ?? 0));
     return push({
-      name, bucket, sub, source: 'Logic', how, code,
+      name, bucket, sub, source: 'Logic', how, code, ...tr1Flag(r),
       qty: { selected: d.selected, low: d.p25, typ: d.p50, high: d.p75 },
       rate: rr,
       cells: {
         general: [mk(d.p25, rr.general), mk(d.p50, rr.general), mk(d.p75, rr.general)],
         twin: [mk(d.p25, rr.twin), mk(d.p50, rr.twin), mk(d.p75, rr.twin)],
         single: [mk(d.p25, rr.single), mk(d.p50, rr.single), mk(d.p75, rr.single)],
+      },
+      // selected amount must follow the SELECTED days (manual overrides
+      // included), not the mode-picked percentile cell
+      selectedCells: {
+        general: mk(d.selected, rr.general),
+        twin: mk(d.selected, rr.twin),
+        single: mk(d.selected, rr.single),
       },
     });
   };
@@ -130,7 +161,7 @@ export function computeLineItems(ctx) {
     const r = rateOf(code);
     const mk = (rate) => guard(code, rate ?? 0);
     return push({
-      name, bucket, sub, source: 'Logic', how: 'Fixed 1', code,
+      name, bucket, sub, source: 'Logic', how: 'Fixed 1', code, ...tr1Flag(r),
       qty: { selected: 1, low: 1, typ: 1, high: 1 },
       rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
       cells: {
@@ -144,12 +175,15 @@ export function computeLineItems(ctx) {
   let idx = 0;
   function push(row) {
     row.index = idx++;
-    // selected totals per room column (mode-pick over that room's low/typ/high)
-    row.selected = {
+    // selected totals per room column — day-driven rows carry an explicit
+    // selectedCells (selected days x rate, honouring manual LOS/ward/ICU
+    // overrides); every other row mode-picks that room's low/typ/high
+    row.selected = row.selectedCells ?? {
       general: modePick(mode, ...row.cells.general),
       twin: modePick(mode, ...row.cells.twin),
       single: modePick(mode, ...row.cells.single),
     };
+    delete row.selectedCells;
     rows.push(row);
     return row;
   }
@@ -162,6 +196,10 @@ export function computeLineItems(ctx) {
     for (const t of ctx.templateRows) {
       template(t.name, t.bucket, t.sub, t.code);
     }
+    // Session-based treatments (15-Jul Q4: dialysis, phototherapy, newborn
+    // care) bill per visit — LOS × ward/ICU room rows would fabricate lakhs
+    // of room charges actual bills never carry, so they are suppressed.
+    if (!ctx.sessionBased) {
     driver('Nursing - Room', 'Room Charges', 'Ward Care', 'ROM5189', drivers.ward, { how: 'Ward days x rate' });
     driver('Nursing - ICU', 'Room Charges', 'Critical Care', 'ROM5189', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
     driver('DMO', 'Room Charges', 'Ward Care', 'ROM0093', drivers.ward, { how: 'Ward days x rate' });
@@ -177,13 +215,20 @@ export function computeLineItems(ctx) {
       push({
         name: 'Bed Charges - Ward', bucket: 'Room Charges', sub: 'Ward Care', source: 'Logic',
         how: 'Ward days x room rate', code: 'ROOM_BED',
+        ...(rateOf('ROM0001').tr1_fallback || rateOf('ROM0024').tr1_fallback || rateOf('ROM0036').tr1_fallback ? { tr1_rate: true } : {}),
         qty: { selected: d.selected, low: d.p25, typ: d.p50, high: d.p75 }, rate: bedRates,
         cells: {
           general: [mk(d.p25, bedRates.general), mk(d.p50, bedRates.general), mk(d.p75, bedRates.general)],
           twin: [mk(d.p25, bedRates.twin), mk(d.p50, bedRates.twin), mk(d.p75, bedRates.twin)],
           single: [mk(d.p25, bedRates.single), mk(d.p50, bedRates.single), mk(d.p75, bedRates.single)],
         },
+        selectedCells: {
+          general: mk(d.selected, bedRates.general),
+          twin: mk(d.selected, bedRates.twin),
+          single: mk(d.selected, bedRates.single),
+        },
       });
+    }
     }
     template('CSSD Charges', 'Procedure / OT Charges', 'OT Charges', 'RNS5005');
     // Medical Records: daycare bills MSC10 ("-1 DAY"), non-daycare RNS0120 ("> 1 DAY").
@@ -210,8 +255,8 @@ export function computeLineItems(ctx) {
       push({
         name: 'OT Charges', bucket: 'Procedure / OT Charges', sub: 'OT Charges', source: 'Logic',
         how: 'Selected OT duration snapped to the nearest supported tariff OT slot using the normal or emergency ladder',
-        code: slot.item_code ?? null,
-        otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal' },
+        code: slot.item_code ?? null, ...(slot.tr1_fallback ? { tr1_rate: true } : {}),
+        otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal', ...(slot.tr1_fallback ? { tr1_fallback: true } : {}) },
         qty: { selected: drivers.ot.selected, low: drivers.ot.p25, typ: drivers.ot.p50, high: drivers.ot.p75 },
         rate: { general: slot.general ?? 0, twin: slot.twin ?? 0, single: slot.single ?? 0 },
         cells: { general: mkCells('general'), twin: mkCells('twin'), single: mkCells('single') },
@@ -220,26 +265,50 @@ export function computeLineItems(ctx) {
     if (famRows.cathLab !== false) {
       const c = cathLab || { p25: 0, p50: 0, p75: 0 };
       const cells = [c.p25 ?? 0, c.p50 ?? 0, c.p75 ?? 0];
+      // Cath-lab hours control (mirrors OT hours): manual hours price at the
+      // cohort's historical ₹/hour (typical amount ÷ typical billed hours —
+      // derived from the SAME slot-family rows the amounts come from); a P25/P75
+      // basis picks that percentile's historical amount. Default (P50, no
+      // manual) keeps the mode-picked cell — identical to the untouched row.
+      const ch = drivers.cath ?? {};
+      const cathHoursP50 = basisRow.cath_hours_p50 ?? 0;
+      const hourly = cathHoursP50 > 0 ? (c.p50 ?? 0) / cathHoursP50 : 0;
+      const manualAmt = ch.manual != null && hourly > 0 ? Math.max(0, ch.manual) * hourly : null;
+      const selV = manualAmt != null ? manualAmt
+        : ch.basis === 'P25' ? cells[0]
+        : ch.basis === 'P75' ? cells[2]
+        : null;
       push({
         name: 'Cath Lab Charges', bucket: 'Procedure / OT Charges', sub: 'Cath Lab Hours',
         source: 'Historical Cath Lab Family',
-        how: 'Actual billed cath-lab slot-family P25 / P50 / P75 from the selected historical payer basis.',
+        how: manualAmt != null
+          ? 'Manual cath-lab hours x historical cath-lab rate per hour (typical billed amount / typical billed hours on the selected payer basis).'
+          : 'Actual billed cath-lab slot-family P25 / P50 / P75 from the selected historical payer basis.',
         code: null,
+        ...(cathHoursP50 > 0 ? {
+          cathHours: {
+            hours: ch.selected ?? cathHoursP50, p25: ch.p25, p50: ch.p50, p75: ch.p75,
+            manual: ch.manual ?? null, rate_per_hour: hourly,
+          },
+        } : {}),
         qty: { selected: 1, low: 1, typ: 1, high: 1 }, rate: {},
         cells: { general: cells, twin: [...cells], single: [...cells] },
+        ...(selV != null ? { selectedCells: { general: selV, twin: selV, single: selV } } : {}),
       });
     }
+    if (!ctx.sessionBased) {
     driver('Intensivist Per Day', 'Room Charges', 'Critical Care', 'ICC0002', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
     driver('Assistant Intensivist Per Day', 'Room Charges', 'Critical Care', 'ICC0001', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
     driver('Ward Consumables', 'Room Charges', 'Ward Care', 'HSP5013', drivers.los, { how: 'LOS days x rate' });
     driver('Monitor Per Day', 'Room Charges', 'Critical Care', 'EME0019', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
+    }
     {
       const r = rateOf('HSP0047');
       const qty = ctx.mlc === 'Yes' ? 1 : 0;
       const mk = (rate) => guard('HSP0047', qty * (rate ?? 0));
       push({
         name: 'MLC Charges', bucket: 'Bedside Services', sub: 'Administrative', source: 'Logic',
-        how: 'Applied only when MLC input is Yes', code: 'HSP0047',
+        how: 'Applied only when MLC input is Yes', code: 'HSP0047', ...tr1Flag(r),
         qty: { selected: qty, low: qty, typ: qty, high: qty },
         rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
         cells: {
@@ -268,11 +337,17 @@ export function computeLineItems(ctx) {
     push({
       name: 'Bed Charges - Ward', bucket: 'Room Charges', sub: 'Ward Care', source: 'Logic',
       how: 'Ward days x room rate', code: 'ROOM_BED',
+      ...(rateOf('ROM0001').tr1_fallback || rateOf('ROM0024').tr1_fallback || rateOf('ROM0036').tr1_fallback ? { tr1_rate: true } : {}),
       qty: { selected: d.selected, low: d.p25, typ: d.p50, high: d.p75 }, rate: bedRates,
       cells: {
         general: [mk(d.p25, bedRates.general), mk(d.p50, bedRates.general), mk(d.p75, bedRates.general)],
         twin: [mk(d.p25, bedRates.twin), mk(d.p50, bedRates.twin), mk(d.p75, bedRates.twin)],
         single: [mk(d.p25, bedRates.single), mk(d.p50, bedRates.single), mk(d.p75, bedRates.single)],
+      },
+      selectedCells: {
+        general: mk(d.selected, bedRates.general),
+        twin: mk(d.selected, bedRates.twin),
+        single: mk(d.selected, bedRates.single),
       },
     });
   }
@@ -298,8 +373,8 @@ export function computeLineItems(ctx) {
     push({
       name: 'OT Charges', bucket: 'Procedure / OT Charges', sub: 'OT Charges', source: 'Logic',
       how: 'Selected OT duration snapped to the nearest supported tariff OT slot using the normal or emergency ladder',
-      code: slot.item_code ?? null,
-      otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal' },
+      code: slot.item_code ?? null, ...(slot.tr1_fallback ? { tr1_rate: true } : {}),
+      otSlot: { hours: drivers.ot.selected, code: slot.item_code, label: slot.item_name, type: otMode === 'emergency' ? 'Emergency' : 'Normal', ...(slot.tr1_fallback ? { tr1_fallback: true } : {}) },
       qty: { selected: drivers.ot.selected, low: drivers.ot.p25, typ: drivers.ot.p50, high: drivers.ot.p75 },
       rate: { general: slot.general ?? 0, twin: slot.twin ?? 0, single: slot.single ?? 0 },
       cells: { general: mkCells('general'), twin: mkCells('twin'), single: mkCells('single') },
@@ -350,6 +425,37 @@ export function computeLineItems(ctx) {
     });
   }
   } // end fixed knee layout
+
+  // Robotic add-on charge (15-Jul #27): when the family resolution said
+  // "base family + robotic add-on" (or per-payor presence demands it), the
+  // charge is a real row — priced from the payor tariff's contracted robotic
+  // item (e.g. TR290 "ROBO (TKR) - UNILATERAL" ₹1,20,000) or, failing that,
+  // the cohort's billed robotic history. Optional (not-included) state keeps
+  // the row visible at ₹0 so the UI can offer the convert-to-robotic prompt.
+  if (ctx.roboticAddon) {
+    const ra = ctx.roboticAddon;
+    const inc = ra.included === true;
+    const tariffPriced = ra.pricing === 'tariff';
+    const mkc = (v) => guard(ra.item_code, inc ? (v ?? 0) : 0);
+    const cellsFor = (rk) => (tariffPriced
+      ? [mkc(ra.rate?.[rk]), mkc(ra.rate?.[rk]), mkc(ra.rate?.[rk])]
+      : [mkc(ra.amount), mkc(ra.amount), mkc(ra.amount)]);
+    push({
+      name: ra.item_name, bucket: inc ? 'Procedure / OT Charges' : 'Optional Add-Ons',
+      sub: 'OT Charges',
+      source: tariffPriced ? 'Tariff' : 'History',
+      how: tariffPriced
+        ? 'Robotic add-on at the payor tariff\'s contracted robotic charge'
+        : 'Robotic add-on at the cohort\'s typical billed robotic amount',
+      code: ra.item_code, robotic_addon: true, included: inc,
+      ...(ra.tr1_rate ? { tr1_rate: true } : {}),
+      qty: { selected: inc ? 1 : 0, low: inc ? 1 : 0, typ: inc ? 1 : 0, high: inc ? 1 : 0 },
+      rate: tariffPriced
+        ? { general: ra.rate?.general ?? 0, twin: ra.rate?.twin ?? 0, single: ra.rate?.single ?? 0 }
+        : {},
+      cells: { general: cellsFor('general'), twin: cellsFor('twin'), single: cellsFor('single') },
+    });
+  }
 
   // placeholders for drug admin + PF (filled after pharmacy rows)
   const drugAdminIdx = rows.length;
@@ -440,7 +546,7 @@ export function computeLineItems(ctx) {
     const bucket = inc && hasRealBucket ? a.bucket : 'Optional Add-Ons';
     push({
       name: a.name, bucket, sub: a.grouping, source: 'Advanced',
-      how: 'Include / Exclude selection', code: a.code, addOn: true, included: inc,
+      how: 'Include / Exclude selection', code: a.code, addOn: true, included: inc, ...tr1Flag(r),
       qty: { selected: modePick(mode, q.low, q.typ, q.high), ...q },
       rate: { general: r.general ?? 0, twin: r.twin ?? 0, single: r.single ?? 0 },
       cells: {
@@ -499,36 +605,47 @@ export function computeLineItems(ctx) {
   }
   // subtotal before PF = all rows except PF rows
   const subtotal = sumCells((_, i) => i < pfStart || i > pfStart + 3);
+  // selected subtotal sums the rows' SELECTED amounts (day-driven rows carry
+  // manual LOS/ward/ICU overrides there that the percentile cells don't have)
+  const subtotalSelected = { general: 0, twin: 0, single: 0 };
+  rows.forEach((row, i) => {
+    if (i >= pfStart && i <= pfStart + 3) return;
+    for (const c of cols) subtotalSelected[c] += row.selected[c] ?? 0;
+  });
   // PF cascade
   const pf = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
+  const pfSel = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
   for (const c of cols) {
     pf.surgeon[c] = subtotal[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
     pf.asstSurgeon[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.15 * v));
     pf.anesthetist[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
     pf.asstAnesthetist[c] = pf.anesthetist[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
+    pfSel.surgeon[c] = insuranceMode ? 0 : 0.25 * subtotalSelected[c];
+    pfSel.asstSurgeon[c] = insuranceMode ? 0 : 0.15 * pfSel.surgeon[c];
+    pfSel.anesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.surgeon[c];
+    pfSel.asstAnesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.anesthetist[c];
   }
   const pfRows = [pf.surgeon, pf.asstSurgeon, pf.anesthetist, pf.asstAnesthetist];
+  const pfSelRows = [pfSel.surgeon, pfSel.asstSurgeon, pfSel.anesthetist, pfSel.asstAnesthetist];
   pfRows.forEach((p, k) => {
     const row = rows[pfStart + k];
     for (const c of cols) row.cells[c] = p[c];
-    row.selected = { general: modePick(mode, ...p.general), twin: modePick(mode, ...p.twin), single: modePick(mode, ...p.single) };
+    row.selected = { ...pfSelRows[k] };
   });
   // grand total
   const grand = { general: [0, 0, 0], twin: [0, 0, 0], single: [0, 0, 0] };
   for (const c of cols) for (let m = 0; m < 3; m++) {
     grand[c][m] = subtotal[c][m] + pfRows.reduce((t, p) => t + p[c][m], 0);
   }
-  const selTotals = (block) => ({
-    general: modePick(mode, ...block.general),
-    twin: modePick(mode, ...block.twin),
-    single: modePick(mode, ...block.single),
-  });
-  const grandSelected = selTotals(grand);
+  const grandSelected = { general: 0, twin: 0, single: 0 };
+  for (const c of cols) {
+    grandSelected[c] = subtotalSelected[c] + pfSelRows.reduce((t, p) => t + p[c], 0);
+  }
   const finalEstimate = roomPick(room, grandSelected.general, grandSelected.twin, grandSelected.single);
 
   return {
     rows,
-    subtotal: { ...subtotal, selected: selTotals(subtotal) },
+    subtotal: { ...subtotal, selected: subtotalSelected },
     grandTotal: { ...grand, selected: grandSelected },
     finalEstimate,
     indices: { drugAdmin: drugAdminIdx, pfStart, pharmStart, pharmEnd },

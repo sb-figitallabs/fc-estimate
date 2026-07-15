@@ -5,7 +5,7 @@
 import { query } from '../../db/pool.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
 import { payorBucketCounts, resolveBasis } from '../resolve/payerBasis.js';
-import { getCohort, applyCareControls } from './cohort.js';
+import { getCohort, applyCareControls, roboticBaseOf, roboticAddonItemsOf } from './cohort.js';
 import {
   fetchCohortRows, basisCohorts, buildBasisSummary, buildServiceStats,
   buildPharmacyStats, buildActualBasisMetrics, buildPfPayorSummary,
@@ -13,8 +13,8 @@ import {
 } from './artifacts.js';
 import {
   cleanServiceRows, splitCleanedRows, prioritizeOptionalRows, splitRoboticOptional,
-  roboticPresenceRate, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
-  isRemoveCategory,
+  roboticPresenceInfo, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
+  isRemoveCategory, isRoboticText, resolveRoboticAddonPricing, ROBOTIC_PROMPT_THRESHOLD,
 } from './services.js';
 import {
   buildOtConsumableShortlist, otConsumablesApplied, buildImplantHierarchy, resolveImplantEstimate,
@@ -89,6 +89,37 @@ export async function buildEstimate(input) {
   const svcBasisRow = basisRowOf(svcBasis);
   const pharmBasisRow = basisRowOf(pharmBasis);
 
+  // 6b. robotic-redirect suggestion (manager approved): GIPSA/Non-GIPSA insurers
+  // historically price robotic procedures as the conventional base family's
+  // package + a robotic add-on charge. When the robotic cohort is insurance-thin
+  // (< 5 cases in the target bucket) but the base family's bucket cohort is
+  // solid (>= 5), surface a one-click switch suggestion. Additive field —
+  // reuses the payorBucketCounts already computed for the basis; only ONE extra
+  // count query (the base family's cohort) when the payor/family gate matches.
+  const suggestions = [];
+  const roboticBaseFamily = roboticBaseOf(cohortDef.family);
+  if (roboticBaseFamily && (target === 'GIPSA Insurance' || target === 'Non-GIPSA Insurance')) {
+    const roboticCases = counts.counts[target] || 0;
+    if (roboticCases < 5) {
+      try {
+        const baseDef = await getCohort(roboticBaseFamily);
+        const baseCounts = await payorBucketCounts(baseDef.whereSql, baseDef.params);
+        const baseCases = baseCounts.counts[target] || 0;
+        if (baseCases >= 5) {
+          suggestions.push({
+            type: 'robotic_redirect',
+            base_family: roboticBaseFamily,
+            base_label: baseDef.templateName,
+            payor_bucket: target,
+            message: `${target} historically prices this as ${baseDef.templateName} + robotic add-on`,
+            robotic_cases: roboticCases,
+            base_cases: baseCases,
+          });
+        }
+      } catch { /* best-effort suggestion — never blocks the build */ }
+    }
+  }
+
   // 7. stats + reference lookups
   const [svcStats, pharmMap, svcMap] = await Promise.all([
     buildServiceStats(cohorts, tariff.tariff_cd), pharmacyMapping(), serviceMapping(),
@@ -96,7 +127,25 @@ export async function buildEstimate(input) {
   const catalogNames = await pharmacyCatalogNames();
   const pharmacyStats = buildPharmacyStats(cohorts, catalogNames);
   const rates = await tariffRateLookup(tariff.tariff_cd);
-  const otSlotRows = await buildOtSlotMatrix([tariff.tariff_cd]);
+  // OT slot ladder: many insurer tariffs carry no "OT - X HOURS" rows at all,
+  // which used to leave the ladder empty and silently price OT Charges at ₹0
+  // (verified on dev: TR289 Bajaj → ot_slot.hours null, OT row ₹0). Mirror
+  // tariffRateLookup's conservative TR1 fallback: ONLY when the org tariff has
+  // zero slot rows, price OT on the TR1 (cash) ladder and flag + warn.
+  let otSlotRows = await buildOtSlotMatrix(tariff.tariff_cd === 'TR1' ? ['TR1'] : [tariff.tariff_cd, 'TR1']);
+  let otSlotTariff = tariff.tariff_cd;
+  if (tariff.tariff_cd !== 'TR1') {
+    const orgSlots = otSlotRows.filter((s) => s.tariff_code === tariff.tariff_cd);
+    if (orgSlots.length) {
+      otSlotRows = orgSlots;
+    } else {
+      otSlotRows = otSlotRows.filter((s) => s.tariff_code === 'TR1').map((s) => ({ ...s, tr1_fallback: true }));
+      otSlotTariff = 'TR1';
+      if (otSlotRows.length) {
+        warnings.push(`Tariff ${tariff.tariff_cd} has no OT hour-slot rates — OT Charges priced on the TR1 (cash) OT slot ladder.`);
+      }
+    }
+  }
   const otSlots = new Map(otSlotRows.map((s) => [`${s.ot_mode}|${s.ot_slot_hours}`, s]));
   const otLadder = [...new Set(otSlotRows.filter((s) => s.ot_mode === 'normal').map((s) => s.ot_slot_hours))];
 
@@ -106,10 +155,21 @@ export async function buildEstimate(input) {
 
   // 8. drivers
   const drivers = resolveDrivers(svcBasisRow, {
+    los_basis: controls.los_basis ?? 'P50', los_manual: controls.los_manual,
     icu_basis: controls.icu_basis ?? 'P50', icu_manual: controls.icu_manual,
     ward_basis: controls.ward_basis ?? 'P50', ward_manual: controls.ward_manual,
     ot_hours_basis: controls.ot_hours_basis ?? 'P50', ot_hours_manual: controls.ot_hours_manual,
+    cath_hours_basis: controls.cath_hours_basis ?? 'P50', cath_hours_manual: controls.cath_hours_manual,
   }, otLadder);
+  // Manual cath-lab hours only apply to cath-lab families with parseable billed
+  // hours history — surface why the override was ignored instead of silently dropping it.
+  if (controls.cath_hours_manual != null) {
+    if (cohortDef.rows?.cathLab !== true) {
+      warnings.push('Cath Lab hours ignored — this procedure family has no cath-lab charge row.');
+    } else if (!(svcBasisRow.cath_hours_p50 > 0) && !(pharmBasisRow.cath_hours_p50 > 0)) {
+      warnings.push('Cath Lab hours ignored — no billed cath-lab hour history in this cohort basis; the historical cath-lab amount is used instead.');
+    }
+  }
 
   // 9. cleaned services / add-ons / robotic
   const autoTemplate = cohortDef.coreTemplate === 'auto';
@@ -121,10 +181,65 @@ export async function buildEstimate(input) {
   const prioritized = prioritizeOptionalRows(optionalRaw);
   const procedureCode = cohortDef.procedure?.code ?? null;
   const { optional, roboticRows } = splitRoboticOptional(prioritized, procedureCode);
-  const roboticPresence = roboticPresenceRate(svcStatsForBasis, procedureCode);
-  const roboticSelection = controls.robotic && controls.robotic !== 'auto'
+  const roboticInfo = roboticPresenceInfo(svcStatsForBasis, procedureCode);
+  const roboticPresence = roboticInfo.rate;
+  let roboticSelection = controls.robotic && controls.robotic !== 'auto'
     ? (controls.robotic === 'yes' ? 'Yes' : 'No')
     : roboticDefaultSelection('auto', roboticPresence);
+
+  // 9b. robotic add-on charge (15-Jul #27). The gate's payor-aware resolution
+  // can return "base family + robotic add-on" (GIPSA/Non-GIPSA robotic
+  // redirect) — the BUILT estimate must then carry the robotic charge, priced
+  // from the payor tariff's contracted robotic item (TR290 "ROBO (TKR) -
+  // UNILATERAL" ₹1,20,000) with cohort billed history as fallback. Absent an
+  // explicit ask, the per-payor rule (15-Jul #9) drives the default: presence
+  // >90% for THIS payor basis ⇒ included; ≥30% ⇒ optional row + convert prompt.
+  const treatmentText = input.clinical.treatment_text?.trim();
+  const roboticDeclined = controls.robotic === 'no';
+  const roboticRequired = !roboticDeclined && (
+    input.clinical.robotic_addon === true ||  // gate resolution carried robotic_addon: true
+    controls.robotic === 'yes' ||             // caller explicitly asked robotic
+    /ROBOT/i.test(treatmentText || '')        // doctor's wording says robotic
+  );
+  if (roboticRequired) roboticSelection = 'Yes';
+  // families whose robotic charge is already priced elsewhere in the build:
+  // robotic families carry it on their roboticControlled procedure row; auto
+  // families with >90% presence carry it as a default-included template row.
+  const roboticOnProcedureRow = (cohortDef.includeProcedure ?? true)
+    && /ROBO/i.test(cohortDef.procedure?.label || '');
+  const roboticInTemplate = autoTemplate && autoIncluded.some((r) =>
+    r.item_code !== procedureCode
+    && isRoboticText(r.item_code, r.item_name, r.grouping, r.fc_estimate_bucket));
+  let roboticAddon = null;
+  if (!roboticOnProcedureRow && !roboticInTemplate && !roboticDeclined) {
+    let addonStatus = null, addonReason = null;
+    if (roboticRequired) {
+      addonStatus = 'included';
+      addonReason = input.clinical.robotic_addon === true ? 'gate_robotic_addon'
+        : controls.robotic === 'yes' ? 'explicit_robotic_yes' : 'treatment_text_robotic';
+    } else if (roboticPresence > 90) {
+      addonStatus = 'included';
+      addonReason = 'payor_presence_above_90';
+    } else if (roboticPresence >= ROBOTIC_PROMPT_THRESHOLD) {
+      addonStatus = 'optional';
+      addonReason = 'payor_presence_significant';
+    }
+    if (addonStatus) {
+      const pricing = resolveRoboticAddonPricing({
+        addonItems: roboticAddonItemsOf(cohortDef.family), roboticRows, rates,
+      });
+      if (pricing) {
+        roboticAddon = { ...pricing, status: addonStatus, included: addonStatus === 'included', reason: addonReason };
+        if (roboticAddon.included) roboticSelection = 'Yes';
+      } else {
+        roboticAddon = {
+          status: 'unpriced', included: false, reason: addonReason,
+          source: null, item_code: null, item_name: null,
+        };
+        warnings.push('Robotic add-on applies but neither the payor tariff nor billed history carries a robotic charge to price it — add the amount manually.');
+      }
+    }
+  }
 
   // 10. grouped residuals
   const gaps = buildGroupingGaps(cohortRows, cleaned, svcMap);
@@ -159,6 +274,9 @@ export async function buildEstimate(input) {
   const mode = controls.estimate_mode ?? 'Typical';
   const lineItems = computeLineItems({
     mode, room, pricingMode,
+    // 15-Jul Q4: session-based families (dialysis, phototherapy, newborn care)
+    // suppress LOS-driven room rows — they bill per visit, not per ward day.
+    sessionBased: cohortDef.sessionBased === true,
     emergencyOt: controls.emergency_ot ?? 'No',
     mlc: controls.mlc ?? 'No',
     robotic: roboticSelection,
@@ -175,6 +293,7 @@ export async function buildEstimate(input) {
       : undefined,
     advanced: { otConsumablesApplied: otApplied },
     implants: { resolvedTypical: implantResolved },
+    roboticAddon: roboticAddon && roboticAddon.status !== 'unpriced' ? roboticAddon : undefined,
     grouped,
     familyRows: cohortDef.rows,
     ipPharmacyMode: cohortDef.ipPharmacyMode,
@@ -182,6 +301,109 @@ export async function buildEstimate(input) {
       ? { p25: pharmBasisRow.cath_lab_p25 ?? 0, p50: pharmBasisRow.cath_lab_p50 ?? 0, p75: pharmBasisRow.cath_lab_p75 ?? 0 }
       : { p25: 0, p50: 0, p75: 0 },
   });
+
+  // 13a. robotic add-on finalization: selected-room amount + convert prompt.
+  if (roboticAddon && roboticAddon.status !== 'unpriced') {
+    const rk = room.toLowerCase();
+    if (roboticAddon.pricing === 'tariff') {
+      roboticAddon.amount = roboticAddon.rate?.[rk] ?? roboticAddon.rate?.single ?? 0;
+    }
+    const fmt = (v) => `₹${Math.round(v ?? 0).toLocaleString('en-IN')}`;
+    const srcLabel = roboticAddon.source === 'tariff_contracted'
+      ? `contracted on tariff ${tariff.tariff_cd}`
+      : roboticAddon.source === 'cohort_history'
+        ? `typical billed robotic amount, basis ${svcBasis}`
+        : 'TR1 (cash) rate — no contracted robotic item on this tariff';
+    if (roboticAddon.included) {
+      warnings.push(`Robotic add-on included: ${roboticAddon.item_name} ${fmt(roboticAddon.amount)} (${srcLabel}).`);
+    } else {
+      roboticAddon.prompt = `${Math.round(roboticPresence)}% of ${svcBasis} cases had robotic — convert to robotic?`;
+      warnings.push(`Robotic add-on available (${roboticAddon.item_name} ${fmt(roboticAddon.amount)}, ${srcLabel}): ${roboticAddon.prompt}`);
+    }
+  }
+
+  // 13b. Insurer PF from the historic P50 (15-Jul answers, Q1): insurer
+  // tariffs price Professional Fees at token consultation rates (₹740 vs
+  // actual ₹15k–₹1.4L) — "let's use the historic PF P50 for the time being".
+  // Every PF line is scaled per room so the bucket lands exactly on the P50
+  // and lines still reconcile with totals; bands shift by the same delta.
+  const actualMetricsEarly = buildActualBasisMetrics(cohorts);
+  let pfSource = 'tariff';
+  if (pricingMode !== 'Cash / TR1') {
+    const histPfRow = actualMetricsEarly.find(
+      (r) => r.basis_label === bases.pf_basis.selected_basis && r.field_key === 'professional_fees'
+    );
+    if (histPfRow?.p50 > 0) {
+      const pfRows = lineItems.rows.filter((r) => r.bucket === 'Professional Fees');
+      const roomKeys = ['general', 'twin', 'single'];
+      for (const rk of roomKeys) {
+        const pfTotal = pfRows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
+        const delta = histPfRow.p50 - pfTotal;
+        if (!Number.isFinite(delta) || Math.abs(delta) < 1) continue;
+        if (pfTotal > 0) {
+          const f = histPfRow.p50 / pfTotal;
+          for (const r of pfRows) if (r.selected?.[rk] != null) r.selected[rk] = Math.round(r.selected[rk] * f * 100) / 100;
+        } else if (pfRows[0]?.selected) {
+          pfRows[0].selected[rk] = histPfRow.p50; // no PF lines priced — carry it on the first PF row
+        } else {
+          continue; // no PF rows at all for this family — nothing to scale
+        }
+        if (Array.isArray(lineItems.grandTotal[rk])) {
+          lineItems.grandTotal[rk] = lineItems.grandTotal[rk].map((v) => Math.round((v + delta) * 100) / 100);
+        }
+        if (lineItems.grandTotal.selected?.[rk] != null) {
+          lineItems.grandTotal.selected[rk] = Math.round((lineItems.grandTotal.selected[rk] + delta) * 100) / 100;
+        }
+      }
+      lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
+      pfRows.forEach((r) => { r.historic_pf = true; });
+      pfSource = 'historic_p50';
+      warnings.push(`Professional Fees priced from the historic P50 (₹${Math.round(histPfRow.p50).toLocaleString('en-IN')}, basis ${bases.pf_basis.selected_basis}) — the insurer tariff carries token PF rates.`);
+    }
+  }
+
+  // 13c. Historical backfill for empty buckets on medical families (15-Jul
+  // answers, Q3 — "could be a good fallback for now"): the itemized template
+  // for medical/infusion cohorts often carries NO investigation lines and no
+  // drug line (Immunotherapy Pharmacy ₹0 vs actual ₹45k–₹2.3L). When a money
+  // bucket is empty but the cohort's history isn't, add ONE clearly-annotated
+  // row at the historical P25/P50/P75.
+  if (cohortDef.familyKind === 'medical') {
+    const BACKFILL = [
+      ['investigations', 'Investigations'],
+      ['pharmacy_total', 'Pharmacy'],
+    ];
+    const modeVal = (p25, p50, p75) => (mode === 'Low' ? p25 : mode === 'Typical' ? p50 : p75);
+    for (const [field, bucket] of BACKFILL) {
+      const bucketNow = lineItems.rows
+        .filter((r) => r.bucket === bucket)
+        .reduce((t, r) => t + (r.selected?.single ?? 0), 0);
+      const m = actualMetricsEarly.find((r) => r.basis_label === svcBasis && r.field_key === field);
+      if (bucketNow > 0 || !(m?.p50 > 0)) continue;
+      const cells = [m.p25 ?? m.p50, m.p50, m.p75 ?? m.p50];
+      const sel = modeVal(...cells);
+      lineItems.rows.push({
+        index: lineItems.rows.length,
+        name: `${bucket} — historical estimate`,
+        bucket, sub: bucket, source: 'Historical',
+        how: `No ${bucket.toLowerCase()} lines in this cohort's template — filled from the ${svcBasis} basis P25/P50/P75 of actual bills.`,
+        code: null, historical_estimate: true,
+        qty: { selected: 1, low: 1, typ: 1, high: 1 }, rate: {},
+        cells: { general: cells, twin: [...cells], single: [...cells] },
+        selected: { general: sel, twin: sel, single: sel },
+      });
+      for (const rk of ['general', 'twin', 'single']) {
+        if (Array.isArray(lineItems.grandTotal[rk])) {
+          lineItems.grandTotal[rk] = lineItems.grandTotal[rk].map((v, i) => Math.round((v + cells[i]) * 100) / 100);
+        }
+        if (lineItems.grandTotal.selected?.[rk] != null) {
+          lineItems.grandTotal.selected[rk] = Math.round((lineItems.grandTotal.selected[rk] + sel) * 100) / 100;
+        }
+      }
+      lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
+      warnings.push(`${bucket} had no template lines — filled from historical actuals (P50 ₹${Math.round(m.p50).toLocaleString('en-IN')}, basis ${svcBasis}).`);
+    }
+  }
 
   // 14. service line count alert
   const baseCount = cohortDef.baseServiceCount ?? (autoIncluded.length + 10);
@@ -194,15 +416,34 @@ export async function buildEstimate(input) {
     status: serviceLineCountAlert({ current: currentCount, p25: svcBasisRow.service_line_p25, p75: svcBasisRow.service_line_p75 }),
   };
 
-  // 15. side-by-side package offer (never replaces the itemized estimate)
+  // 15. side-by-side package offer (never replaces the itemized estimate).
+  // Gate-driven selection (15-Jul flow doc): when the doctor's raw wording is
+  // available and no explicit package was chosen, the package comes from the
+  // gate brain (alias + AI clinical ranking on this tariff) — same choice the
+  // flow view makes. Cohort-dominant stays as the fallback.
   let packageOffer;
   try {
+    let inputPackage = input.package;
+    let gatePicked = false;
+    if (!inputPackage?.package_code && !inputPackage?.package_name && !inputPackage?.text && treatmentText) {
+      try {
+        const { rankPackageCandidates } = await import('../resolve/familyResolve.js');
+        const { candidates } = await rankPackageCandidates({
+          treatment: treatmentText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
+        });
+        if (candidates[0]) {
+          inputPackage = { package_code: candidates[0].package_code, package_name: candidates[0].package_name };
+          gatePicked = true;
+        }
+      } catch { /* gate match unavailable — cohort-dominant fallback below */ }
+    }
     packageOffer = await packageOfferForEstimate({
       cohortRows,
       tariff_cd: tariff.tariff_cd,
       organization_cd: input.payment.organization_cd,
-      inputPackage: input.package,
+      inputPackage,
     });
+    if (gatePicked && packageOffer) packageOffer.source = 'gate_match';
   } catch (err) {
     packageOffer = { status: 'lookup_error', error: err.message, package: null };
   }
@@ -225,7 +466,7 @@ export async function buildEstimate(input) {
   // historic metrics (manager i6): curated bucket ranges for the selected basis —
   // relevant p25/p50/p75 only, labelled with basis + case count; UI compares
   // them against the live bucket_totals. Computed once, shared with artifacts.
-  const actualMetrics = buildActualBasisMetrics(cohorts);
+  const actualMetrics = actualMetricsEarly; // computed at 13b (PF scaling)
   const pfSummary = buildPfPayorSummary(cohorts);
   const HISTORIC_FIELDS = {
     total_amount_excluding_food_and_beverage_and_returns_plus_drug_admin: 'Gross total',
@@ -257,7 +498,15 @@ export async function buildEstimate(input) {
   const histPf = metricOf(bases.pf_basis.selected_basis, 'professional_fees');
   const pfDeviation = histPf?.p50 > 0 ? (logicPf - histPf.p50) / histPf.p50 : null;
   const pfAnalysis = pricingMode !== 'Cash / TR1' || !histPf
-    ? { applicable: false, reason: pricingMode !== 'Cash / TR1' ? 'PF folded into tariff in insurance mode' : 'no historic PF data' }
+    ? {
+        applicable: false,
+        reason: pricingMode !== 'Cash / TR1'
+          ? (pfSource === 'historic_p50'
+            ? 'PF priced from the historic P50 — the insurer tariff carries token PF rates (15-Jul Q1)'
+            : 'PF folded into tariff in insurance mode')
+          : 'no historic PF data',
+        ...(pfSource === 'historic_p50' ? { pf_source: 'historic_p50' } : {}),
+      }
     : {
         applicable: true,
         logic_pf: Math.round(logicPf * 100) / 100,
@@ -271,11 +520,88 @@ export async function buildEstimate(input) {
         final_estimate_with_historic_pf: Math.round((lineItems.finalEstimate - logicPf + (histPf.p50 ?? 0)) * 100) / 100,
       };
 
+  // resolved_context.flow (manager model #5, 14-Jul): "the entire flow should
+  // only be selected once we have the exact payer AND the treatment". Today the
+  // family (treatment) picks the cohort/template and the payer picks tariff,
+  // rates and statistical basis — this additive block EXPLAINS every one of
+  // those flow decisions so the payer+treatment → flow choice is fully
+  // transparent and auditable, even where the logic is still family-driven.
+  const basisOut = (b) => ({
+    basis: b.selected_basis,
+    status: b.status,
+    confidence: b.confidence,
+    ...(b.case_count != null ? { case_count: b.case_count } : {}),
+    reason: b.reason,
+  });
+  const flow = {
+    treatment: {
+      family: cohortDef.family,
+      label: cohortDef.templateName,
+      family_kind: cohortDef.familyKind,
+    },
+    payer: {
+      payor_bucket: target,
+      organization_cd: input.payment.organization_cd ?? null,
+      organization_name: tariff.organization_name ?? null,
+    },
+    tariff: {
+      tariff_cd: tariff.tariff_cd,
+      tariff_name: tariff.tariff_name,
+      source: tariff.source,               // cash_default | organization_tariff_mapping
+      pricing_mode: pricingMode,
+    },
+    rates: {
+      service_rates_tariff: tariff.tariff_cd,
+      tr1_fallback_item_count: rates.tr1FallbackCount ?? 0, // org-tariff gaps back-filled from TR1
+      ot_slot_ladder_tariff: otSlotTariff,
+      ot_slot_ladder_tr1_fallback: otSlotTariff !== tariff.tariff_cd,
+    },
+    cohort: {
+      scope: 'clinical_family_all_payors', // membership is treatment-wide; the payer enters via component_basis
+      case_count: cohortRows.length,
+      payor_mix: counts.counts,
+      care_filtered: cohortDef._careFiltered === true,
+    },
+    component_basis: {
+      mode: auto ? 'auto' : 'manual_override',
+      services: basisOut(bases.service_basis),
+      pharmacy: basisOut(bases.pharmacy_basis),
+      professional_fees: basisOut(bases.pf_basis),
+      drivers: {
+        basis: svcBasis,
+        note: 'LOS / ICU / ward / OT-hour / cath-hour percentiles ride the service basis',
+      },
+    },
+    template: {
+      layout: autoTemplate ? 'auto_from_cohort' : 'fixed_workbook_parity',
+      ...(autoTemplate ? { derived_from_basis: svcBasis } : {}),
+      row_flags: cohortDef.rows ?? {},
+    },
+    billing_route: {
+      itemized: true, // the itemized (open-billing) estimate is always produced
+      package_status: packageOffer?.status ?? 'no_package_exists',
+      package_source: packageOffer?.source ?? null,
+      package_code: packageOffer?.package?.package_code ?? null,
+      package_tariff: packageOffer?.package?.tariff_code ?? null,
+    },
+    robotic: {
+      selection: roboticSelection,
+      redirect_suggested: suggestions.some((s) => s.type === 'robotic_redirect'),
+      ...(roboticBaseFamily ? { base_family: roboticBaseFamily } : {}),
+      ...(roboticAddon ? {
+        addon_status: roboticAddon.status,          // included | optional | unpriced
+        addon_source: roboticAddon.source,          // tariff_contracted | cohort_history | tariff_tr1_fallback | null
+        addon_amount: roboticAddon.amount ?? null,
+      } : {}),
+    },
+  };
+
   const estimate = {
     resolved_context: {
       payor_bucket: input.payment.payor_bucket,
       pricing_mode: pricingMode,
       tariff,
+      flow,
       family: cohortDef.family,
       family_kind: cohortDef.familyKind,
       cohort_case_count: cohortRows.length,
@@ -284,8 +610,38 @@ export async function buildEstimate(input) {
       room_type: isDaycare ? 'Daycare (room N/A)' : room,  // display label
       room_key: room.toLowerCase(),                        // machine key into selected{general,twin,single}
       daycare: isDaycare,
-      robotic: { selection: roboticSelection, presence_rate: roboticPresence },
+      robotic: {
+        selection: roboticSelection,
+        presence_rate: roboticPresence,
+        // exact provenance counts (manager i14): robotic charge seen in
+        // cases_with_robotic of basis_case_count admissions of the selected
+        // service basis — null when no robotic signal row exists in history
+        cases_with_robotic: roboticInfo.case_count,
+        basis_case_count: roboticInfo.basis_case_count ?? (cohorts[svcBasis]?.length ?? null),
+        basis: svcBasis,
+        // robotic add-on charge state (15-Jul #27) — mirrored top-level as
+        // estimate.robotic_addon for direct UI consumption
+        addon: roboticAddon ? {
+          status: roboticAddon.status,              // 'included' | 'optional' | 'unpriced'
+          required: roboticRequired,                // gate redirect / explicit yes / robotic wording
+          reason: roboticAddon.reason,
+          source: roboticAddon.source,              // 'tariff_contracted' | 'cohort_history' | 'tariff_tr1_fallback' | null
+          amount: roboticAddon.amount ?? null,      // selected-room charge
+          item_name: roboticAddon.item_name,
+          item_code: roboticAddon.item_code,
+          ...(roboticAddon.tr1_rate ? { tr1_rate: true } : {}),
+          ...(roboticAddon.prompt ? { prompt: roboticAddon.prompt } : {}),
+          presence: {
+            rate: roboticPresence,
+            basis: svcBasis,
+            cases_with_robotic: roboticInfo.case_count,
+            basis_case_count: roboticInfo.basis_case_count ?? (cohorts[svcBasis]?.length ?? null),
+          },
+        } : null,
+      },
       ot_slot: lineItems.rows.find((r) => r.name === 'OT Charges')?.otSlot,
+      // cath-lab families only: selected/typical billed cath-lab hours + ₹/hour
+      cath_lab: lineItems.rows.find((r) => r.name === 'Cath Lab Charges')?.cathHours ?? null,
     },
     drivers,
     line_items: lineItems.rows,
@@ -314,6 +670,10 @@ export async function buildEstimate(input) {
     warnings,
     unresolved_items: [],
   };
+  if (suggestions.length) estimate.suggestions = suggestions; // additive — absent when not applicable
+  // additive (15-Jul #27): robotic add-on state for the UI — absent when robotic
+  // is not applicable / already priced on the family's own robotic procedure row
+  if (roboticAddon) estimate.robotic_addon = estimate.resolved_context.robotic.addon;
 
   // 17. insurance settlement: insurer share vs patient share (itemized claim)
   if (input.insurance && input.payment.payor_bucket !== 'Cash') {
@@ -330,13 +690,19 @@ export async function buildEstimate(input) {
     }
   }
 
+  // Package tariff differs per room type: use the room's tier from
+  // room_amounts (derived from fc.package_master.room_rates_jsonb), falling
+  // back to the scalar package_amount (= General Ward tier) when the jsonb
+  // is missing/empty for that tier.
+  const pkgAmountForRoom = (pkg, rk) => Number(pkg?.room_amounts?.[rk] ?? pkg?.package_amount) || 0;
+
   // 18. package coverage: per-line inclusion status + dual grand totals
   // (only when a package resolved and curated inclusion text exists)
   if (packageOffer?.package?.inclusions_text) {
     try {
       const model = parseCoverage(packageOffer.package.inclusions_text, packageOffer.package.exclusions_text);
       const coverage = applyCoverage(estimate, model);
-      const pkgAmt = Number(packageOffer.package.package_amount) || 0;
+      const pkgAmt = pkgAmountForRoom(packageOffer.package, room.toLowerCase());
       coverage.totals.package_amount = pkgAmt;
       coverage.totals.with_package = Math.round((pkgAmt + coverage.totals.payable_extras) * 100) / 100;
       packageOffer.coverage = coverage;
@@ -344,7 +710,7 @@ export async function buildEstimate(input) {
       if (input.insurance && input.payment.payor_bucket !== 'Cash') {
         try {
           packageOffer.insurance_settlement = settleWithPackage({
-            packageAmount: packageOffer.package.package_amount,
+            packageAmount: pkgAmt,
             coverageRows: coverage.rows,
             lineItems: lineItems.rows,
             roomKey: room.toLowerCase(),
@@ -360,6 +726,32 @@ export async function buildEstimate(input) {
     }
   }
 
+  // 18b. conversion alert (15-Jul flow doc): the open→package conversion is
+  // driven by inclusion/exclusion text parsing — when the converted total
+  // lands outside the ACTUAL billed range for this package, the parsing (or
+  // the package price) is suspect and must be checked, not trusted.
+  {
+    const ba = packageOffer?.billed_actuals?.this_tariff;
+    const converted = packageOffer?.coverage?.totals?.with_package;
+    if (ba && ba.cases >= 5 && Number.isFinite(converted) && converted > 0) {
+      const lo = ba.p25 * 0.75;
+      const hi = ba.p75 * 1.25;
+      const out = converted < lo || converted > hi;
+      packageOffer.conversion_check = {
+        status: out ? 'out_of_range' : 'ok',
+        converted_total: converted,
+        actual_band: { p25: ba.p25, p50: ba.p50, p75: ba.p75, cases: ba.cases },
+      };
+      if (out) {
+        warnings.push(
+          `Package conversion check: the converted total ₹${Math.round(converted).toLocaleString('en-IN')} is outside the actual billed range ` +
+          `₹${Math.round(ba.p25).toLocaleString('en-IN')}–₹${Math.round(ba.p75).toLocaleString('en-IN')} (${ba.cases} cases) — ` +
+          'check this package\'s inclusion/exclusion parsing and price before quoting.'
+        );
+      }
+    }
+  }
+
   // 19. per-room side-by-side data (manager: show all room types at once).
   // Line-item and grand totals already carry all rooms; only the cheap tail —
   // package coverage and insurance settlement — is room-specific, so we replay
@@ -369,14 +761,16 @@ export async function buildEstimate(input) {
     const model = packageOffer?.coverage && !packageOffer.coverage.error
       ? parseCoverage(packageOffer.package.inclusions_text, packageOffer.package.exclusions_text)
       : null;
-    const pkgAmt = Number(packageOffer?.package?.package_amount) || 0;
     estimate.by_room = {};
     for (const rk of ['general', 'twin', 'single']) {
+      // per-room package tariff (room_rates_jsonb tier, scalar fallback)
+      const pkgAmt = pkgAmountForRoom(packageOffer?.package, rk);
       const entry = { final_estimate: round2(lineItems.grandTotal.selected[rk] ?? 0) };
       if (model) {
         try {
           const cov = applyCoverage({ ...estimate, resolved_context: { ...estimate.resolved_context, room_key: rk } }, model);
           entry.coverage = {
+            package_amount: pkgAmt,
             with_package: round2(pkgAmt + cov.totals.payable_extras),
             payable_extras: round2(cov.totals.payable_extras),
             rows: cov.rows.map((r) => ({ index: r.index, status: r.status, final_amount: r.final_amount })),

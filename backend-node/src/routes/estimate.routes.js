@@ -65,6 +65,16 @@ export const EstimateInput = z.object({
   }).default({}),
   clinical: z.object({
     procedure: z.string().default('robotic_tkr_unilateral_right'),
+    /** Raw doctor's wording (intake note / treatment search). When present and
+     *  no explicit package is given, package selection goes through the gate
+     *  brain (alias + AI clinical ranking on the payor's tariff) instead of
+     *  the cohort-dominant heuristic. */
+    treatment_text: z.string().optional(),
+    /** Gate resolution carried `robotic_addon: true` (payor-aware robotic
+     *  redirect: base family + robotic add-on). Forces the built estimate to
+     *  include the robotic add-on charge, priced from the payor tariff's
+     *  contracted robotic item (cohort history as fallback). */
+    robotic_addon: z.boolean().optional(),
     department_name: z.string().optional(),
     doctor_name: z.string().optional(),
     doctor_cd: z.string().optional(),
@@ -87,6 +97,11 @@ export const EstimateInput = z.object({
     ward_manual: z.number().optional(),
     ot_hours_basis: z.string().default('P50'),
     ot_hours_manual: z.number().optional(),
+    // Cath-lab hours (cath-lab families only — CAG / PTCA): mirrors ot_hours.
+    // basis 'manual' + cath_hours_manual prices the Cath Lab row at manual
+    // hours x the cohort's historical cath-lab ₹/hour.
+    cath_hours_basis: z.string().default('P50'),
+    cath_hours_manual: z.number().optional(),
     robotic: z.enum(['yes', 'no', 'auto']).default('auto'),
     emergency_ot: z.enum(['No', 'Yes']).default('No'), // switches OT pricing to the OT-E slot ladder
     mlc: z.enum(['No', 'Yes']).default('No'),          // applies the MLC charge row (HSP0047)
