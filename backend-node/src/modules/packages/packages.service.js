@@ -255,12 +255,20 @@ export async function packageOfferForEstimate({ cohortRows, tariff_cd, organizat
  */
 async function billedActualsForPackage(packageName, tariff_code) {
   try {
+    // three quartile sets per the 15-Jul flow doc: the gross (final bill),
+    // the package amount itself, and what rode on top as billed exclusions.
+    const q3 = (col) => `
+      round(percentile_cont(0.25) WITHIN GROUP (ORDER BY ${col})::numeric) ${col.replace(/[^a-z_]/g, '')}_p25,
+      round(percentile_cont(0.5)  WITHIN GROUP (ORDER BY ${col})::numeric) ${col.replace(/[^a-z_]/g, '')}_p50,
+      round(percentile_cont(0.75) WITHIN GROUP (ORDER BY ${col})::numeric) ${col.replace(/[^a-z_]/g, '')}_p75`;
     const { rows } = await query(
       `SELECT (upper(btrim(p_tariff_cd)) = upper(btrim($2))) AS this_tariff,
               count(*)::int cases,
-              round(percentile_cont(0.25) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p25,
-              round(percentile_cont(0.5)  WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50,
-              round(percentile_cont(0.75) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p75
+              ${q3('final_pkg_bill_excl_fnb')},
+              ${q3('pkg_gross_amount')},
+              round(percentile_cont(0.25) WITHIN GROUP (ORDER BY greatest(final_pkg_bill_excl_fnb - pkg_gross_amount, 0))::numeric) excl_p25,
+              round(percentile_cont(0.5)  WITHIN GROUP (ORDER BY greatest(final_pkg_bill_excl_fnb - pkg_gross_amount, 0))::numeric) excl_p50,
+              round(percentile_cont(0.75) WITHIN GROUP (ORDER BY greatest(final_pkg_bill_excl_fnb - pkg_gross_amount, 0))::numeric) excl_p75
        FROM fc.package_bill_admissions
        WHERE upper(btrim(package_name)) = upper(btrim($1)) AND final_pkg_bill_excl_fnb IS NOT NULL
          AND package_name NOT LIKE '%,%' -- multi-package combo bills (e.g. "CAG - CAT - 1,PTCA…") would inflate a single package's band
@@ -270,9 +278,16 @@ async function billedActualsForPackage(packageName, tariff_code) {
     if (!rows.length) return null;
     const mine = rows.find((r) => r.this_tariff) ?? null;
     const all = rows.reduce((t, r) => t + r.cases, 0);
+    const set = (r, prefix) => ({ p25: Number(r[`${prefix}_p25`]), p50: Number(r[`${prefix}_p50`]), p75: Number(r[`${prefix}_p75`]) });
     return {
       basis: 'converted package bills (excl. F&B)',
-      this_tariff: mine ? { cases: mine.cases, p25: Number(mine.p25), p50: Number(mine.p50), p75: Number(mine.p75) } : null,
+      this_tariff: mine ? {
+        cases: mine.cases,
+        // gross final bill (kept flat for existing consumers)
+        ...set(mine, 'final_pkg_bill_excl_fnb'),
+        package_amount: set(mine, 'pkg_gross_amount'),
+        exclusions_over_package: set(mine, 'excl'),
+      } : null,
       all_tariffs_cases: all,
     };
   } catch { return null; }
