@@ -15,7 +15,7 @@ const ai = process.env.VERTEX_AI_PROJECT
     location: process.env.VERTEX_AI_LOCATION || 'global',
   })
   : new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview';
 
 const MAX_TOOL_CALLS = 6;
 const MAX_ROWS = 50;

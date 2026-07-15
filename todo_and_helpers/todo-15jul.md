@@ -127,13 +127,13 @@ morning before the doc landed** — verified live. The "Feedback to AI" ask is
 
 ## From the 17:58 review call (bugs he demoed + new asks)
 
-- [ ] **22. AI matching must be deterministic** — his demo: "Spine help for
-  discectomy" (Cash) gave DIFFERENT packages/amounts on two runs (~₹40–50k
-  apart), once even no package. ROOT CAUSE FOUND: `geminiJson()`
-  (src/modules/ai/gemini.js) sends no `temperature`, so Gemini runs at its
-  default 1.0 — every flow call (family match, package ranking, intake) is
-  sampled hot. Fix: temperature 0 (+ seed if supported) on all flow-path
-  calls; then re-verify his discectomy input gives one stable answer.
+- [x] **22. AI matching must be deterministic** — DONE 15-Jul eve: root cause
+  was `geminiJson()` sending no `temperature` (Gemini default 1.0). Fixed:
+  `temperature: 0` on all flow-path JSON calls, and the engine moved to
+  **gemini-3.1-pro-preview** (code defaults + .env). Verified live with his
+  exact demo input — "Spine help for discectomy" returns the identical
+  family list on repeated runs. NOTE: the EC2 deploy env still has
+  GEMINI_MODEL=gemini-2.5-flash — update it when deploying (#11/#29).
 - [x] **23. Send him the flow AI prompts + input format** — he wants to refine
   them himself ("prompt de do, input batao kaise jata hai, main refine karta
   hu"). Doc prepared: `todo_and_helpers/ai-prompts-15jul.md`.

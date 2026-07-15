@@ -1,10 +1,11 @@
 # FC Estimate Builder — the AI prompts in the flow (as asked on the 17:58 call)
 
-All three flow-path calls run on **Gemini 2.5 Flash** (Vertex AI) with
-`responseMimeType: application/json`. **Note for the refinement: today no
-`temperature` is sent, so the model samples at its default (1.0) — this is why
-the same input can pick different packages on different runs. We are pinning
-it to 0 as part of the determinism fix (#22).**
+All three flow-path calls run on **Gemini 3.1 Pro** (`gemini-3.1-pro-preview`,
+Vertex AI, global endpoint) with `responseMimeType: application/json` and
+**`temperature: 0`** — fixed on 15-Jul eve (#22). Before the fix no temperature
+was sent (model default 1.0), which is why the same input could pick different
+packages on different runs. Verified after the fix: "Spine help for
+discectomy" now returns the identical family list on repeated runs.
 
 There are 3 AI calls in the matching flow, in this order:
 
