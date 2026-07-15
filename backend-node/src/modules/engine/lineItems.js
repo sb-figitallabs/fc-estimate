@@ -196,6 +196,10 @@ export function computeLineItems(ctx) {
     for (const t of ctx.templateRows) {
       template(t.name, t.bucket, t.sub, t.code);
     }
+    // Session-based treatments (15-Jul Q4: dialysis, phototherapy, newborn
+    // care) bill per visit — LOS × ward/ICU room rows would fabricate lakhs
+    // of room charges actual bills never carry, so they are suppressed.
+    if (!ctx.sessionBased) {
     driver('Nursing - Room', 'Room Charges', 'Ward Care', 'ROM5189', drivers.ward, { how: 'Ward days x rate' });
     driver('Nursing - ICU', 'Room Charges', 'Critical Care', 'ROM5189', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
     driver('DMO', 'Room Charges', 'Ward Care', 'ROM0093', drivers.ward, { how: 'Ward days x rate' });
@@ -224,6 +228,7 @@ export function computeLineItems(ctx) {
           single: mk(d.selected, bedRates.single),
         },
       });
+    }
     }
     template('CSSD Charges', 'Procedure / OT Charges', 'OT Charges', 'RNS5005');
     // Medical Records: daycare bills MSC10 ("-1 DAY"), non-daycare RNS0120 ("> 1 DAY").
@@ -291,10 +296,12 @@ export function computeLineItems(ctx) {
         ...(selV != null ? { selectedCells: { general: selV, twin: selV, single: selV } } : {}),
       });
     }
+    if (!ctx.sessionBased) {
     driver('Intensivist Per Day', 'Room Charges', 'Critical Care', 'ICC0002', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
     driver('Assistant Intensivist Per Day', 'Room Charges', 'Critical Care', 'ICC0001', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
     driver('Ward Consumables', 'Room Charges', 'Ward Care', 'HSP5013', drivers.los, { how: 'LOS days x rate' });
     driver('Monitor Per Day', 'Room Charges', 'Critical Care', 'EME0019', drivers.icu, { icuRate: true, how: 'ICU days x rate' });
+    }
     {
       const r = rateOf('HSP0047');
       const qty = ctx.mlc === 'Yes' ? 1 : 0;

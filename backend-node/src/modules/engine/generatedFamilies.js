@@ -19,6 +19,8 @@ const GENERATED_FAMILIES = {
   hemodialysis_management: {
     family: 'hemodialysis_management',
     familyKind: 'medical',
+    // 15-Jul Q4: session-based — per-day room charges suppressed
+    sessionBased: true,
     whereSql: `curated_template_names_jsonb ? 'Hemodialysis Management'`,
     params: [],
     procedure: null,
@@ -52,6 +54,8 @@ const GENERATED_FAMILIES = {
   neonatal_jaundice_phototherapy_management: {
     family: 'neonatal_jaundice_phototherapy_management',
     familyKind: 'medical',
+    // 15-Jul Q4: session-based — per-day room charges suppressed
+    sessionBased: true,
     whereSql: `curated_template_names_jsonb ? 'Neonatal Jaundice / Phototherapy Management'`,
     params: [],
     procedure: null,
@@ -96,6 +100,8 @@ const GENERATED_FAMILIES = {
   routine_newborn_care_and_vaccination: {
     family: 'routine_newborn_care_and_vaccination',
     familyKind: 'medical',
+    // 15-Jul Q4: session-based — per-day room charges suppressed
+    sessionBased: true,
     whereSql: `curated_template_names_jsonb ? 'Routine Newborn Care & Vaccination'`,
     params: [],
     procedure: null,
@@ -1504,6 +1510,8 @@ const GENERATED_FAMILIES = {
   hemodialysis_support: {
     family: 'hemodialysis_support',
     familyKind: 'surgical',
+    // 15-Jul Q4: session-based — per-day room charges suppressed
+    sessionBased: true,
     whereSql: `curated_template_names_jsonb ? 'Hemodialysis Support'`,
     params: [],
     procedure: null,

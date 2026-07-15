@@ -220,6 +220,9 @@ export async function buildEstimate(input) {
   const mode = controls.estimate_mode ?? 'Typical';
   const lineItems = computeLineItems({
     mode, room, pricingMode,
+    // 15-Jul Q4: session-based families (dialysis, phototherapy, newborn care)
+    // suppress LOS-driven room rows — they bill per visit, not per ward day.
+    sessionBased: cohortDef.sessionBased === true,
     emergencyOt: controls.emergency_ot ?? 'No',
     mlc: controls.mlc ?? 'No',
     robotic: roboticSelection,
@@ -243,6 +246,46 @@ export async function buildEstimate(input) {
       ? { p25: pharmBasisRow.cath_lab_p25 ?? 0, p50: pharmBasisRow.cath_lab_p50 ?? 0, p75: pharmBasisRow.cath_lab_p75 ?? 0 }
       : { p25: 0, p50: 0, p75: 0 },
   });
+
+  // 13b. Insurer PF from the historic P50 (15-Jul answers, Q1): insurer
+  // tariffs price Professional Fees at token consultation rates (₹740 vs
+  // actual ₹15k–₹1.4L) — "let's use the historic PF P50 for the time being".
+  // Every PF line is scaled per room so the bucket lands exactly on the P50
+  // and lines still reconcile with totals; bands shift by the same delta.
+  const actualMetricsEarly = buildActualBasisMetrics(cohorts);
+  let pfSource = 'tariff';
+  if (pricingMode !== 'Cash / TR1') {
+    const histPfRow = actualMetricsEarly.find(
+      (r) => r.basis_label === bases.pf_basis.selected_basis && r.field_key === 'professional_fees'
+    );
+    if (histPfRow?.p50 > 0) {
+      const pfRows = lineItems.rows.filter((r) => r.bucket === 'Professional Fees');
+      const roomKeys = ['general', 'twin', 'single'];
+      for (const rk of roomKeys) {
+        const pfTotal = pfRows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
+        const delta = histPfRow.p50 - pfTotal;
+        if (!Number.isFinite(delta) || Math.abs(delta) < 1) continue;
+        if (pfTotal > 0) {
+          const f = histPfRow.p50 / pfTotal;
+          for (const r of pfRows) if (r.selected?.[rk] != null) r.selected[rk] = Math.round(r.selected[rk] * f * 100) / 100;
+        } else if (pfRows[0]?.selected) {
+          pfRows[0].selected[rk] = histPfRow.p50; // no PF lines priced — carry it on the first PF row
+        } else {
+          continue; // no PF rows at all for this family — nothing to scale
+        }
+        if (Array.isArray(lineItems.grandTotal[rk])) {
+          lineItems.grandTotal[rk] = lineItems.grandTotal[rk].map((v) => Math.round((v + delta) * 100) / 100);
+        }
+        if (lineItems.grandTotal.selected?.[rk] != null) {
+          lineItems.grandTotal.selected[rk] = Math.round((lineItems.grandTotal.selected[rk] + delta) * 100) / 100;
+        }
+      }
+      lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
+      pfRows.forEach((r) => { r.historic_pf = true; });
+      pfSource = 'historic_p50';
+      warnings.push(`Professional Fees priced from the historic P50 (₹${Math.round(histPfRow.p50).toLocaleString('en-IN')}, basis ${bases.pf_basis.selected_basis}) — the insurer tariff carries token PF rates.`);
+    }
+  }
 
   // 14. service line count alert
   const baseCount = cohortDef.baseServiceCount ?? (autoIncluded.length + 10);
@@ -306,7 +349,7 @@ export async function buildEstimate(input) {
   // historic metrics (manager i6): curated bucket ranges for the selected basis —
   // relevant p25/p50/p75 only, labelled with basis + case count; UI compares
   // them against the live bucket_totals. Computed once, shared with artifacts.
-  const actualMetrics = buildActualBasisMetrics(cohorts);
+  const actualMetrics = actualMetricsEarly; // computed at 13b (PF scaling)
   const pfSummary = buildPfPayorSummary(cohorts);
   const HISTORIC_FIELDS = {
     total_amount_excluding_food_and_beverage_and_returns_plus_drug_admin: 'Gross total',
@@ -338,7 +381,15 @@ export async function buildEstimate(input) {
   const histPf = metricOf(bases.pf_basis.selected_basis, 'professional_fees');
   const pfDeviation = histPf?.p50 > 0 ? (logicPf - histPf.p50) / histPf.p50 : null;
   const pfAnalysis = pricingMode !== 'Cash / TR1' || !histPf
-    ? { applicable: false, reason: pricingMode !== 'Cash / TR1' ? 'PF folded into tariff in insurance mode' : 'no historic PF data' }
+    ? {
+        applicable: false,
+        reason: pricingMode !== 'Cash / TR1'
+          ? (pfSource === 'historic_p50'
+            ? 'PF priced from the historic P50 — the insurer tariff carries token PF rates (15-Jul Q1)'
+            : 'PF folded into tariff in insurance mode')
+          : 'no historic PF data',
+        ...(pfSource === 'historic_p50' ? { pf_source: 'historic_p50' } : {}),
+      }
     : {
         applicable: true,
         logic_pf: Math.round(logicPf * 100) / 100,
