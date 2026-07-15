@@ -263,6 +263,7 @@ async function billedActualsForPackage(packageName, tariff_code) {
               round(percentile_cont(0.75) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p75
        FROM fc.package_bill_admissions
        WHERE upper(btrim(package_name)) = upper(btrim($1)) AND final_pkg_bill_excl_fnb IS NOT NULL
+         AND package_name NOT LIKE '%,%' -- multi-package combo bills (e.g. "CAG - CAT - 1,PTCA…") would inflate a single package's band
        GROUP BY 1`,
       [packageName, tariff_code || '']
     );

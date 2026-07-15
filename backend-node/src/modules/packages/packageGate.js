@@ -54,9 +54,10 @@ async function billedActuals(packageName, packageCode) {
             round(percentile_cont(0.5)  WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50,
             round(percentile_cont(0.75) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p75
      FROM fc.package_bill_admissions
-     WHERE upper(btrim(package_name)) = upper(btrim($1))
+     WHERE package_name NOT LIKE '%,%' -- combo bills (multiple packages on one admission) would inflate a single package's band
+       AND (upper(btrim(package_name)) = upper(btrim($1))
         OR ($2 <> '' AND upper(btrim(package_name)) IN (
-             SELECT DISTINCT upper(btrim(package_name)) FROM fc.package_master WHERE package_code = $2))
+             SELECT DISTINCT upper(btrim(package_name)) FROM fc.package_master WHERE package_code = $2)))
      GROUP BY 1, 2 ORDER BY 3 DESC`,
     [packageName, packageCode || '']
   );
@@ -79,6 +80,7 @@ async function relatedBilledHistory(treatment) {
   const params = words.map((w) => `%${w}%`);
   const { rows } = await query(
     `SELECT package_name, p_tariff_cd, payer_type, count(*)::int n,
+            (package_name LIKE '%,%') AS is_combo,
             round(percentile_cont(0.5) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50
      FROM fc.package_bill_admissions
      WHERE package_name IS NOT NULL AND (${cond})
