@@ -31,7 +31,7 @@ claim in the note was checked against the dev database before writing this.
 - [x] **2. His exact fallback ladder** — DONE 15-Jul: the gate returns `fallback_ladder` (package: pkg-with-payor → family-with-payor → strong-match-without → no match; non-package: 4-rung variant) with the used rung; the Flow view renders it highlighted.
 - [x] **3. Package-code-first matching** — DONE 15-Jul: billed actuals match every name sharing the package CODE (same code = one package); candidates dedupe by code.
 - [x] **4. Gate drives the actual estimate build** — DONE 15-Jul: intake wording / AI-match text persists as `treatment_text` on the build request → package selection goes through the gate brain (`package_offer.source: gate_match`), cohort-dominant only as fallback; resolve-treatment also returns the gate's `package_hint`.
-- [ ] **5. Clarifying questions on ambiguity** — treatment seen historically as both surgical/medical or daycare/non-daycare ⇒ ask the user, then build ONLY from that cohort.
+- [x] **5. Clarifying questions on ambiguity** — DONE 15-Jul eve (HO `37700e5`): mandatory inline prompt when a family is seen as both daycare/non-daycare or surgical/medical; the answer locks the cohort before build.
 - [x] **6. Package-bill quartile set** — DONE 15-Jul eve: `billed_actuals.this_tariff` now carries three sets — gross final bill, the package amount itself (`package_amount`), and what rode on top (`exclusions_over_package`) — per package, combo bills excluded.
 - [x] **7. Auto-verification harness** — DONE + first run complete
   (`verification-report-15jul.md`): 207 zero-input builds (Cash ×170 +
@@ -119,9 +119,52 @@ morning before the doc landed** — verified live. The "Feedback to AI" ask is
   (31 rows) — needs a historical residual; (d) infusion Pharmacy ₹0
   (Immunotherapy/Chemo, 6 rows); (e) Hemodialysis/Newborn room-charge
   cohort quirks. Re-run the harness after each fix to prove it.
-- [ ] **20. (Daksh) Sessions-with-estimates in the public API** — expose the
-  total scribe sessions that produced estimates to the dashboard via the
-  public API. To be discussed in detail before building.
+- [x] **20. (Daksh) Sessions-with-estimates in the public API** — DONE 15-Jul
+  eve (HO `6ffacad`): `GET /api/public/fc-summary` — total FC sessions +
+  per-staff {estimates_created, sessions_recorded, sessions_with_estimates};
+  filters `?date | ?from&to | ?range=today|yesterday|last7|last30` (same IST
+  semantics as daily-summary); bare call → most recent day with FC activity.
+
+## From the 17:58 review call (bugs he demoed + new asks)
+
+- [ ] **22. AI matching must be deterministic** — his demo: "Spine help for
+  discectomy" (Cash) gave DIFFERENT packages/amounts on two runs (~₹40–50k
+  apart), once even no package. ROOT CAUSE FOUND: `geminiJson()`
+  (src/modules/ai/gemini.js) sends no `temperature`, so Gemini runs at its
+  default 1.0 — every flow call (family match, package ranking, intake) is
+  sampled hot. Fix: temperature 0 (+ seed if supported) on all flow-path
+  calls; then re-verify his discectomy input gives one stable answer.
+- [x] **23. Send him the flow AI prompts + input format** — he wants to refine
+  them himself ("prompt de do, input batao kaise jata hai, main refine karta
+  hu"). Doc prepared: `todo_and_helpers/ai-prompts-15jul.md`.
+- [ ] **24. Show the package code in the UI** — package matches display name
+  only (his NES5011/NES 5281 check needed the DB); show `[code] name` on the
+  Flow view, package offer and historic panels — code, not name, is package
+  identity.
+- [ ] **25. Robotic visibility in the UI** — "how do I even tell if robotic is
+  included? it's shown nowhere". Surface the robotic state (included /
+  add-on available / not applicable) + presence % on the estimate & Flow
+  views without needing a trigger.
+- [ ] **26. Drop Procedure from stage 1 (Simple flow)** — stage 1 currently
+  forces a pick from ~170 families BEFORE payer context, and LOS/stay derive
+  from that too-early pick; changing payer later doesn't re-derive it. His
+  ask: stage 1 captures ONLY admission-note text + payer; the payor-aware
+  gate resolves the procedure at the next stage (both inputs first, then the
+  flow decides — matches the flow doc philosophy).
+- [ ] **27. Robotic add-on charges missing from the built estimate** — GIPSA +
+  Robotic TKR: gate correctly resolved base TKR + robotic add-on, but the
+  estimate applied NO robotic charge anywhere (implants present, add-on
+  absent; ₹6.11L total). GIPSA tariff carries a contracted "CHARGES FOR
+  ROBOTIC TKR" ₹1,20,000 under Other Services — the add-on must price from
+  the payor's contracted rate, and default per the per-payor 90%/flag rule
+  (#9), not stay invisible.
+- [ ] **28. DB-level robotic classification** — persist per package/surgery
+  whether a robotic add-on exists (and the contracted rate), and per IP
+  admission whether robotic was actually billed. He is sending a review doc
+  from his side; align with it.
+- [ ] **29. Deploy prep (with #11)** — push current state to prod so feedback
+  dock etc. reaches users; Flow view stays HIDDEN for normal users
+  (admin-only); after deploy, revisit the robotic documentation gaps (#27/#28).
 
 ## Explicitly paused / replaced by him
 
