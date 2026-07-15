@@ -5,7 +5,7 @@
 import { query } from '../../db/pool.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
 import { payorBucketCounts, resolveBasis } from '../resolve/payerBasis.js';
-import { getCohort, applyCareControls, roboticBaseOf } from './cohort.js';
+import { getCohort, applyCareControls, roboticBaseOf, roboticAddonItemsOf } from './cohort.js';
 import {
   fetchCohortRows, basisCohorts, buildBasisSummary, buildServiceStats,
   buildPharmacyStats, buildActualBasisMetrics, buildPfPayorSummary,
@@ -14,7 +14,7 @@ import {
 import {
   cleanServiceRows, splitCleanedRows, prioritizeOptionalRows, splitRoboticOptional,
   roboticPresenceInfo, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
-  isRemoveCategory,
+  isRemoveCategory, isRoboticText, resolveRoboticAddonPricing, ROBOTIC_PROMPT_THRESHOLD,
 } from './services.js';
 import {
   buildOtConsumableShortlist, otConsumablesApplied, buildImplantHierarchy, resolveImplantEstimate,
@@ -183,9 +183,63 @@ export async function buildEstimate(input) {
   const { optional, roboticRows } = splitRoboticOptional(prioritized, procedureCode);
   const roboticInfo = roboticPresenceInfo(svcStatsForBasis, procedureCode);
   const roboticPresence = roboticInfo.rate;
-  const roboticSelection = controls.robotic && controls.robotic !== 'auto'
+  let roboticSelection = controls.robotic && controls.robotic !== 'auto'
     ? (controls.robotic === 'yes' ? 'Yes' : 'No')
     : roboticDefaultSelection('auto', roboticPresence);
+
+  // 9b. robotic add-on charge (15-Jul #27). The gate's payor-aware resolution
+  // can return "base family + robotic add-on" (GIPSA/Non-GIPSA robotic
+  // redirect) — the BUILT estimate must then carry the robotic charge, priced
+  // from the payor tariff's contracted robotic item (TR290 "ROBO (TKR) -
+  // UNILATERAL" ₹1,20,000) with cohort billed history as fallback. Absent an
+  // explicit ask, the per-payor rule (15-Jul #9) drives the default: presence
+  // >90% for THIS payor basis ⇒ included; ≥30% ⇒ optional row + convert prompt.
+  const treatmentText = input.clinical.treatment_text?.trim();
+  const roboticDeclined = controls.robotic === 'no';
+  const roboticRequired = !roboticDeclined && (
+    input.clinical.robotic_addon === true ||  // gate resolution carried robotic_addon: true
+    controls.robotic === 'yes' ||             // caller explicitly asked robotic
+    /ROBOT/i.test(treatmentText || '')        // doctor's wording says robotic
+  );
+  if (roboticRequired) roboticSelection = 'Yes';
+  // families whose robotic charge is already priced elsewhere in the build:
+  // robotic families carry it on their roboticControlled procedure row; auto
+  // families with >90% presence carry it as a default-included template row.
+  const roboticOnProcedureRow = (cohortDef.includeProcedure ?? true)
+    && /ROBO/i.test(cohortDef.procedure?.label || '');
+  const roboticInTemplate = autoTemplate && autoIncluded.some((r) =>
+    r.item_code !== procedureCode
+    && isRoboticText(r.item_code, r.item_name, r.grouping, r.fc_estimate_bucket));
+  let roboticAddon = null;
+  if (!roboticOnProcedureRow && !roboticInTemplate && !roboticDeclined) {
+    let addonStatus = null, addonReason = null;
+    if (roboticRequired) {
+      addonStatus = 'included';
+      addonReason = input.clinical.robotic_addon === true ? 'gate_robotic_addon'
+        : controls.robotic === 'yes' ? 'explicit_robotic_yes' : 'treatment_text_robotic';
+    } else if (roboticPresence > 90) {
+      addonStatus = 'included';
+      addonReason = 'payor_presence_above_90';
+    } else if (roboticPresence >= ROBOTIC_PROMPT_THRESHOLD) {
+      addonStatus = 'optional';
+      addonReason = 'payor_presence_significant';
+    }
+    if (addonStatus) {
+      const pricing = resolveRoboticAddonPricing({
+        addonItems: roboticAddonItemsOf(cohortDef.family), roboticRows, rates,
+      });
+      if (pricing) {
+        roboticAddon = { ...pricing, status: addonStatus, included: addonStatus === 'included', reason: addonReason };
+        if (roboticAddon.included) roboticSelection = 'Yes';
+      } else {
+        roboticAddon = {
+          status: 'unpriced', included: false, reason: addonReason,
+          source: null, item_code: null, item_name: null,
+        };
+        warnings.push('Robotic add-on applies but neither the payor tariff nor billed history carries a robotic charge to price it — add the amount manually.');
+      }
+    }
+  }
 
   // 10. grouped residuals
   const gaps = buildGroupingGaps(cohortRows, cleaned, svcMap);
@@ -239,6 +293,7 @@ export async function buildEstimate(input) {
       : undefined,
     advanced: { otConsumablesApplied: otApplied },
     implants: { resolvedTypical: implantResolved },
+    roboticAddon: roboticAddon && roboticAddon.status !== 'unpriced' ? roboticAddon : undefined,
     grouped,
     familyRows: cohortDef.rows,
     ipPharmacyMode: cohortDef.ipPharmacyMode,
@@ -246,6 +301,26 @@ export async function buildEstimate(input) {
       ? { p25: pharmBasisRow.cath_lab_p25 ?? 0, p50: pharmBasisRow.cath_lab_p50 ?? 0, p75: pharmBasisRow.cath_lab_p75 ?? 0 }
       : { p25: 0, p50: 0, p75: 0 },
   });
+
+  // 13a. robotic add-on finalization: selected-room amount + convert prompt.
+  if (roboticAddon && roboticAddon.status !== 'unpriced') {
+    const rk = room.toLowerCase();
+    if (roboticAddon.pricing === 'tariff') {
+      roboticAddon.amount = roboticAddon.rate?.[rk] ?? roboticAddon.rate?.single ?? 0;
+    }
+    const fmt = (v) => `₹${Math.round(v ?? 0).toLocaleString('en-IN')}`;
+    const srcLabel = roboticAddon.source === 'tariff_contracted'
+      ? `contracted on tariff ${tariff.tariff_cd}`
+      : roboticAddon.source === 'cohort_history'
+        ? `typical billed robotic amount, basis ${svcBasis}`
+        : 'TR1 (cash) rate — no contracted robotic item on this tariff';
+    if (roboticAddon.included) {
+      warnings.push(`Robotic add-on included: ${roboticAddon.item_name} ${fmt(roboticAddon.amount)} (${srcLabel}).`);
+    } else {
+      roboticAddon.prompt = `${Math.round(roboticPresence)}% of ${svcBasis} cases had robotic — convert to robotic?`;
+      warnings.push(`Robotic add-on available (${roboticAddon.item_name} ${fmt(roboticAddon.amount)}, ${srcLabel}): ${roboticAddon.prompt}`);
+    }
+  }
 
   // 13b. Insurer PF from the historic P50 (15-Jul answers, Q1): insurer
   // tariffs price Professional Fees at token consultation rates (₹740 vs
@@ -350,7 +425,6 @@ export async function buildEstimate(input) {
   try {
     let inputPackage = input.package;
     let gatePicked = false;
-    const treatmentText = input.clinical.treatment_text?.trim();
     if (!inputPackage?.package_code && !inputPackage?.package_name && !inputPackage?.text && treatmentText) {
       try {
         const { rankPackageCandidates } = await import('../resolve/familyResolve.js');
@@ -514,6 +588,11 @@ export async function buildEstimate(input) {
       selection: roboticSelection,
       redirect_suggested: suggestions.some((s) => s.type === 'robotic_redirect'),
       ...(roboticBaseFamily ? { base_family: roboticBaseFamily } : {}),
+      ...(roboticAddon ? {
+        addon_status: roboticAddon.status,          // included | optional | unpriced
+        addon_source: roboticAddon.source,          // tariff_contracted | cohort_history | tariff_tr1_fallback | null
+        addon_amount: roboticAddon.amount ?? null,
+      } : {}),
     },
   };
 
@@ -540,6 +619,25 @@ export async function buildEstimate(input) {
         cases_with_robotic: roboticInfo.case_count,
         basis_case_count: roboticInfo.basis_case_count ?? (cohorts[svcBasis]?.length ?? null),
         basis: svcBasis,
+        // robotic add-on charge state (15-Jul #27) — mirrored top-level as
+        // estimate.robotic_addon for direct UI consumption
+        addon: roboticAddon ? {
+          status: roboticAddon.status,              // 'included' | 'optional' | 'unpriced'
+          required: roboticRequired,                // gate redirect / explicit yes / robotic wording
+          reason: roboticAddon.reason,
+          source: roboticAddon.source,              // 'tariff_contracted' | 'cohort_history' | 'tariff_tr1_fallback' | null
+          amount: roboticAddon.amount ?? null,      // selected-room charge
+          item_name: roboticAddon.item_name,
+          item_code: roboticAddon.item_code,
+          ...(roboticAddon.tr1_rate ? { tr1_rate: true } : {}),
+          ...(roboticAddon.prompt ? { prompt: roboticAddon.prompt } : {}),
+          presence: {
+            rate: roboticPresence,
+            basis: svcBasis,
+            cases_with_robotic: roboticInfo.case_count,
+            basis_case_count: roboticInfo.basis_case_count ?? (cohorts[svcBasis]?.length ?? null),
+          },
+        } : null,
       },
       ot_slot: lineItems.rows.find((r) => r.name === 'OT Charges')?.otSlot,
       // cath-lab families only: selected/typical billed cath-lab hours + ₹/hour
@@ -573,6 +671,9 @@ export async function buildEstimate(input) {
     unresolved_items: [],
   };
   if (suggestions.length) estimate.suggestions = suggestions; // additive — absent when not applicable
+  // additive (15-Jul #27): robotic add-on state for the UI — absent when robotic
+  // is not applicable / already priced on the family's own robotic procedure row
+  if (roboticAddon) estimate.robotic_addon = estimate.resolved_context.robotic.addon;
 
   // 17. insurance settlement: insurer share vs patient share (itemized claim)
   if (input.insurance && input.payment.payor_bucket !== 'Cash') {

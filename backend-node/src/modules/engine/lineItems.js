@@ -426,6 +426,37 @@ export function computeLineItems(ctx) {
   }
   } // end fixed knee layout
 
+  // Robotic add-on charge (15-Jul #27): when the family resolution said
+  // "base family + robotic add-on" (or per-payor presence demands it), the
+  // charge is a real row — priced from the payor tariff's contracted robotic
+  // item (e.g. TR290 "ROBO (TKR) - UNILATERAL" ₹1,20,000) or, failing that,
+  // the cohort's billed robotic history. Optional (not-included) state keeps
+  // the row visible at ₹0 so the UI can offer the convert-to-robotic prompt.
+  if (ctx.roboticAddon) {
+    const ra = ctx.roboticAddon;
+    const inc = ra.included === true;
+    const tariffPriced = ra.pricing === 'tariff';
+    const mkc = (v) => guard(ra.item_code, inc ? (v ?? 0) : 0);
+    const cellsFor = (rk) => (tariffPriced
+      ? [mkc(ra.rate?.[rk]), mkc(ra.rate?.[rk]), mkc(ra.rate?.[rk])]
+      : [mkc(ra.amount), mkc(ra.amount), mkc(ra.amount)]);
+    push({
+      name: ra.item_name, bucket: inc ? 'Procedure / OT Charges' : 'Optional Add-Ons',
+      sub: 'OT Charges',
+      source: tariffPriced ? 'Tariff' : 'History',
+      how: tariffPriced
+        ? 'Robotic add-on at the payor tariff\'s contracted robotic charge'
+        : 'Robotic add-on at the cohort\'s typical billed robotic amount',
+      code: ra.item_code, robotic_addon: true, included: inc,
+      ...(ra.tr1_rate ? { tr1_rate: true } : {}),
+      qty: { selected: inc ? 1 : 0, low: inc ? 1 : 0, typ: inc ? 1 : 0, high: inc ? 1 : 0 },
+      rate: tariffPriced
+        ? { general: ra.rate?.general ?? 0, twin: ra.rate?.twin ?? 0, single: ra.rate?.single ?? 0 }
+        : {},
+      cells: { general: cellsFor('general'), twin: cellsFor('twin'), single: cellsFor('single') },
+    });
+  }
+
   // placeholders for drug admin + PF (filled after pharmacy rows)
   const drugAdminIdx = rows.length;
   push({ name: 'Drug Administration Charges', bucket: 'Drug Administration Charges', sub: 'Pharmacy Related', source: 'Logic', how: '12.5% of pharmacy total', code: null, qty: {}, rate: {}, cells: { general: [0, 0, 0], twin: [0, 0, 0], single: [0, 0, 0] } });

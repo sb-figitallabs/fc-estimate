@@ -70,6 +70,11 @@ export const EstimateInput = z.object({
      *  brain (alias + AI clinical ranking on the payor's tariff) instead of
      *  the cohort-dominant heuristic. */
     treatment_text: z.string().optional(),
+    /** Gate resolution carried `robotic_addon: true` (payor-aware robotic
+     *  redirect: base family + robotic add-on). Forces the built estimate to
+     *  include the robotic add-on charge, priced from the payor tariff's
+     *  contracted robotic item (cohort history as fallback). */
+    robotic_addon: z.boolean().optional(),
     department_name: z.string().optional(),
     doctor_name: z.string().optional(),
     doctor_cd: z.string().optional(),

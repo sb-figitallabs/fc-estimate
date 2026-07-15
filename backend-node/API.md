@@ -77,6 +77,32 @@ robotic state, OT slot), `drivers` (LOS/ICU/Ward/OT p25/p50/p75 + selected),
 `advanced_controls` (OT-consumables shortlist + implant hierarchy), `service_line_count`
 alert, `warnings[]`, `unresolved_items[]`.
 
+Robotic add-on (15-Jul #27): pass `clinical.robotic_addon: true` when the gate's
+payor-aware resolution returned base family + robotic add-on (also triggered by
+robotic wording in `clinical.treatment_text` or `controls.robotic: "yes"`;
+`controls.robotic: "no"` suppresses it). The build then carries a robotic
+charge row (flagged `robotic_addon: true` in `line_items`) priced from the payor
+tariff's contracted robotic item, with billed cohort history as fallback.
+Without an explicit ask, per-payor presence drives the default: > 90 % ⇒ included,
+≥ 30 % ⇒ optional row + a convert-to-robotic prompt. State is mirrored at
+`estimate.robotic_addon` (and `resolved_context.robotic.addon`):
+```json
+{
+  "status": "included",              // included | optional | unpriced
+  "required": true,                  // gate redirect / explicit yes / robotic wording
+  "reason": "gate_robotic_addon",    // explicit_robotic_yes | treatment_text_robotic | payor_presence_above_90 | payor_presence_significant
+  "source": "tariff_contracted",     // cohort_history | tariff_tr1_fallback | null
+  "amount": 120000,                  // selected-room charge
+  "item_name": "ROBO (TKR) - UNILATERAL",
+  "item_code": "OTI0098",
+  "prompt": "61% of GIPSA Insurance cases had robotic — convert to robotic?",  // optional-status only
+  "presence": { "rate": 61.3, "basis": "GIPSA Insurance", "cases_with_robotic": 19, "basis_case_count": 31 }
+}
+```
+Absent when robotic is not applicable or the family's own robotic procedure row
+already prices it. On the package route the row is never swallowed by inclusion
+clauses — it stays a payable extra on top of the package amount.
+
 Known procedure families: `robotic_tkr_unilateral_right` (validated to exact parity),
 `robotic_tkr_unilateral_left`, `robotic_tkr_bilateral`.
 

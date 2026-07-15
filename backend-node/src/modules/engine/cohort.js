@@ -219,6 +219,30 @@ export function roboticBaseOf(family) {
   return ROBOTIC_BASE_FAMILY[family] ?? null;
 }
 
+/**
+ * Contracted robotic add-on tariff items per conventional base family
+ * (15-Jul #27): insurer tariffs carry a contracted "ROBO (…)" charge row
+ * (e.g. TR290 GIPSA: OTI0098 ROBO (TKR) - UNILATERAL ₹1,20,000) that prices
+ * the robotic add-on when the payor takes base package + robotic on top.
+ * Codes are the same procedure codes the robotic families bill (OTI0098 /
+ * OTI0099) plus the THR robotic-equipment variants seen in billed history.
+ * Ordered best-first; the pricer also considers the cohort's own billed
+ * robotic rows, so this map only needs the known curated families.
+ */
+const ROBOTIC_ADDON_ITEMS = {
+  total_knee_replacement_unilateral: [{ code: 'OTI0098', label: 'ROBO (TKR) - UNILATERAL' }],
+  total_knee_replacement_bilateral: [{ code: 'OTI0099', label: 'ROBO (TKR) - BILATERAL' }],
+  total_hip_replacement_thr_hemiarthroplasty: [
+    { code: 'EQP0001', label: 'ROBO (THR) - UNILATERAL' },
+    { code: 'EQP0002', label: 'ROBO (THR) - BILATERAL' },
+  ],
+};
+
+/** Known contracted robotic add-on tariff items for a family ([] when none registered). */
+export function roboticAddonItemsOf(family) {
+  return ROBOTIC_ADDON_ITEMS[family] ?? [];
+}
+
 /** Public registry view for UI/API consumers. */
 export function listFamilies() {
   return Object.values(FAMILIES).map((f) => ({

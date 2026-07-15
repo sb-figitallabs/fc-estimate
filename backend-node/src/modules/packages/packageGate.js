@@ -81,8 +81,12 @@ async function relatedBilledHistory(treatment) {
   const { rows } = await query(
     `SELECT package_name, p_tariff_cd, payer_type, count(*)::int n,
             (package_name LIKE '%,%') AS is_combo,
-            round(percentile_cont(0.5) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50
-     FROM fc.package_bill_admissions
+            round(percentile_cont(0.5) WITHIN GROUP (ORDER BY final_pkg_bill_excl_fnb)::numeric) p50,
+            -- package CODE for this billed name (task #24: code = identity);
+            -- null for combo/unmapped names — the UI simply shows no chip
+            (SELECT pm.package_code FROM fc.package_master pm
+              WHERE upper(btrim(pm.package_name)) = upper(btrim(a.package_name)) LIMIT 1) AS package_code
+     FROM fc.package_bill_admissions a
      WHERE package_name IS NOT NULL AND (${cond})
      GROUP BY 1, 2, 3 ORDER BY 4 DESC LIMIT 40`,
     params
@@ -223,6 +227,9 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
         mapped ? `FC template mapped (${top.fc_template_package_code})` : 'no FC template mapping',
       ].join(' · '),
       {
+        // which package this history belongs to (task #24 — code is identity)
+        package_code: top.package_code ?? null,
+        package_name: top.package_name ?? null,
         billed_actuals: actuals,
         fc_template_package_code: top.fc_template_package_code ?? null,
         fc_case_count_total: top.fc_case_count_total ?? null,

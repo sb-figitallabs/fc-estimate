@@ -175,9 +175,16 @@ router.get('/provenance', async (req, res, next) => {
          FROM mart.main_table WHERE ${def.whereSql}`, def.params
       ),
       query(
-        `SELECT COALESCE(NULLIF(package_name, ''), '(none)') AS package_name, count(*)::int AS cases
-         FROM mart.main_table WHERE ${def.whereSql}
-         GROUP BY 1 ORDER BY cases DESC, package_name LIMIT 20`, def.params
+        // package_code: the master code for each billed name (task #24 — code
+        // is package identity); null for '(none)'/combo/unmapped names.
+        `SELECT g.package_name, g.cases,
+                (SELECT pm.package_code FROM fc.package_master pm
+                  WHERE upper(btrim(pm.package_name)) = upper(btrim(g.package_name)) LIMIT 1) AS package_code
+         FROM (
+           SELECT COALESCE(NULLIF(package_name, ''), '(none)') AS package_name, count(*)::int AS cases
+           FROM mart.main_table WHERE ${def.whereSql}
+           GROUP BY 1 ORDER BY cases DESC, package_name LIMIT 20
+         ) g ORDER BY g.cases DESC, g.package_name`, def.params
       ),
       query(
         `SELECT payor_bucket, count(*)::int AS cases

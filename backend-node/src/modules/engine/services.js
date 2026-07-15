@@ -18,7 +18,7 @@ export const TEMPLATE_EXCLUDED_SERVICE_CODES = new Set([
 ]);
 
 const isOtSlotName = (name) => /^OT(-E)? - .*HOURS?/i.test(name || '');
-const isRoboticText = (...texts) => texts.some((t) => /ROBO/i.test(t || ''));
+export const isRoboticText = (...texts) => texts.some((t) => /ROBO/i.test(t || ''));
 
 /**
  * 'remove'-category rows are room-linked services (BED CHARGES, OXYGEN PER DAY…)
@@ -125,6 +125,70 @@ export function roboticDefaultSelection(mode, presenceRate, threshold = 90) {
   if (mode === 'yes') return 'Yes';
   if (mode === 'no') return 'No';
   return presenceRate > threshold ? 'Yes' : '';
+}
+
+/** Per-payor robotic prompt threshold (15-Jul #9): presence >90% ⇒ include by
+ *  default; ≥30% (but ≤90%) ⇒ offer the add-on as optional + a convert prompt. */
+export const ROBOTIC_PROMPT_THRESHOLD = 30;
+
+/**
+ * Price the robotic add-on charge (15-Jul #27). Candidate items are the
+ * family's registered contracted robotic codes (cohort.js roboticAddonItemsOf)
+ * followed by the cohort's own billed robotic rows (highest presence first).
+ * Pricing order:
+ *   1. tariff_contracted — the payor tariff carries a real (non-TR1-backfilled)
+ *      rate row for a candidate code (e.g. TR290 OTI0098 ₹1,20,000);
+ *   2. cohort_history    — typical billed robotic amount from this basis' rows;
+ *   3. tariff_tr1_fallback — TR1 (cash) rate flagged tr1_rate, last resort.
+ * Returns { source, pricing: 'tariff'|'amount', item_code, item_name,
+ *           rate?{general,twin,single}, amount?, tr1_rate? } or null.
+ */
+export function resolveRoboticAddonPricing({ addonItems = [], roboticRows = [], rates }) {
+  const candidates = [];
+  for (const it of addonItems) candidates.push({ code: it.code, name: it.label });
+  for (const r of [...roboticRows].sort((a, b) => (b.case_presence_rate ?? 0) - (a.case_presence_rate ?? 0))) {
+    if (!candidates.some((c) => c.code === r.item_code)) {
+      candidates.push({ code: r.item_code, name: r.item_name, statsRow: r });
+    }
+  }
+  const roomRates = (rate) => ({
+    general: rate.general ?? rate.twin ?? rate.single ?? 0,
+    twin: rate.twin ?? rate.single ?? rate.general ?? 0,
+    single: rate.single ?? rate.twin ?? rate.general ?? 0,
+  });
+  const hasRate = (rate) => rate && ((rate.single ?? rate.twin ?? rate.general ?? 0) > 0);
+
+  // 1. contracted rate on the resolved tariff itself
+  for (const c of candidates) {
+    const rate = rates.get(c.code);
+    if (hasRate(rate) && !rate.tr1_fallback) {
+      return {
+        source: 'tariff_contracted', pricing: 'tariff',
+        item_code: c.code, item_name: rate.name ?? c.name, rate: roomRates(rate),
+      };
+    }
+  }
+  // 2. billed robotic history in this cohort basis
+  for (const c of candidates) {
+    if ((c.statsRow?.amount_cash_typical ?? 0) > 0) {
+      return {
+        source: 'cohort_history', pricing: 'amount',
+        item_code: c.statsRow.item_code, item_name: c.statsRow.item_name,
+        amount: c.statsRow.amount_cash_typical,
+      };
+    }
+  }
+  // 3. TR1-backfilled tariff rate — better than silently dropping the charge
+  for (const c of candidates) {
+    const rate = rates.get(c.code);
+    if (hasRate(rate)) {
+      return {
+        source: 'tariff_tr1_fallback', pricing: 'tariff', tr1_rate: true,
+        item_code: c.code, item_name: rate.name ?? c.name, rate: roomRates(rate),
+      };
+    }
+  }
+  return null;
 }
 
 /**
