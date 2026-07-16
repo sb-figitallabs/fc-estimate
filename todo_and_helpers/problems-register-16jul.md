@@ -5,6 +5,33 @@ exists so every fix is designed **not to create ten new failures**: each problem
 carries its root cause, the safe fix, what the naive fix would break, and the
 regression gate that must stay green before the fix ships.
 
+## FIX STATUS (17-Jul batch, engine dev 059c4f5 — all verified against the frozen suite)
+
+| Fix | Result | Key verification |
+|---|---|---|
+| P2 negation guard | ✅ SHIPPED | "TKR NON ROBOTIC B/L": add-on optional not injected (₹5.02L); genuine robotic unchanged (₹7.32L); 10 wording unit cases |
+| P1 with-package quote | ✅ SHIPPED | SURLA quote ₹402,860 vs bill ₹406,505 (−0.9%, was +82% read); AKARAPU −5%; G NAGAVENI blocked(not_ready); exact package calls intact; non-package builds field-identical; band gate self-caught a contaminated Cash quote |
+| P3 named drugs | ✅ SHIPPED | SHOURYA −87%→−10.9% (STELMA→STELARA fuzzy+dose corroboration, sale_rate flagged); chemo double-count proof (+₹232 not +₹9,972); VARSHITHA frozen input names no drug → guard path correct, −21.8% once confirmed; controls byte-identical; kill switch both ways |
+| P4 catch-all guard | ✅ SHIPPED | BANDANADAM/KRISHNA/G NAGAVENI (−74%/+371%/−36%) now mandatory labeled question; ARTH/NEEHARIKA/S RAMESH unchanged; 20-family label sweep zero new questions; composes under P5's newborn question |
+| P5 newborn question | ✅ SHIPPED | 3 neonates stop at the cohort question (NICU answer −5.5% vs one bill); naive silent routing measured and REJECTED (would flip a GOOD case to −81%); JIVITESH(10y)/ARTH byte-identical; sick-newborn cohort has only 5 mart cases — mining blocked by data (tell the manager) |
+| P6 LOS-banded residuals | ✅ SHIPPED | NARESH 41,068→25,048 (Investigations 20,790→4,770); extra tightening: trigger requires P25 < P50 so typical-stay cohorts never band (verified both directions); surgical byte-identical; kill switch both ways. Residual gap = PF/room/per-day machinery (scoped out) |
+| P7 package-amount drift | queued | routes through the package-tariff sync audit (billed data as truth, per room tier) |
+| P8 combo pricing / P9 recounselling | scoped future phases | — |
+
+New register entries FROM the fixes:
+- **P10 — session-based families lose their per-day load**: sessionBased room
+  suppression (15-Jul Q4) removes room/bedside rows but nothing adds a
+  per-session charge — newborn/jaundice builds underquote their own cohort
+  P50s (13.3k vs 25.5k). Fix belongs in the session-row logic (a per-session
+  charge mined from the cohort). Found by P6, deliberately not forced there.
+- **P11 — bucket_extras can contain the package's own billed line** (billed
+  under a different service name, e.g. ROBO equipment / Cash PF), inflating
+  the extras rung; P1's band gate contains it (proved live); the durable fix
+  is the P7 sync audit's line classification.
+- **P12 — pharmacy catalog MRP coverage**: only 1,641/7,630 rows carry MRP
+  (STELARA priced via sale_rate, flagged price_source) — an MRP backfill will
+  move named-drug figures; auditable via the flag.
+
 ## The guardrail infrastructure (applies to every fix below)
 
 1. **The 35-case set is now a frozen regression suite.** Extractions + verdicts
