@@ -111,7 +111,9 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
   const payorGroup = payorGroupOf(payment.payor_bucket, tariff.tariff_cd);
   steps.push(mkStep(
     'payor', 'Payor → payor group + tariff',
-    `Checked "${payment.payor_bucket}"${organizationCd ? ` / ${organizationCd}` : ''} against fc.organization_tariff_mapping for the billing tariff and payor group (TR290 = GIPSA).`,
+    tariff.source === 'cash_default'
+      ? `Cash patient — the hospital's own TR1 (KIMS) tariff applies directly; no insurer mapping is involved.`
+      : `Checked "${payment.payor_bucket}"${organizationCd ? ` / ${organizationCd}` : ''} against fc.organization_tariff_mapping for the billing tariff and payor group (TR290 = GIPSA, other insurer tariffs = Non-GIPSA).`,
     {
       evidence: { mapping: tariff },
       decision: { payor_group: payorGroup, tariff_cd: tariff.tariff_cd, tariff_name: tariff.tariff_name },
