@@ -8,6 +8,7 @@ import { quartilesInclusive, round2 } from '../modules/engine/stats.js';
 import { packageGate } from '../modules/packages/packageGate.js';
 import { familyMatches, payorAwareFamilies, rankPackageCandidates } from '../modules/resolve/familyResolve.js';
 import { resolveTariff } from '../modules/resolve/payorTariff.js';
+import { detectCombo } from '../modules/flow2/comboDetect.js';
 
 const router = Router();
 
@@ -65,9 +66,21 @@ router.post('/resolve-treatment', async (req, res, next) => {
       };
     })().catch(() => null);
 
+    // combo detection (16-Jul #8): ADDITIVE — the key is present only when the
+    // wording carries ≥2 fragments that BOTH resolve to a family; single
+    // treatments keep the exact pre-combo response. Fail-open: detection must
+    // never break the resolver.
+    const comboP = detectCombo({ text, payorBucket, organizationCd }).catch(() => null);
+
     const { matches, payor_note } = await payorAwareFamilies(await familyP, payorBucket);
     const package_hint = await hintP;
-    res.json({ text, matches, ...(payor_note ? { payor_note } : {}), ...(package_hint ? { package_hint } : {}) });
+    const combo = await comboP;
+    res.json({
+      text, matches,
+      ...(payor_note ? { payor_note } : {}),
+      ...(package_hint ? { package_hint } : {}),
+      ...(combo ? { combo } : {}),
+    });
   } catch (err) { next(err); }
 });
 
