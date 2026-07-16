@@ -6,7 +6,7 @@ import { fetchCohortRows, basisCohorts, buildBasisSummary } from '../modules/eng
 import { payorBucketCounts, resolveBasis, resolveComponentBases } from '../modules/resolve/payerBasis.js';
 import { quartilesInclusive, round2 } from '../modules/engine/stats.js';
 import { packageGate } from '../modules/packages/packageGate.js';
-import { familyMatches, payorAwareFamilies, rankPackageCandidates } from '../modules/resolve/familyResolve.js';
+import { familyMatches, payorAwareFamilies, rankPackageCandidates, applyCatchAllGuard } from '../modules/resolve/familyResolve.js';
 import { resolveTariff } from '../modules/resolve/payorTariff.js';
 import { detectCombo } from '../modules/flow2/comboDetect.js';
 
@@ -72,11 +72,17 @@ router.post('/resolve-treatment', async (req, res, next) => {
     // never break the resolver.
     const comboP = detectCombo({ text, payorBucket, organizationCd }).catch(() => null);
 
-    const { matches, payor_note } = await payorAwareFamilies(await familyP, payorBucket);
+    const { matches: payorMatches, payor_note } = await payorAwareFamilies(await familyP, payorBucket);
+    // P4 catch-all guard — ADDITIVE: when specific/unnamed wording matched
+    // only a generic catch-all cohort, the top match gains needs_confirmation
+    // (+ confidence capped to 'low') and the response mirrors the flag at the
+    // top level so the Simple flow can show its generic-match warning.
+    const matches = applyCatchAllGuard(payorMatches, text);
     const package_hint = await hintP;
     const combo = await comboP;
     res.json({
       text, matches,
+      ...(matches[0]?.needs_confirmation ? { needs_confirmation: true } : {}),
       ...(payor_note ? { payor_note } : {}),
       ...(package_hint ? { package_hint } : {}),
       ...(combo ? { combo } : {}),

@@ -29,7 +29,10 @@
  */
 import { query } from '../../db/pool.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
-import { familyMatches, payorAwareFamilies, rankPackageCandidates, detectNewbornContext, NEONATAL_FAMILY_KEYS } from '../resolve/familyResolve.js';
+import {
+  familyMatches, payorAwareFamilies, rankPackageCandidates, detectNewbornContext, NEONATAL_FAMILY_KEYS,
+  applyCatchAllGuard, isCatchAllFamily, meaningfulWords,
+} from '../resolve/familyResolve.js';
 import { listFamilies, getCohort, familyPayorCounts } from '../engine/cohort.js';
 import { fetchCohortRows } from '../engine/artifacts.js';
 import { quartilesInclusive } from '../engine/stats.js';
@@ -74,9 +77,8 @@ export function splitFragments(text) {
     .filter((s) => s.length >= 3);
 }
 
-const STOPWORDS = new Set(['AND', 'WITH', 'THE', 'FOR', 'OF', 'LEFT', 'RIGHT', 'UNILATERAL', 'BILATERAL', 'PA', 'PB']);
-const meaningfulWords = (text) => String(text || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ')
-  .split(/\s+/).filter((w) => w.length >= 2 && !STOPWORDS.has(w));
+// meaningfulWords now lives in resolve/familyResolve.js (shared with the P4
+// catch-all guard) — same tokens, same stopwords, imported above.
 
 const mkStep = (key, title, checked, extra = {}) => ({
   key, title, checked,
@@ -234,7 +236,11 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
   // jaundice ~₹25k, NICU ~₹37k P50 for short Cash stays) — mandatory pathway
   // question below, answered through the existing selections.family machinery.
   const newbornCtx = detectNewbornContext(aiMatches, { patient: ctx.patient, wordingText });
-  const { matches, payor_note } = await payorAwareFamilies(aiMatches, payment.payor_bucket);
+  const { matches: payorMatches, payor_note } = await payorAwareFamilies(aiMatches, payment.payor_bucket);
+  // P4: catch-all guard — post-payor-reorder, on the wording the matcher saw.
+  // When it fires, the top match gains { confidence:'low', needs_confirmation,
+  // guard_reason } and the mandatory family question below is raised.
+  const matches = applyCatchAllGuard(payorMatches, primary);
   const registry = new Map(listFamilies().map((f) => [f.family, f]));
 
   const newbornNote = newbornCtx.newborn
@@ -244,6 +250,7 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
     family: m.family, label: m.label, confidence: m.confidence,
     payor_cases: m.payor_cases ?? null, reason: m.reason ?? '',
     ...(m.robotic_addon ? { robotic_addon: true } : {}),
+    ...(m.needs_confirmation ? { needs_confirmation: true, guard_reason: m.guard_reason } : {}),
   });
 
   // mandatory newborn pathway question — only the FC knows whether this is a
@@ -292,6 +299,58 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
       pending_question: {
         step_key: 'family_match', selection_key: 'family',
         question: `Newborn admission detected (${newbornCtx.evidence}) with generic medical-management wording — which newborn pathway is this? Routine newborn care, jaundice/phototherapy and NICU bill very differently; without an answer the estimate defaults to the ADULT medical-management cohort and overquotes ~2×.`,
+        options,
+      },
+      numbers: null,
+      billing_type: null,
+    };
+  }
+
+  // P4 mandatory family confirmation — the TOP match is a catch-all cohort
+  // that the guard flagged (specific/unnamed wording, no label overlap). Only
+  // the FC can say whether the generic cohort is genuinely the right basis or
+  // a specific family should be picked instead. Same question machinery and
+  // selections.family answer path as the P5 newborn question above — and it
+  // COMPOSES with it: the newborn block returns first, so the two questions
+  // can never stack; an explicit selections.family answer skips this entirely.
+  if (matches[0]?.needs_confirmation && !(sel.family && registry.has(sel.family))) {
+    const counts = await familyPayorCounts().catch(() => null);
+    const options = matches.map((m) => {
+      const n = counts?.[m.family]?.[payorGroup] ?? null;
+      return {
+        value: m.family,
+        label: `${m.label}${isCatchAllFamily(m.family) ? ' (generic cohort)' : ''}${n != null ? ` — ${n} ${payorGroup} cases` : ''}`,
+        ...(n != null ? { cases: n } : {}),
+      };
+    });
+    steps.push(mkStep(
+      'family_match', 'Treatment → historic family',
+      `Matched "${primary}" against the onboarded family registry — only a generic catch-all cohort matched this wording (${matches[0].guard_reason}); the family must be confirmed before a cohort is priced.`,
+      {
+        evidence: {
+          candidates: matches.map(candidateEvidenceOf),
+          guard_reason: matches[0].guard_reason,
+          ...(payor_note ? { payor_note } : {}),
+          ...(matcherError ? { error: matcherError } : {}),
+        },
+        decision: { family: null },
+        alternatives: matches.map((m) => ({
+          family: m.family, label: m.label, confidence: m.confidence, payor_cases: m.payor_cases ?? null,
+        })),
+        status: 'pending',
+      }
+    ));
+    for (const [k, t] of [
+      ['characterization', 'Surgical/medical · daycare · robotic'],
+      ['billing_identification', 'Package vs non-package billing'],
+      ['historic_template', 'FC-historic template (fallback ladder)'],
+      ['template_summary', 'Template summary per payor group'],
+    ]) steps.push(pendingStep(k, t, 'waiting on the family confirmation'));
+    return {
+      steps,
+      pending_question: {
+        step_key: 'family_match', selection_key: 'family',
+        question: `Only a generic cohort ("${matches[0].label}") matched "${primary}" — the estimate would be based on generic cohort averages, not this specific procedure. Confirm the generic cohort or pick the correct family.`,
         options,
       },
       numbers: null,

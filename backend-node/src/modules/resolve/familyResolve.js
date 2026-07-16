@@ -34,6 +34,12 @@ async function geminiJsonRetry(prompt, opts, tries = 3) {
   throw lastErr;
 }
 
+/** Word tokens sans structural noise (laterality, articles) — used by the
+ * P4 guard here and by flow2's similar-package-name ladder rung. */
+const WORD_STOPWORDS = new Set(['AND', 'WITH', 'THE', 'FOR', 'OF', 'LEFT', 'RIGHT', 'UNILATERAL', 'BILATERAL', 'PA', 'PB']);
+export const meaningfulWords = (text) => String(text || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ')
+  .split(/\s+/).filter((w) => w.length >= 2 && !WORD_STOPWORDS.has(w));
+
 /** AI family matcher — high-confidence keys from the registry, best-first. */
 export async function familyMatches(text) {
   const cacheKey = String(text || '').trim().toLowerCase();
@@ -102,6 +108,114 @@ export async function payorAwareFamilies(matches, payorBucket) {
     }
   }
   return { matches: families, payor_note: payorNote };
+}
+
+// ——— P4: catch-all cohort guard (problems-register-16jul P4) ————————————————
+// SPECIFIC wording resolving to a department-level CATCH-ALL family at
+// medium/high confidence produced −74% (BANDANADAM, ₹450k reconstruction
+// priced off the generic plastic cohort), +371% (KRISHNA, arch-bar wiring →
+// same cohort) and −36% (G NAGAVENI, Achilles repair → ortho catch-all).
+// The distinction that prevents collateral: GENERIC wording → generic family
+// is CORRECT ("MEDICAL MANAGEMENT" → general_medical_management scored GOOD)
+// and must not change. The guard fires only when the TOP match is a catch-all
+// AND the wording either (a) carries specific clinical tokens with ZERO
+// overlap against that family's label, or (b) is the hospital's own
+// unnamed-procedure wording ("OTHER MAJOR SURGERY <specialty>" — the text
+// itself declares the procedure unnamed, so the catch-all adds no
+// information; verified no family label carries an OTHER/UNSPECIFIED token,
+// so a family's own label as wording can never trigger this).
+// Effect: confidence capped at 'low' + needs_confirmation — flow2 raises its
+// existing pending-question machinery, the Simple flow shows a visible
+// generic-match warning on its existing confirm card. Explicit confirmation
+// (selections.family / the FC's confirm click) proceeds exactly as today.
+// Kill switch (one flag per behavior change): P4_CATCHALL_GUARD=off.
+/**
+ * The registry's department-level catch-all cohorts, derived by inspecting
+ * listFamilies() labels (2026-07-16): the "General …", "… Management /
+ * Procedure" and "Departmental …" templates that absorb whatever the AI
+ * matcher can't place. An explicit list, NOT a label heuristic, so a new
+ * family never silently becomes a catch-all. Deliberately EXCLUDED:
+ *  - general_medical_management_infusion — the daycare-infusion cohort;
+ *    named-drug wording landing there is P3's fix (named_drug MRP pricing) —
+ *    flagging it here would stack a question onto every "INJ <drug>" case;
+ *  - procedure-class cohorts whose label IS the procedure (Hernia Repair
+ *    (General), Spinal Fusion & Fixation (General), General Laparoscopic
+ *    Gynecological Surgery, Ophthalmology/Minor Procedure — the wording that
+ *    reaches them names their own class);
+ *  - the departmental *_medical_management families (nephrology/neurology/…)
+ *    — medical-management wording is the generic-wording majority the
+ *    register says must keep auto-resolving.
+ */
+export const CATCH_ALL_FAMILIES = [
+  'general_medical_management',
+  'general_surgical_procedure',
+  'general_plastic_surgery_procedure',
+  'general_obg_medical_management_observation',
+  'obg_medical_management_procedure',
+  'ent_medical_management_procedure',
+  'orthopaedic_management_procedure',
+  'orthopaedic_medical_management',
+  'departmental_management_procedure',
+  'paediatric_surgical_procedure',
+  'surgical_oncology_procedure',
+];
+const CATCH_ALL_SET = new Set(CATCH_ALL_FAMILIES);
+export const isCatchAllFamily = (family) => CATCH_ALL_SET.has(family);
+
+// Generic clinical vocabulary — words that describe THAT something is done,
+// not WHAT is done. Removed from the wording before the specific-token check
+// so "MEDICAL MANAGEMENT" / "SURGICAL REPAIR" read as zero specific tokens.
+const GENERIC_WORDING_STOPWORDS = new Set([
+  'SURGERY', 'SURGERIES', 'SURGICAL', 'OPERATION', 'OPERATIVE', 'PROCEDURE', 'PROCEDURES',
+  'MANAGEMENT', 'TREATMENT', 'THERAPEUTIC', 'MEDICAL', 'CONSERVATIVE', 'OBSERVATION', 'CARE',
+  'GENERAL', 'MAJOR', 'MINOR', 'OTHER', 'OTHERS', 'MISC', 'MISCELLANEOUS', 'UNSPECIFIED',
+  'ELECTIVE', 'REPAIR', 'DOUBLE', 'RT', 'LT', 'BL',
+]);
+// The hospital's own "not on the named list" wording markers (prong b).
+const UNNAMED_PROCEDURE_MARKERS = new Set(['OTHER', 'OTHERS', 'UNSPECIFIED', 'MISC', 'MISCELLANEOUS']);
+
+/** Clinically specific tokens of a wording: meaningful words minus the generic
+ * clinical vocabulary and bare numbers. */
+export function specificTokensOf(text) {
+  return meaningfulWords(text).filter((w) => !GENERIC_WORDING_STOPWORDS.has(w) && !/^\d+$/.test(w));
+}
+
+/**
+ * P4 guard — post-step over the (payor-reordered) matches. When it fires, the
+ * TOP match is returned with `{ confidence: 'low', needs_confirmation: true,
+ * guard_reason, guard_capped_from }` (additive; every other match untouched).
+ * Only the top match is inspected: a catch-all sitting in the alternatives is
+ * already just an alternative. Families have no alias table (fc.package_alias
+ * is package-keyed), so the label — which IS the template name — is the
+ * overlap surface.
+ */
+export function applyCatchAllGuard(matches, wordingText) {
+  if (process.env.P4_CATCHALL_GUARD === 'off') return matches;
+  const top = matches?.[0];
+  if (!top || !CATCH_ALL_SET.has(top.family)) return matches;
+
+  const words = meaningfulWords(wordingText);
+  const specific = specificTokensOf(wordingText);
+  const labelTokens = new Set(meaningfulWords(top.label ?? top.family.replace(/_/g, ' ')));
+
+  let guardReason = null;
+  if (specific.length >= 1 && specific.every((t) => !labelTokens.has(t))) {
+    guardReason = 'specific wording matched only a generic family';
+  } else if (words.some((w) => UNNAMED_PROCEDURE_MARKERS.has(w))) {
+    guardReason = 'unnamed-procedure wording ("OTHER …") matched only a generic family';
+  }
+  if (!guardReason) return matches;
+
+  return [
+    {
+      ...top,
+      ...(top.confidence !== 'low' ? { guard_capped_from: top.confidence } : {}),
+      confidence: 'low',
+      needs_confirmation: true,
+      guard_reason: guardReason,
+    },
+    ...matches.slice(1),
+  ];
 }
 
 // ——— P5: newborn context detection (problems-register-16jul P5) —————————————
