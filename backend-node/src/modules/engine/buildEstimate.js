@@ -14,7 +14,7 @@ import {
 import {
   cleanServiceRows, splitCleanedRows, prioritizeOptionalRows, splitRoboticOptional,
   roboticPresenceInfo, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
-  isRemoveCategory, isRoboticText, resolveRoboticAddonPricing, ROBOTIC_PROMPT_THRESHOLD,
+  isRemoveCategory, isRoboticText, isRoboticWording, resolveRoboticAddonPricing, ROBOTIC_PROMPT_THRESHOLD,
   roomMatchedPfFallback,
 } from './services.js';
 import {
@@ -200,7 +200,7 @@ export async function buildEstimate(input) {
   const roboticRequired = !roboticDeclined && (
     input.clinical.robotic_addon === true ||  // gate resolution carried robotic_addon: true
     controls.robotic === 'yes' ||             // caller explicitly asked robotic
-    /ROBOT/i.test(treatmentText || '')        // doctor's wording says robotic
+    isRoboticWording(treatmentText)           // doctor's wording says robotic (negation-guarded, P2)
   );
   if (roboticRequired) roboticSelection = 'Yes';
   // families whose robotic charge is already priced elsewhere in the build:

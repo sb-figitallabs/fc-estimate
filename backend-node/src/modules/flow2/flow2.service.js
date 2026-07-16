@@ -33,7 +33,7 @@ import { familyMatches, payorAwareFamilies, rankPackageCandidates } from '../res
 import { listFamilies, getCohort } from '../engine/cohort.js';
 import { fetchCohortRows } from '../engine/artifacts.js';
 import { quartilesInclusive } from '../engine/stats.js';
-import { roomMatchedPfFallback } from '../engine/services.js';
+import { roomMatchedPfFallback, isRoboticWording } from '../engine/services.js';
 import { familyRobotic, familyRoboticFor } from '../robotic/robotic.service.js';
 import {
   lookupPackage, billedActualsForPackage, bucketExtrasForPackage,
@@ -382,7 +382,7 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
 
   // axis: robotic
   {
-    const wordingRobotic = /ROBOT/i.test(wordingText);
+    const wordingRobotic = isRoboticWording(wordingText); // negation-guarded (P2)
     const pct = robRate != null ? Math.round(robRate) : (robCohort > 0 ? Math.round((robCases / robCohort) * 100) : null);
     const roboticOk = !robNoData && (robCases > 0 || (pct != null && pct > 0));
     const nonRoboticOk = !robNoData && (robCohort - robCases > 0 || (pct != null && pct < 100));

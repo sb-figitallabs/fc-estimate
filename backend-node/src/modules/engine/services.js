@@ -22,6 +22,24 @@ const isOtSlotName = (name) => /^OT(-E)? - .*HOURS?/i.test(name || '');
 export const isRoboticText = (...texts) => texts.some((t) => /ROBO/i.test(t || ''));
 
 /**
+ * Doctor's WORDING says robotic (P2, problems-register-16jul): a robot token
+ * NOT immediately preceded by a negator. "TKR NON ROBOTIC B/L" must not fire
+ * (it triggered a ₹2.3L add-on on a real case); "robotic TKR, non-weight-
+ * bearing" must still fire — the negator is anchored to the token, never the
+ * sentence. Item-row classification stays on isRoboticText (item names never
+ * carry negation).
+ */
+export function isRoboticWording(text) {
+  const t = String(text || '');
+  const re = /(\bnon[-\s]?|\bnot\s+|\bno\s+|\bwithout\s+)?robot/gi;
+  let m;
+  while ((m = re.exec(t)) !== null) {
+    if (!m[1]) return true; // an un-negated robot mention
+  }
+  return false;
+}
+
+/**
  * 'remove'-category rows are room-linked services (BED CHARGES, OXYGEN PER DAY…)
  * already priced via the room logic rows. The classification may mark them in
  * fc_estimate_bucket OR grouping — treat either as remove (manager review:
