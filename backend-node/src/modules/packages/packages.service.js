@@ -293,16 +293,57 @@ async function billedActualsForPackage(packageName, tariff_code) {
   } catch { return null; }
 }
 
+/**
+ * Bucket-level Historic Metrics for the package bill (16-Jul manager note):
+ * what rides ABOVE the package, classified into the estimate's buckets —
+ * per-admission quartiles across bills WHERE the bucket is present, from
+ * fc.package_bill_bucket_metrics (scripts/backfill-package-bill-buckets.js).
+ * Falls back to the All-Payers rollup when this payor group has no bills;
+ * fail-open null on engines without the table.
+ */
+async function bucketExtrasForPackage(package_code, tariff_code) {
+  try {
+    const t = (tariff_code || '').trim().toUpperCase();
+    const payorGroup = !t || t === 'TR1' ? 'Cash' : t === 'TR290' ? 'GIPSA Insurance' : 'Non-GIPSA Insurance';
+    const fetch = async (group) => (await query(
+      `SELECT bucket, admissions, presence_cases, p25, p50, p75
+       FROM fc.package_bill_bucket_metrics
+       WHERE package_code = $1 AND payor_group = $2
+       ORDER BY p50 DESC NULLS LAST`, [package_code, group])).rows;
+    let rows = await fetch(payorGroup);
+    let basis = payorGroup;
+    if (!rows.length) { rows = await fetch('All Payers'); basis = 'All Payers'; }
+    if (!rows.length) return null;
+    return {
+      payor_group: basis,
+      buckets: rows.map((r) => ({
+        bucket: r.bucket,
+        admissions: r.admissions,
+        cases: r.presence_cases,
+        presence_pct: r.admissions ? Math.round((r.presence_cases / r.admissions) * 100) : null,
+        p25: Number(r.p25),
+        p50: Number(r.p50),
+        p75: Number(r.p75),
+      })),
+    };
+  } catch { return null; }
+}
+
 async function finishOffer(pkg, tariff_code, organization_cd, source, candidates) {
   if (!pkg) return { status: 'no_package_exists', source, package: null, ...(candidates ? { candidates } : {}) };
   const history = await packageHistory({ tariff_code, package_code: pkg.package_code, organization_cd });
   const billed_actuals = await billedActualsForPackage(pkg.package_name, tariff_code);
+  const bucket_extras = await bucketExtrasForPackage(pkg.package_code, tariff_code);
+  if (billed_actuals && bucket_extras) billed_actuals.bucket_extras = bucket_extras;
   return {
     status: pkg.readiness.can_generate_estimate ? 'resolved' : 'not_ready',
     source,
     package: pkg,
     history,
-    ...(billed_actuals ? { billed_actuals } : {}),
+    // name-variant bills can miss the name-keyed actuals while the
+    // code-keyed bucket metrics still exist — surface them regardless
+    ...(billed_actuals ? { billed_actuals }
+      : bucket_extras ? { billed_actuals: { basis: 'converted package bills (excl. F&B)', this_tariff: null, all_tariffs_cases: null, bucket_extras } } : {}),
     ...(candidates ? { candidates } : {}),
   };
 }
