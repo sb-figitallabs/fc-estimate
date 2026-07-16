@@ -12,8 +12,34 @@ import { aliasCandidates } from '../packages/packages.service.js';
  *    clinical sense) and dropped entirely when nothing genuinely fits.
  */
 
+// Short-TTL result cache: the SAME wording within a session (question→answer
+// round-trips, step re-evaluations) must resolve to the SAME family without
+// re-asking the model — kills both mid-conversation cohort flips and most
+// transient matcher flakes. Size-capped FIFO; entries expire after TTL.
+const MATCH_CACHE = new Map();
+const MATCH_CACHE_TTL_MS = 10 * 60 * 1000;
+const MATCH_CACHE_MAX = 500;
+
+/** geminiJson with exponential backoff — transient Vertex 429/5xx flakes
+ * under concurrency should retry, not surface as "matcher unavailable". */
+async function geminiJsonRetry(prompt, opts, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try { return await geminiJson(prompt, opts); }
+    catch (err) {
+      lastErr = err;
+      if (i < tries - 1) await new Promise((r) => setTimeout(r, 400 * 2 ** i + Math.random() * 200));
+    }
+  }
+  throw lastErr;
+}
+
 /** AI family matcher — high-confidence keys from the registry, best-first. */
 export async function familyMatches(text) {
+  const cacheKey = String(text || '').trim().toLowerCase();
+  const hit = MATCH_CACHE.get(cacheKey);
+  if (hit && Date.now() - hit.at < MATCH_CACHE_TTL_MS) return hit.matches;
+
   const families = listFamilies();
   const system = `You map a doctor's free-text treatment/surgery wording to a hospital's
 known procedure families for cost estimation.
@@ -25,10 +51,10 @@ Return STRICT JSON: { "matches": [{ "family": "<exact key from the list>",
 "confidence": "high"|"medium"|"low", "reason": "<one line why it matches>" }] }.
 Return at most the top 3 matches ordered best-first; fewer if fewer plausibly fit,
 and an empty array if nothing fits. Never invent family keys not in the list.`;
-  const out = await geminiJson(`Doctor's wording: ${text}`, { system });
+  const out = await geminiJsonRetry(`Doctor's wording: ${text}`, { system });
   const byKey = new Map(families.map((f) => [f.family, f]));
   const seen = new Set();
-  return (Array.isArray(out?.matches) ? out.matches : [])
+  const matches = (Array.isArray(out?.matches) ? out.matches : [])
     .filter((m) => m && byKey.has(m.family) && !seen.has(m.family) && seen.add(m.family))
     .slice(0, 3)
     .map((m) => ({
@@ -37,6 +63,9 @@ and an empty array if nothing fits. Never invent family keys not in the list.`;
       confidence: ['high', 'medium', 'low'].includes(m.confidence) ? m.confidence : 'low',
       reason: typeof m.reason === 'string' ? m.reason : '',
     }));
+  if (MATCH_CACHE.size >= MATCH_CACHE_MAX) MATCH_CACHE.delete(MATCH_CACHE.keys().next().value);
+  MATCH_CACHE.set(cacheKey, { at: Date.now(), matches });
+  return matches;
 }
 
 /**
