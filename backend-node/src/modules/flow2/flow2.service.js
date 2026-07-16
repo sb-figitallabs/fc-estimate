@@ -30,6 +30,7 @@ import { familyRobotic, familyRoboticFor } from '../robotic/robotic.service.js';
 import {
   lookupPackage, billedActualsForPackage, bucketExtrasForPackage,
 } from '../packages/packages.service.js';
+import { buildEstimate } from '../engine/buildEstimate.js';
 
 // ——— thresholds ————————————————————————————————————————————————————————————
 /** Below this a package price is a TR1-style ₹10/₹0 placeholder, not a price. */
@@ -552,7 +553,21 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
     pkg: billingType === 'package' ? pkg : null,
     tariffCd: tariff.tariff_cd,
   });
-  if (mode !== 'historic') numbers.note = 'logic comparison lands in phase B';
+
+  // ── phase B: logic comparison — run the EXISTING engine build for the
+  // decided context and compare it bucket-by-bucket with the pure history.
+  // Additive: only numbers.logic + numbers.comparison are appended; every
+  // historic field is untouched, and a build failure never blocks history.
+  if (mode === 'logic' || mode === 'both') {
+    await attachLogicComparison(numbers, {
+      familyKey,
+      payment,
+      decided,
+      roboticAddonHint: decidedMatch?.robotic_addon === true,
+      pkg: billingType === 'package' ? pkg : null,
+      roomType: sel.room_type ?? 'Single',
+    });
+  }
 
   return { mode, steps, pending_question: null, numbers };
 }
@@ -707,4 +722,133 @@ async function buildNumbers({ def, familyKey, familyLabel, payorGroup, decisions
       : null,
     case_set: caseSet,
   };
+}
+
+// ——— phase B: logic vs history comparison ——————————————————————————————————
+/**
+ * Logic bucket_totals keys → the historic BUCKET_LABELS names. Identity for
+ * the shared names (Room Charges, Procedure / OT Charges, Investigations,
+ * Professional Fees, Bedside Services, Other Services); only 'Pharmacy'
+ * renames — the build's Pharmacy bucket already contains IP/OT drugs,
+ * consumables and implants, which is exactly the historic 'Pharmacy (total)'.
+ * Anything unmapped (Drug Administration Charges, Optional Add-Ons, ...) keeps
+ * its own name and compares as no_data.
+ */
+const LOGIC_TO_HISTORIC = new Map([['Pharmacy', 'Pharmacy (total)']]);
+/** The Pharmacy bucket's sub-rows → the historic sub-bucket names. */
+const PHARMACY_SUB_ROWS = [
+  [/^IP Drugs/i, 'IP Drugs'],
+  [/^IP Consumables/i, 'IP Consumables'],
+  [/^OT Drugs/i, 'OT Drugs'],
+  [/^OT Consumables/i, 'OT Consumables'],
+  [/^Implants/i, 'Implants'],
+];
+/** The panel's 75/125 convention (same as the package conversion_check). */
+const verdictOf = (hist, logic) => {
+  if (!hist || logic == null) return 'no_data';
+  if (logic < hist.p25 * 0.75) return 'below';
+  if (logic > hist.p75 * 1.25) return 'above';
+  return 'within';
+};
+
+/**
+ * Run the existing estimate builder IN-PROCESS for the flow's decided context
+ * (family + payment + characterization decisions + decided package) and attach
+ * `numbers.logic` + `numbers.comparison`. The historic fields are never
+ * touched; a builder failure sets `numbers.logic = { error }` (fail-open).
+ *
+ * Deliberately NO treatment_text on the build input: the flow already decided
+ * the family, the package and robotic — re-deriving any of them inside the
+ * build (gate AI ranking, wording heuristics) could disagree with the trail
+ * the manager just audited. controls.robotic carries the robotic decision;
+ * robotic_addon carries the gate's payor-aware robotic redirect.
+ */
+async function attachLogicComparison(numbers, { familyKey, payment, decided, roboticAddonHint, pkg, roomType }) {
+  let est;
+  try {
+    est = await buildEstimate({
+      patient: {},
+      clinical: {
+        procedure: familyKey,
+        ...(roboticAddonHint ? { robotic_addon: true } : {}),
+      },
+      payment: {
+        payor_bucket: payment.payor_bucket,
+        ...(payment.organization_cd ? { organization_cd: payment.organization_cd } : {}),
+      },
+      controls: {
+        room_type: roomType,
+        estimate_mode: 'Typical',
+        ...(decided.care_type ? { care_type: decided.care_type } : {}),
+        ...(decided.setting ? { setting: decided.setting } : {}),
+        ...(decided.robotic ? { robotic: decided.robotic } : {}),
+      },
+      ...(pkg ? { package: { package_code: pkg.package_code, package_name: pkg.package_name } } : {}),
+    });
+  } catch (err) {
+    numbers.logic = { error: err.message || String(err) };
+    return;
+  }
+  try {
+    if (typeof est?.final_estimate !== 'number') {
+      const why = (est?.unresolved_items ?? []).join(', ') || 'no estimate produced';
+      numbers.logic = { error: `logic build unresolved: ${why}` };
+      return;
+    }
+    const roomKey = est.resolved_context?.room_key ?? roomType.toLowerCase();
+
+    // logic buckets in the historic name space
+    const logicBuckets = new Map();
+    const add = (name, amount) => logicBuckets.set(name, (logicBuckets.get(name) ?? 0) + (Number(amount) || 0));
+    for (const [bucket, amount] of Object.entries(est.bucket_totals ?? {})) {
+      add(LOGIC_TO_HISTORIC.get(bucket) ?? bucket, amount);
+    }
+    // pharmacy sub-buckets from the Pharmacy line rows (mirrors the historic
+    // split: Pharmacy (total) plus its components, implants broken out)
+    for (const row of est.line_items ?? []) {
+      if (row.bucket !== 'Pharmacy') continue;
+      const sub = PHARMACY_SUB_ROWS.find(([re]) => re.test(row.name ?? ''));
+      if (sub) add(sub[1], row.selected?.[roomKey] ?? row.selected?.single ?? 0);
+    }
+
+    const histBuckets = numbers.buckets ?? [];
+    const histNames = new Set(histBuckets.map((b) => b.bucket));
+    // drop zero-amount logic buckets with no historic counterpart (noise);
+    // keep zeros where the history HAS the bucket — that's a real "below".
+    const bucketsOut = [...logicBuckets.entries()]
+      .filter(([name, amount]) => amount > 0 || histNames.has(name))
+      .map(([name, amount]) => ({ bucket: name, amount: Math.round(amount) }));
+    const logicByName = new Map(bucketsOut.map((b) => [b.bucket, b.amount]));
+
+    const comparison = histBuckets.map((h) => {
+      const hist = { p25: h.p25, p50: h.p50, p75: h.p75 };
+      const logicAmt = logicByName.get(h.bucket) ?? null;
+      return { bucket: h.bucket, historic: hist, logic: logicAmt, verdict: verdictOf(hist, logicAmt) };
+    });
+    for (const b of bucketsOut) {
+      if (!histNames.has(b.bucket)) {
+        comparison.push({ bucket: b.bucket, historic: null, logic: b.amount, verdict: 'no_data' });
+      }
+    }
+    const gross = Math.round(est.final_estimate);
+    const grossHist = numbers.gross?.approximate_bill ?? null;
+    comparison.push({ bucket: '__gross__', historic: grossHist, logic: gross, verdict: verdictOf(grossHist, gross) });
+
+    const withPackage = est.package_offer?.coverage?.totals?.with_package;
+    numbers.logic = {
+      assumptions: {
+        room_type: roomType,
+        estimate_mode: 'Typical',
+        care_type: decided.care_type ?? null,
+        setting: decided.setting ?? null,
+        robotic: decided.robotic ?? null,
+      },
+      buckets: bucketsOut,
+      gross,
+      with_package: Number.isFinite(withPackage) ? Math.round(withPackage) : null,
+    };
+    numbers.comparison = comparison;
+  } catch (err) {
+    numbers.logic = { error: err.message || String(err) };
+  }
 }

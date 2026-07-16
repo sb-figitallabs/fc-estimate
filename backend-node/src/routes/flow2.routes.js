@@ -22,6 +22,8 @@ const SelectionsSchema = z.object({
   family: z.string().nullable().optional(),
   package_code: z.string().nullable().optional(),
   case_filters: CaseFiltersSchema.nullable().optional(),
+  /** logic/both only: the room the logic build prices at (history is room-agnostic). */
+  room_type: z.enum(['General', 'Twin', 'Single']).nullable().optional(),
 });
 
 const Flow2Input = z.object({
