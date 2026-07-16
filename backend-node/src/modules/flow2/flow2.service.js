@@ -13,6 +13,13 @@
  *   payor → family_match → characterization → billing_identification →
  *   historic_template → template_summary → numbers
  *
+ * Multi-treatment combos (manager: "you create a path for each"): when the
+ * wording splits into >1 clinical fragments, the SAME SOP runs once per
+ * fragment (payor computed once, reused in every path's trail) and the
+ * response gains an ADDITIVE top-level `combo` key; path 0 is also mirrored
+ * at the top level so pre-combo clients keep working unchanged.
+ * Single-treatment responses are byte-identical to before.
+ *
  * Reuses the shared brains, never reimplements them:
  *   - payor→tariff: resolve/payorTariff.js
  *   - treatment→family + package ranking: resolve/familyResolve.js
@@ -99,18 +106,14 @@ async function martCount(whereSql, params) {
 // ——— main ——————————————————————————————————————————————————————————————————
 export async function evaluateFlow2({ treatment_text, payment, selections, mode }) {
   const sel = selections ?? {};
-  const cf = sel.case_filters ?? {};
-  const steps = [];
-  let pending = null;
-
   const fragments = splitFragments(treatment_text);
   const primary = fragments[0] ?? treatment_text.trim();
   const organizationCd = payment.organization_cd || undefined;
 
-  // ── 1. payor ──────────────────────────────────────────────────────────────
+  // ── 1. payor — SHARED across every treatment path; computed once ─────────
   const tariff = await resolveTariff({ payorBucket: payment.payor_bucket, organizationCd });
   const payorGroup = payorGroupOf(payment.payor_bucket, tariff.tariff_cd);
-  steps.push(mkStep(
+  const payorStep = mkStep(
     'payor', 'Payor → payor group + tariff',
     tariff.source === 'cash_default'
       ? `Cash patient — the hospital's own TR1 (KIMS) tariff applies directly; no insurer mapping is involved.`
@@ -119,7 +122,97 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
       evidence: { mapping: tariff },
       decision: { payor_group: payorGroup, tariff_cd: tariff.tariff_cd, tariff_name: tariff.tariff_name },
     }
-  ));
+  );
+
+  const ctx = {
+    payorStep, tariff, payorGroup, payment, organizationCd, fragments,
+    // logic/both room is shared across paths (history is room-agnostic)
+    roomType: sel.room_type ?? 'Single',
+  };
+
+  // single treatment — one path; response shape EXACTLY as before combos
+  if (fragments.length <= 1) {
+    const r = await evaluatePath({ fragment: primary, wordingText: treatment_text, ctx, sel, mode });
+    return { mode, steps: r.steps, pending_question: r.pending_question, numbers: r.numbers };
+  }
+
+  // combo — the same full SOP once per fragment (manager: "you create a path
+  // for each"). Path 0 is ALSO mirrored at the top level so a pre-combo
+  // client sees the first treatment exactly as before.
+  const paths = [];
+  for (let i = 0; i < fragments.length; i++) {
+    const r = await evaluatePath({
+      fragment: fragments[i], wordingText: fragments[i], ctx,
+      sel: selForPath(sel, i), mode,
+    });
+    paths.push({
+      fragment: fragments[i],
+      steps: r.steps,
+      pending_question: r.pending_question,
+      numbers: r.numbers,
+      billing_type: r.billing_type,
+    });
+  }
+
+  // billing shape — from the per-path billing decisions, decided only once
+  // EVERY path has reached billing identification ('single' = not yet known,
+  // e.g. a characterization question is still pending on some path).
+  const types = paths.map((p) => p.billing_type);
+  let billingShape = 'single';
+  if (types.every((t) => t != null)) {
+    const pkgN = types.filter((t) => t === 'package').length;
+    billingShape = pkgN === types.length ? 'multiple_packages'
+      : pkgN === 0 ? 'multiple_non_package'
+        : 'package_plus_non_package';
+  }
+
+  // combined — only when every path priced; a plain sum of historic P50s
+  const combined = paths.every((p) => p.numbers?.gross?.approximate_bill?.p50 != null)
+    ? {
+      gross_p50_sum: paths.reduce((t, p) => t + p.numbers.gross.approximate_bill.p50, 0),
+      note: 'sum of per-path historic P50s — combo interactions (shared LOS/OT, package overlaps) are NOT modeled; treat as an upper-bound reference',
+    }
+    : null;
+
+  return {
+    mode,
+    steps: paths[0].steps,
+    pending_question: paths[0].pending_question,
+    numbers: paths[0].numbers,
+    combo: { fragments, billing_shape: billingShape, paths, combined },
+  };
+}
+
+/**
+ * Effective selections for path i: the FLAT selections keep applying to
+ * path 0 (backward compat with pre-combo clients); `selections.paths[i]`
+ * wins over flat, field by field, for its index.
+ */
+function selForPath(sel, i) {
+  const p = (Array.isArray(sel.paths) ? sel.paths[i] : null) ?? {};
+  if (i !== 0) return { ...p };
+  const { paths: _paths, room_type: _room, ...flat } = sel;
+  return { ...flat, ...p };
+}
+
+/**
+ * One treatment's full SOP path: family_match → characterization →
+ * billing_identification → historic_template → template_summary → numbers
+ * (+ the phase-B logic comparison when mode is logic/both). The shared payor
+ * step (ctx.payorStep) opens the trail so every path audits complete on its
+ * own. The single-treatment flow calls this once and returns it verbatim;
+ * the combo flow calls it per fragment into combo.paths.
+ *
+ * `wordingText` is what wording-based checks (robotic keyword, medical-mgmt
+ * phrasing) look at: the full treatment_text for the single flow (unchanged
+ * behavior), the fragment alone for a combo path.
+ */
+async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
+  const { payorStep, tariff, payorGroup, payment, organizationCd } = ctx;
+  const cf = sel.case_filters ?? {};
+  const steps = [payorStep];
+  let pending = null;
+  const primary = fragment;
 
   // ── 2. family_match — the shared gate brain, payor-aware ─────────────────
   // one retry: the AI matcher flakes transiently, and an empty result here
@@ -186,7 +279,7 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
     steps.push(pendingStep('billing_identification', 'Package vs non-package billing', 'no historic family matched this wording'));
     steps.push(pendingStep('historic_template', 'FC-historic template (fallback ladder)', 'no historic family matched this wording'));
     steps.push(pendingStep('template_summary', 'Template summary per payor group', 'no historic family matched this wording'));
-    return { mode, steps, pending_question: null, numbers: null };
+    return { steps, pending_question: null, numbers: null, billing_type: null };
   }
 
   // ── 3. characterization — the three axes from THIS hospital's history ────
@@ -288,7 +381,7 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
 
   // axis: robotic
   {
-    const wordingRobotic = /ROBOT/i.test(treatment_text);
+    const wordingRobotic = /ROBOT/i.test(wordingText);
     const pct = robRate != null ? Math.round(robRate) : (robCohort > 0 ? Math.round((robCases / robCohort) * 100) : null);
     const roboticOk = !robNoData && (robCases > 0 || (pct != null && pct > 0));
     const nonRoboticOk = !robNoData && (robCohort - robCases > 0 || (pct != null && pct < 100));
@@ -345,11 +438,11 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
     steps.push(pendingStep('billing_identification', 'Package vs non-package billing', 'waiting on the characterization answer'));
     steps.push(pendingStep('historic_template', 'FC-historic template (fallback ladder)', 'waiting on the characterization answer'));
     steps.push(pendingStep('template_summary', 'Template summary per payor group', 'waiting on the characterization answer'));
-    return { mode, steps, pending_question: pending, numbers: null };
+    return { steps, pending_question: pending, numbers: null, billing_type: null };
   }
 
   // ── 4. billing_identification — package master on the resolved tariff ────
-  const medicalRoute = decided.care_type === 'Medical' || isMedicalMgmtWording(treatment_text);
+  const medicalRoute = decided.care_type === 'Medical' || isMedicalMgmtWording(wordingText);
   let candidates = [];
   let ranking = null;
   if (tariff.tariff_cd && !medicalRoute) {
@@ -400,10 +493,10 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
           ? [pkg, ...candidates] : candidates).map(candidateEvidence),
         ...(ranking ? { ranking } : {}),
         ...(pkgNote ? { note: pkgNote } : {}),
-        ...(fragments.length > 1 ? {
+        ...(ctx.fragments.length > 1 ? {
           possible_combo: {
-            fragments,
-            note: 'evaluate each separately — combo pricing is a later phase',
+            fragments: ctx.fragments,
+            note: `part of a ${ctx.fragments.length}-treatment combo — this path prices this treatment alone`,
           },
         } : {}),
       },
@@ -565,11 +658,11 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
       decided,
       roboticAddonHint: decidedMatch?.robotic_addon === true,
       pkg: billingType === 'package' ? pkg : null,
-      roomType: sel.room_type ?? 'Single',
+      roomType: ctx.roomType,
     });
   }
 
-  return { mode, steps, pending_question: null, numbers };
+  return { steps, pending_question: null, numbers, billing_type: billingType };
 }
 
 // ——— numbers builder ————————————————————————————————————————————————————————

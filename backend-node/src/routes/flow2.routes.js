@@ -15,6 +15,16 @@ const CaseFiltersSchema = z.object({
   care_type: z.enum(['Surgical', 'Medical']).nullable().optional(),
 });
 
+/** Combo only: one treatment path's selections (indexed by fragment). */
+const PathSelectionsSchema = z.object({
+  care_type: z.enum(['Surgical', 'Medical']).nullable().optional(),
+  setting: z.enum(['Daycare', 'Inpatient']).nullable().optional(),
+  robotic: z.enum(['yes', 'no']).nullable().optional(),
+  family: z.string().nullable().optional(),
+  package_code: z.string().nullable().optional(),
+  case_filters: CaseFiltersSchema.nullable().optional(),
+});
+
 const SelectionsSchema = z.object({
   care_type: z.enum(['Surgical', 'Medical']).nullable().optional(),
   setting: z.enum(['Daycare', 'Inpatient']).nullable().optional(),
@@ -22,8 +32,14 @@ const SelectionsSchema = z.object({
   family: z.string().nullable().optional(),
   package_code: z.string().nullable().optional(),
   case_filters: CaseFiltersSchema.nullable().optional(),
-  /** logic/both only: the room the logic build prices at (history is room-agnostic). */
+  /** logic/both only: the room the logic build prices at (history is room-agnostic; shared across combo paths). */
   room_type: z.enum(['General', 'Twin', 'Single']).nullable().optional(),
+  /**
+   * Combo only: per-path selections, indexed by splitFragments order.
+   * paths[i] wins over the flat fields for its index; the flat fields keep
+   * applying to path 0 (backward compat). Ignored for single treatments.
+   */
+  paths: z.array(PathSelectionsSchema.nullable()).nullable().optional(),
 });
 
 const Flow2Input = z.object({
@@ -36,7 +52,11 @@ const Flow2Input = z.object({
     .transform((v) => {
       if (!v) return {};
       // normalize nulls away so the service can use plain ?? / truthiness
-      return Object.fromEntries(Object.entries(v).filter(([, val]) => val != null));
+      const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, val]) => val != null));
+      const out = clean(v);
+      // paths entries keep their index (null entry → {}), nulls cleaned per entry
+      if (Array.isArray(out.paths)) out.paths = out.paths.map((p) => (p == null ? {} : clean(p)));
+      return out;
     }),
   mode: z.enum(['historic', 'logic', 'both']).default('historic'),
 });
