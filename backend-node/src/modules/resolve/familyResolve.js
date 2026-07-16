@@ -109,12 +109,21 @@ export async function payorAwareFamilies(matches, payorBucket) {
  * Returns { candidates (best-first), ranking } — candidates is EMPTY when the
  * alias hits were noise (ranking.no_clinical_match = true).
  */
+// Same short-TTL cache treatment as the family matcher: the SAME
+// treatment+tariff must rank to the SAME package within a session — an AI
+// re-rank between calls flips package ↔ non_package on the billing decision.
+const RANK_CACHE = new Map();
+
 export async function rankPackageCandidates({ treatment, tariff_code, organization_cd, limit = 5 }) {
+  const rankKey = [String(treatment || '').trim().toLowerCase(), tariff_code || '', organization_cd || '', limit].join('|');
+  const cached = RANK_CACHE.get(rankKey);
+  if (cached && Date.now() - cached.at < MATCH_CACHE_TTL_MS) return cached.result;
+
   let candidates = await aliasCandidates({ text: treatment, tariff_code, organization_cd, limit });
   let ranking = null;
   if (candidates.length > 1) {
     try {
-      const pick = await geminiJson(
+      const pick = await geminiJsonRetry(
         `Raw treatment text: "${treatment}" (tariff ${tariff_code}).
 Candidate hospital packages:
 ${candidates.map((c, i) => `${i}: [${c.package_code}] ${c.package_name}`).join('\n')}
@@ -131,5 +140,11 @@ Return JSON {"best_index": <int or null if none genuinely matches clinically>, "
       }
     } catch { ranking = { method: 'alias_score_only' }; }
   }
-  return { candidates, ranking };
+  const result = { candidates, ranking };
+  // don't cache the degraded no-AI path — let the next call retry the ranking
+  if (!(candidates.length > 1 && ranking?.method === 'alias_score_only')) {
+    if (RANK_CACHE.size >= MATCH_CACHE_MAX) RANK_CACHE.delete(RANK_CACHE.keys().next().value);
+    RANK_CACHE.set(rankKey, { at: Date.now(), result });
+  }
+  return result;
 }
