@@ -10,7 +10,7 @@ parallel and will stop it once we show flow confidence — speed matters.
 
 ## TODO
 
-- [ ] **1. Update the engine's local test frontend** so he can test the recent
+- [x] **1. Update the engine's local test frontend** — DONE 16-Jul eve: public/flow2.html (self-contained Flow 2 stepper on the engine's own UI, live at fc-estimate-dev.figitallabs.com/flow2.html, browser-driven verification) + nav links on index/packages pages. Original ask: so he can test the recent
   rounds from his test server (the engine's own standalone UI, separate from
   the /api/fc/* surface HO consumes) — ON HOLD until user gives the go.
 - [x] **2. Package-bill historic metrics at bucket level** — DONE 16-Jul:
