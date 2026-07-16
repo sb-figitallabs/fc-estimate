@@ -42,6 +42,7 @@ import {
   lookupPackage, billedActualsForPackage, bucketExtrasForPackage, computePackageQuote,
 } from '../packages/packages.service.js';
 import { buildEstimate } from '../engine/buildEstimate.js';
+import { P3_NAMED_DRUG_FAMILIES, p3NamedDrugEnabled, matchNamedDrugs } from '../ai/namedDrug.js';
 
 // ——— thresholds ————————————————————————————————————————————————————————————
 /** Below this a package price is a TR1-style ₹10/₹0 placeholder, not a price. */
@@ -793,6 +794,52 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
       pkg: billingType === 'package' ? pkg : null,
       roomType: ctx.roomType,
     });
+
+    // P3 (problems-register-16jul): infusion-family named-drug note. Additive
+    // `numbers.named_drug` (matched item, MRP, the replace math) rides ONLY
+    // the logic/both modes — historic numbers stay pure history. Same family
+    // whitelist + P3_NAMED_DRUG kill switch as the build's step 13d; the
+    // logic build itself receives no treatment_text (by design, see
+    // attachLogicComparison), so the wording is matched here.
+    if (p3NamedDrugEnabled() && P3_NAMED_DRUG_FAMILIES.has(familyKey) && wordingText) {
+      try {
+        const nd = await matchNamedDrugs(wordingText);
+        const priced = (nd.matches ?? []).filter((m) => m.price > 0 && m.qty > 0);
+        if (priced.length) {
+          const histBucket = (name) => (numbers.buckets ?? []).find((b) => b.bucket === name);
+          const pharmP50 = histBucket('Pharmacy (total)')?.p50 ?? 0;
+          const ipDrugsP50 = histBucket('IP Drugs')?.p50 ?? 0;
+          const residual = Math.max(0, pharmP50 - ipDrugsP50);
+          const drugTotal = priced.reduce((t, m) => t + m.price * m.qty, 0);
+          numbers.named_drug = {
+            matches: priced.map((m) => ({
+              token: m.token, match_kind: m.match_kind,
+              item_code: m.item_code, item_name: m.item_name, generic_name: m.generic_name,
+              price: m.price, price_source: m.price_source,
+              qty: m.qty, qty_source: m.qty_source,
+              line_amount: Math.round(m.price * m.qty),
+            })),
+            replace_math: {
+              cohort_pharmacy_p50: Math.round(pharmP50),
+              non_drug_residual: Math.round(residual),
+              drug_total: Math.round(drugTotal),
+              candidate: Math.round(drugTotal + residual),
+              pharmacy_becomes: Math.round(Math.max(pharmP50, drugTotal + residual)),
+              winner: drugTotal + residual >= pharmP50 ? 'named_drug' : 'cohort_p50',
+            },
+            note: 'named drug detected in the wording — the estimate build prices it at MRP × qty and REPLACES the '
+              + 'cohort pharmacy figure with max(cohort pharmacy P50, drug + non-drug residual); confirm drug + qty with the FC',
+          };
+        } else if (nd.ambiguous?.length || nd.injection_context) {
+          numbers.named_drug = {
+            matches: [],
+            ...(nd.ambiguous?.length ? { ambiguous_tokens: nd.ambiguous } : {}),
+            note: 'a drug name may be present in the infusion wording but no confident pharmacy-master match was found — '
+              + 'confirm the drug from the pharmacy list; a named high-cost drug can dominate this estimate',
+          };
+        }
+      } catch { /* additive note — never blocks the flow */ }
+    }
   }
 
   return { steps, pending_question: null, numbers, billing_type: billingType };

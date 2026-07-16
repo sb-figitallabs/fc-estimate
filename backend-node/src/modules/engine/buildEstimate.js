@@ -23,6 +23,7 @@ import {
 } from './advanced.js';
 import { resolveDrivers, computeLineItems } from './lineItems.js';
 import { serviceLineCountAlert } from './rules.js';
+import { P3_NAMED_DRUG_FAMILIES, p3NamedDrugEnabled, P3_MIN_DRUG_AMOUNT, matchNamedDrugs } from '../ai/namedDrug.js';
 import { packageOfferForEstimate, computePackageQuote } from '../packages/packages.service.js';
 import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
 import { settle, settleWithPackage } from '../insurance/settlement.js';
@@ -447,6 +448,123 @@ export async function buildEstimate(input) {
     }
   }
 
+  // 13d. P3 (problems-register-16jul): named high-cost drugs invisible to
+  // daycare infusion pricing (SHOURYA "DAY CARE INJ STELMA 90 MG IV" -87%).
+  // For the explicit infusion-class family whitelist ONLY, a high-confidence
+  // pharmacy-master match of a drug named in the treatment wording adds a
+  // `named_drug` line (MRP × qty) and REPLACES the cohort pharmacy figure:
+  //   pharmacy bucket ← max(cohort pharmacy P50, drug line + non-drug residual)
+  // — replace, not add, so cohorts whose history already carries drug spend
+  // (chemo/immunotherapy) never double-count: their P50 side of the max()
+  // wins and the historic drug rows shrink to the remaining allowance.
+  // Non-whitelisted families never enter this block (byte-identical builds);
+  // a weak/ambiguous match adds NO line — only a confirm-from-the-pharmacy-
+  // list warning. Kill switch: P3_NAMED_DRUG=off.
+  let namedDrug = null;
+  if (p3NamedDrugEnabled() && P3_NAMED_DRUG_FAMILIES.has(cohortDef.family) && treatmentText) {
+    try {
+      const nd = await matchNamedDrugs(treatmentText);
+      const priced = nd.matches.filter((m) => m.price > 0 && m.qty > 0);
+      const drugAmt = round2(priced.reduce((t, m) => t + m.price * m.qty, 0));
+      const fmt = (v) => `₹${Math.round(v ?? 0).toLocaleString('en-IN')}`;
+      if (priced.length && drugAmt >= P3_MIN_DRUG_AMOUNT) {
+        // drug-side pharmacy rows (IP/OT Drugs + the 13c historical backfill
+        // row) carry the cohort's historic drug spend — the named drug
+        // replaces them up to the max() target; consumables/implants are the
+        // "non-drug pharmacy residual" and stay untouched.
+        const isDrugSide = (r) => r.bucket === 'Pharmacy'
+          && (/DRUGS/i.test(r.name || '') || r.historical_estimate === true);
+        const drugRows = lineItems.rows.filter(isDrugSide);
+        const nonDrugRows = lineItems.rows.filter((r) => r.bucket === 'Pharmacy' && !isDrugSide(r));
+        const pharmMetric = actualMetricsEarly.find((r) => r.basis_label === pharmBasis && r.field_key === 'pharmacy_total')
+          ?? actualMetricsEarly.find((r) => r.basis_label === svcBasis && r.field_key === 'pharmacy_total');
+        const cohortPharmP50 = pharmMetric?.p50 > 0 ? pharmMetric.p50 : 0;
+        const sumSel = (rows, rk) => rows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
+        const math = {};
+        for (const rk of ['general', 'twin', 'single']) {
+          const drugCur = sumSel(drugRows, rk);
+          const nonDrugCur = sumSel(nonDrugRows, rk);
+          const current = round2(drugCur + nonDrugCur);
+          const candidate = round2(drugAmt + nonDrugCur);
+          // never lower an already-larger bucket — max() with `current` too
+          const target = Math.max(cohortPharmP50, candidate, current);
+          const remaining = round2(Math.max(0, target - drugAmt - nonDrugCur));
+          const f = drugCur > 0 ? remaining / drugCur : 0;
+          for (const r of drugRows) {
+            if (r.selected?.[rk] != null) r.selected[rk] = round2(r.selected[rk] * f);
+            if (Array.isArray(r.cells?.[rk])) r.cells[rk] = r.cells[rk].map((v) => round2(v * f));
+          }
+          const newBucket = round2(drugAmt + nonDrugCur + (drugCur > 0 ? remaining : 0));
+          const delta = round2(newBucket - current);
+          if (Array.isArray(lineItems.grandTotal[rk])) {
+            lineItems.grandTotal[rk] = lineItems.grandTotal[rk].map((v) => round2(v + delta));
+          }
+          if (lineItems.grandTotal.selected?.[rk] != null) {
+            lineItems.grandTotal.selected[rk] = round2(lineItems.grandTotal.selected[rk] + delta);
+          }
+          math[rk] = {
+            previous_bucket: current,
+            cohort_pharmacy_p50: round2(cohortPharmP50),
+            drug_total: drugAmt,
+            non_drug_residual: round2(nonDrugCur),
+            candidate,
+            new_bucket: newBucket,
+            winner: newBucket <= current + 0.01 ? 'unchanged'
+              : (candidate >= cohortPharmP50 ? 'named_drug' : 'cohort_p50'),
+          };
+        }
+        for (const m of priced) {
+          const amt = round2(m.price * m.qty);
+          lineItems.rows.push({
+            index: lineItems.rows.length,
+            name: `${m.item_name} — named drug`,
+            bucket: 'Pharmacy', sub: 'IP Pharmacy',
+            source: 'named_drug_mrp', named_drug: true,
+            how: `"${m.token}" in the treatment wording matched the pharmacy master (${m.match_kind}); `
+              + `${m.price_source === 'mrp' ? 'MRP' : 'sale rate (no MRP on file)'} ${fmt(m.price)} × qty ${m.qty} (${m.qty_source}). `
+              + 'Pharmacy bucket = max(cohort pharmacy P50, drug + non-drug residual) — replaced, not added. Confirm drug + qty with the FC.',
+            code: m.item_code,
+            qty: { selected: m.qty, low: m.qty, typ: m.qty, high: m.qty },
+            rate: { general: m.price, twin: m.price, single: m.price },
+            cells: { general: [amt, amt, amt], twin: [amt, amt, amt], single: [amt, amt, amt] },
+            selected: { general: amt, twin: amt, single: amt },
+          });
+        }
+        lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
+        const rm = math[room.toLowerCase()] ?? math.single;
+        namedDrug = {
+          status: 'applied',
+          matches: priced,
+          drug_total: drugAmt,
+          replace_math: rm,
+          ...(nd.ambiguous.length ? { ambiguous_tokens: nd.ambiguous } : {}),
+        };
+        warnings.push(
+          `Named drug priced from the pharmacy master: ${priced.map((m) => `${m.item_name} ${fmt(m.price)} × ${m.qty}`).join('; ')} `
+          + `(matched from the treatment wording) — CONFIRM the drug and quantity with the FC before quoting. `
+          + `Pharmacy set to max(cohort P50 ${fmt(rm.cohort_pharmacy_p50)}, drug ${fmt(drugAmt)} + non-drug residual ${fmt(rm.non_drug_residual)}) = ${fmt(rm.new_bucket)}.`
+        );
+      } else if (priced.length) {
+        // matched but too small to be the "named high-cost drug" — the cohort
+        // P50 already carries routine drug spend; note it, change nothing.
+        namedDrug = { status: 'below_threshold', matches: priced, drug_total: drugAmt, threshold: P3_MIN_DRUG_AMOUNT };
+      } else if (nd.ambiguous.length || nd.injection_context) {
+        namedDrug = {
+          status: nd.ambiguous.length ? 'ambiguous' : 'no_confident_match',
+          matches: [],
+          ...(nd.ambiguous.length ? { ambiguous_tokens: nd.ambiguous } : {}),
+          candidates_considered: nd.candidates,
+        };
+        warnings.push(
+          'A drug name may be present in the infusion wording but could not be confidently matched in the pharmacy master — '
+          + 'confirm the drug from the pharmacy list before quoting; a named high-cost drug can dominate this estimate.'
+        );
+      }
+    } catch (err) {
+      warnings.push(`Named-drug pharmacy lookup unavailable (${err.message}) — check high-cost drugs manually.`);
+    }
+  }
+
   // 14. service line count alert
   const baseCount = cohortDef.baseServiceCount ?? (autoIncluded.length + 10);
   const roboticCount = roboticSelection === 'Yes' ? 1 + roboticRows.length : 0;
@@ -750,6 +868,10 @@ export async function buildEstimate(input) {
     unresolved_items: [],
   };
   if (suggestions.length) estimate.suggestions = suggestions; // additive — absent when not applicable
+  // additive (P3): named-drug detection state — present ONLY for whitelisted
+  // infusion-class families where there was something to say (a priced line,
+  // an ambiguity, or an unmatched injection wording)
+  if (namedDrug) estimate.named_drug = namedDrug;
   // additive (15-Jul #27): robotic add-on state for the UI — absent when robotic
   // is not applicable / already priced on the family's own robotic procedure row
   if (roboticAddon) estimate.robotic_addon = estimate.resolved_context.robotic.addon;
