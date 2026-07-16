@@ -35,7 +35,7 @@ parallel and will stop it once we show flow confidence — speed matters.
   tariff/LOS math; case-set FILTER CHIPS (payor scope / daycare / robotic /
   care type) re-derive everything live; per-bucket cases clickable → the IP
   case list with per-case flags (his "these 15 IPs, all cash, all robotic").
-- [ ] **4. Flow 2 Phase B**: `mode=logic|both` — the logic layer as a
+- [x] **4. Flow 2 Phase B** — DONE 16-Jul eve: mode=logic|both live (per-bucket verdicts vs the 75/125 band, __gross__ row, room-type select; logic build gets the audited decisions, never free text). Also same-day: combo path-per-treatment in Flow2 (tabs, per-path questions/selections, combined P50 strip) and matcher/rank caching (7s→0.04s round-trips, no mid-conversation flips). Original ask:: `mode=logic|both` — the logic layer as a
   side-by-side comparison per bucket ("historically X–Y; logic produced Z"),
   gross validation vs both bands, optional agent self-verify loop.
 - [ ] **5. PF fallback (his note ¶2)**: same room category, standard

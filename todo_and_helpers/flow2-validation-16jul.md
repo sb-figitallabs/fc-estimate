@@ -74,18 +74,37 @@ combo, mode toggles). **604 total evaluations** including answer round-trips.
 3. **One question at a time** rather than all ambiguities upfront — each
    answer can change what the next question should be.
 
-## Not yet in this phase
+## Added same day (the three items originally deferred)
 
-- `mode = logic / both` (the side-by-side "historically X–Y, logic produced Z"
-  dissection) — phase B; the API already accepts the modes.
-- Combo pricing (a path per treatment).
-- Operational note: under 5-way concurrent testing, ~12% of calls hit
-  transient AI-matcher flakes (surfaced as visible errors with a retry, never
-  as fake no-matches). Single-user review won't see this rate.
+1. **`mode = logic / both` — the dissection layer.** The real engine build
+   runs alongside the pure history (same decided family/package/robotic; room
+   type selectable, Typical mode) and every bucket gets a verdict: *"Room —
+   historically ₹36,871–₹49,208; logic produced ₹42,558 — within"*, plus a
+   gross-total verdict. The logic build receives NO free text — it prices the
+   audited decisions, so it can never disagree with the trail about WHAT is
+   being priced, only about the amounts. Verified live: historic numbers are
+   byte-identical across modes; the contracted robotic ₹1.2L rides the logic
+   side; switching to a General room moves only the logic figures.
+2. **Combo — a path per treatment.** "lap cholecystectomy + inguinal hernia
+   repair" now evaluates each treatment through the full SOP independently —
+   its own trail, its own questions, its own numbers — with tabs per
+   treatment, the identified billing shape ("2 packages" / "package +
+   non-package"), and a combined historic-P50 strip (marked as an upper-bound
+   reference: combo interactions like shared LOS/OT are not modeled yet).
+   Answering a question on one path changes only that path (verified).
+3. **Matcher stability + speed.** The AI matching (family AND package
+   ranking) is now cached per wording within a session with retry/backoff
+   underneath: answer round-trips dropped from ~7s to ~0.04s, the same
+   wording can never resolve differently mid-conversation, and the transient
+   flake rate seen under concurrent testing retries silently instead of
+   surfacing. Verified: three consecutive combo evaluations give the
+   identical billing shape.
 
 **Net**: the flow executes exactly as documented, every step is auditable with
-its evidence and case counts, and the numbers are provably the history of the
-named IP cases. Ready for hands-on review on the test server.
+its evidence and case counts, the numbers are provably the history of the
+named IP cases — and the logic layer is now available side-by-side for the
+dissection, per treatment, at interactive speed. Ready for hands-on review on
+the test server.
 
 ---
 
