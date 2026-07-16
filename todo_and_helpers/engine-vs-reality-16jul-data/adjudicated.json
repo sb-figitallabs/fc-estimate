@@ -1,0 +1,317 @@
+[
+ [
+  "ABDUL HASEEB MOHAMMAD FC.pdf",
+  "ENGINE_GOOD",
+  240424,
+  279340,
+  -13.9,
+  4.4,
+  "itemized"
+ ],
+ [
+  "ARTH AGGARWAL FC.pdf",
+  "ENGINE_GOOD",
+  82764,
+  111618.95,
+  -25.9,
+  -28.3,
+  "itemized; -26% at planned LOS2, replay@3 = 95,935 (-14%)"
+ ],
+ [
+  "Baby of NIKHAT SHAMSI FC.pdf",
+  "ENGINE_GOOD",
+  43417,
+  36605,
+  18.6,
+  24.3,
+  "itemized; +19% despite LOS 1->2"
+ ],
+ [
+  "GUDURU LAKSHMI DEVI FC.pdf",
+  "ENGINE_GOOD",
+  326703,
+  348954,
+  -6.4,
+  20.1,
+  "itemized"
+ ],
+ [
+  "HEMALATHA THOTA FC.pdf",
+  "ENGINE_GOOD",
+  355000,
+  369220,
+  -3.9,
+  1.0,
+  "package route ORT5535 exact"
+ ],
+ [
+  "K CHARVIN FC.pdf",
+  "ENGINE_GOOD",
+  222884,
+  200679.96,
+  11.1,
+  -11.1,
+  "itemized"
+ ],
+ [
+  "LAKSHMI DEVAMMA FC.pdf",
+  "ENGINE_GOOD",
+  762181,
+  682744,
+  11.6,
+  -6.3,
+  "itemized; robotic addon 230k == bill line"
+ ],
+ [
+  "Neeharika gorla FC.pdf",
+  "ENGINE_GOOD",
+  82764,
+  97488.25,
+  -15.1,
+  -20.5,
+  "itemized"
+ ],
+ [
+  "PINNAMANENI VIJAYALAKSHMI FC.pdf",
+  "ENGINE_GOOD",
+  690000,
+  700340,
+  -1.5,
+  3.5,
+  "package route ORT5536 exact"
+ ],
+ [
+  "RAVULA PUSHYAMI FC.pdf",
+  "ENGINE_GOOD",
+  61014,
+  78043.17,
+  -21.8,
+  -2.0,
+  "itemized"
+ ],
+ [
+  "S RAMESH FC.pdf",
+  "ENGINE_GOOD",
+  242160,
+  286709,
+  -15.5,
+  9.3,
+  "itemized"
+ ],
+ [
+  "SHIVA KUMARI FC.pdf",
+  "ENGINE_GOOD",
+  257877,
+  209920,
+  22.8,
+  56.0,
+  "itemized +23% at planned LOS; replay@2 = 226,443 (+8%)"
+ ],
+ [
+  "BANDANADAM NAVEEN IGNESIOUS FC.pdf",
+  "ENGINE_OFF",
+  118019,
+  449879,
+  -73.8,
+  9.3,
+  "vague FC wording -> generic plastic family"
+ ],
+ [
+  "Baby Boy NAKKA TRIVED RAJ KARTHIKEYA FC.pdf",
+  "ENGINE_OFF",
+  63107,
+  30555,
+  106.5,
+  137.3,
+  "neonatal gap"
+ ],
+ [
+  "Baby of HARIKA FC.pdf",
+  "ENGINE_OFF",
+  63107,
+  35231,
+  79.1,
+  88.8,
+  "neonatal gap"
+ ],
+ [
+  "Baby of SOUNDARYA FC.pdf",
+  "ENGINE_OFF",
+  63107,
+  26007,
+  142.7,
+  169.2,
+  "neonatal gap"
+ ],
+ [
+  "G NAGAVENI FC.pdf",
+  "ENGINE_OFF",
+  164978,
+  256865.71,
+  -35.8,
+  8.8,
+  "generic ortho family underprices"
+ ],
+ [
+  "KRISHNA B R FC.pdf",
+  "ENGINE_OFF",
+  86120,
+  18282,
+  371.1,
+  83.2,
+  "mis-resolution maxillofacial->plastic"
+ ],
+ [
+  "NARESH GURAJALA FC.pdf",
+  "ENGINE_OFF",
+  41068,
+  7887,
+  420.7,
+  248.7,
+  "medical-mgmt floor too high for trivial stay"
+ ],
+ [
+  "RAMULU GUNDI FC.pdf",
+  "ENGINE_OFF",
+  328743,
+  258837,
+  27.0,
+  6.1,
+  "marginal overestimate +27%"
+ ],
+ [
+  "SHOURYA SRIVASTAV FC.pdf",
+  "ENGINE_OFF",
+  17821,
+  136548,
+  -86.9,
+  8.0,
+  "named biologic drug not priced"
+ ],
+ [
+  "SURLA RAJESWARI fc.pdf",
+  "ENGINE_OFF",
+  737751,
+  406505,
+  81.5,
+  1.5,
+  "NON ROBOTIC false trigger +230k; clean 507,751 still +25%"
+ ],
+ [
+  "VARSHITHA FC.pdf",
+  "ENGINE_OFF",
+  17821,
+  50000,
+  -64.4,
+  13.0,
+  "named drug not priced"
+ ],
+ [
+  "Y CHANDRIKA FC.pdf",
+  "ENGINE_OFF",
+  115798,
+  173667.97,
+  -33.3,
+  -15.6,
+  "bilateral EVLT underpriced"
+ ],
+ [
+  "A JIVITESH SAI FC.pdf",
+  "COURSE_CHANGED",
+  129354,
+  114097,
+  13.4,
+  33.7,
+  "combo bill; engine itemized nonetheless +13%"
+ ],
+ [
+  "AKARAPU VISHWANATAHM FC.pdf",
+  "COURSE_CHANGED",
+  326703,
+  243307.05,
+  34.3,
+  14.1,
+  "LOS 4->2; replay@2 = 297,788 (+22%)"
+ ],
+ [
+  "ANITA KUMARI FC.pdf",
+  "COURSE_CHANGED",
+  38368,
+  144511.89,
+  -73.4,
+  -18.7,
+  "combo D&C bill; also mis-resolved to lscs (low conf)"
+ ],
+ [
+  "HARANADHA BABU FC.pdf",
+  "COURSE_CHANGED",
+  201655,
+  1019024,
+  -80.2,
+  -48.5,
+  "LOS 3->13, two packages + dialysis + 2nd vessel"
+ ],
+ [
+  "K ASHWINI FC.pdf",
+  "COURSE_CHANGED",
+  218312,
+  250219.69,
+  -12.8,
+  -13.9,
+  "LOS 1->4; replay@4 = 228,368 (-9%)"
+ ],
+ [
+  "KRANTHI KUMAR FC.pdf",
+  "COURSE_CHANGED",
+  102488,
+  406000,
+  -74.8,
+  -15.9,
+  "EVL/sclerotherapy added; MICU; FB extraction sums inconsistent"
+ ],
+ [
+  "MEENAKSHI VECHA FC.pdf",
+  "COURSE_CHANGED",
+  131854,
+  143367.99,
+  -8.0,
+  -1.3,
+  "combo bill; engine itemized nonetheless -8%"
+ ],
+ [
+  "RAMBABU FC.pdf",
+  "COURSE_CHANGED",
+  128677,
+  399282,
+  -67.8,
+  10.8,
+  "combo + LOS 2->6; replay@6 = 179,506 (-55%)"
+ ],
+ [
+  "SARBESWAR MAITY FC.pdf",
+  "COURSE_CHANGED",
+  68458,
+  495515.63,
+  -86.2,
+  -63.4,
+  "LOS 3->16; replay@16 = 199,931 (-60%)"
+ ],
+ [
+  "VUTKUR SURYA PRAKASH FC.pdf",
+  "COURSE_CHANGED",
+  104605,
+  153554,
+  -31.9,
+  23.4,
+  "colonoscopy+therapeutic endoscopy+fibroscan added; bill inside wide band"
+ ],
+ [
+  "YALABANDI K S L VALLIDEVI FC.pdf",
+  "COURSE_CHANGED",
+  190560,
+  166213,
+  14.6,
+  -7.6,
+  "combo (hysteroscopy 50%); engine itemized nonetheless +15%"
+ ]
+]
