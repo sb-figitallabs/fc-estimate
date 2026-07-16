@@ -33,6 +33,7 @@ import { familyMatches, payorAwareFamilies, rankPackageCandidates } from '../res
 import { listFamilies, getCohort } from '../engine/cohort.js';
 import { fetchCohortRows } from '../engine/artifacts.js';
 import { quartilesInclusive } from '../engine/stats.js';
+import { roomMatchedPfFallback } from '../engine/services.js';
 import { familyRobotic, familyRoboticFor } from '../robotic/robotic.service.js';
 import {
   lookupPackage, billedActualsForPackage, bucketExtrasForPackage,
@@ -645,6 +646,10 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
     decisions: decided, caseFilters: cf,
     pkg: billingType === 'package' ? pkg : null,
     tariffCd: tariff.tariff_cd,
+    // PF room-matched fallback (16-Jul note ¶2) rides only the modes that
+    // surface PF logic anyway — pure-history responses stay byte-identical.
+    roomType: ctx.roomType,
+    includePfFallback: mode === 'logic' || mode === 'both',
   });
 
   // ── phase B: logic comparison — run the EXISTING engine build for the
@@ -681,7 +686,7 @@ const BUCKET_LABELS = [
   ['other_services', 'Other Services'],
 ];
 
-async function buildNumbers({ def, familyKey, familyLabel, payorGroup, decisions, caseFilters, pkg, tariffCd }) {
+async function buildNumbers({ def, familyKey, familyLabel, payorGroup, decisions, caseFilters, pkg, tariffCd, roomType, includePfFallback }) {
   const rows = await fetchCohortRows(def.whereSql, def.params);
   const notes = [];
 
@@ -773,6 +778,12 @@ async function buildNumbers({ def, familyKey, familyLabel, payorGroup, decisions
     bucketExtras = await bucketExtrasForPackage(pkg.package_code, tariffCd).catch(() => null);
   }
 
+  // PF room-matched fallback (16-Jul note ¶2) — additive; computed over the
+  // same FILTERED case set the numbers ride; absent when < 3 cases qualify.
+  const pfFallback = includePfFallback
+    ? roomMatchedPfFallback({ cohortRows: set, roomType: roomType ?? 'Single' })
+    : null;
+
   const caseSet = [...set]
     .sort((a, b) => String(b.admission_no).localeCompare(String(a.admission_no)))
     .slice(0, CASE_SET_CAP)
@@ -813,6 +824,7 @@ async function buildNumbers({ def, familyKey, familyLabel, payorGroup, decisions
         bucket_extras: bucketExtras,
       }
       : null,
+    ...(pfFallback ? { pf_fallback: pfFallback } : {}),
     case_set: caseSet,
   };
 }

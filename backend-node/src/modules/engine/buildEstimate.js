@@ -15,6 +15,7 @@ import {
   cleanServiceRows, splitCleanedRows, prioritizeOptionalRows, splitRoboticOptional,
   roboticPresenceInfo, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
   isRemoveCategory, isRoboticText, resolveRoboticAddonPricing, ROBOTIC_PROMPT_THRESHOLD,
+  roomMatchedPfFallback,
 } from './services.js';
 import {
   buildOtConsumableShortlist, otConsumablesApplied, buildImplantHierarchy, resolveImplantEstimate,
@@ -519,6 +520,43 @@ export async function buildEstimate(input) {
         recommended: pfDeviation != null && Math.abs(pfDeviation) > 0.25 ? 'historic_p50' : 'logic',
         final_estimate_with_historic_pf: Math.round((lineItems.finalEstimate - logicPf + (histPf.p50 ?? 0)) * 100) / 100,
       };
+
+  // PF room-matched fallback (16-Jul note ¶2): the NEXT rung after the plain
+  // historic P50 — median PF of the pf-basis cohort's same-room, standard
+  // single-procedure admissions billing within ±15% of the cohort's gross P50.
+  // Recommendation-only surface (like the existing 'use historic PF' flow):
+  // the priced estimate is NEVER silently changed; the FC/UI chooses.
+  {
+    const pfBasisCohort = cohorts[bases.pf_basis.selected_basis] ?? [];
+    const roomPf = roomMatchedPfFallback({ cohortRows: pfBasisCohort, roomType: room });
+    if (roomPf) {
+      const weakHistoricBasis = pfBasisCohort.length < 5;
+      pfAnalysis.room_matched_fallback = {
+        ...roomPf,
+        basis: bases.pf_basis.selected_basis,
+        reason: `PF from ${roomPf.cases} same-room standard cases billing near P50`,
+      };
+      if (pfAnalysis.applicable === true) {
+        // cash path: prefer the room-matched figure over the plain historic P50
+        // when the historic basis is thin or logic deviates significantly.
+        pfAnalysis.final_estimate_with_room_matched_pf =
+          Math.round((lineItems.finalEstimate - logicPf + roomPf.pf_p50) * 100) / 100;
+        if (weakHistoricBasis || pfAnalysis.significantly_different) {
+          pfAnalysis.recommended = 'room_matched_pf';
+          pfAnalysis.recommendation_reason =
+            `PF from ${roomPf.cases} same-room standard cases billing near P50` +
+            (weakHistoricBasis ? ` (historic basis has only ${pfBasisCohort.length} cases)` : '');
+        }
+      } else if (weakHistoricBasis || !(histPf?.p50 > 0)) {
+        // insurer path: the historic-P50 basis is thin (or absent) — surface
+        // the room-matched figure as the recommended PF reference.
+        pfAnalysis.recommended = 'room_matched_pf';
+        pfAnalysis.recommendation_reason =
+          `PF from ${roomPf.cases} same-room standard cases billing near P50` +
+          (weakHistoricBasis ? ` (historic basis has only ${pfBasisCohort.length} cases)` : '');
+      }
+    }
+  }
 
   // resolved_context.flow (manager model #5, 14-Jul): "the entire flow should
   // only be selected once we have the exact payer AND the treatment". Today the

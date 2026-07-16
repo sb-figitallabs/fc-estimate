@@ -36,6 +36,7 @@ export async function fetchCohortRows(whereSql, params) {
             surgical_medical, los_days::float, icu_days::float, ward_days::float,
             derived_ot_hours::float AS ot_hours, service_line_count::int,
             normalized_billable_stay_days::float, room_category, icu_unit_name,
+            curated_template_names_jsonb AS curated_templates,
             fc_actual_bucket_totals_jsonb AS buckets,
             fc_actual_total_excluding_fnb_and_returns::float AS services_total_ex_fnb,
             fc_actual_cash_drug_administration_charge::float AS drug_admin_charge,

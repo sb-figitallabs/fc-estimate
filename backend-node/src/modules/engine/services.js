@@ -3,6 +3,7 @@
  * robotic handling and grouped residual candidates (BUILD_SPEC §3b–3d, docs 10/17).
  */
 import { quartilesInclusive } from './stats.js';
+import { inferRoomCategory } from '../drivers/normalization.js';
 
 export const FIXED_ESTIMATE_TEMPLATE_SERVICE_CODES = new Set([
   'XRY5090', 'PHY5082', 'PAT0045', 'PAT0042', 'OTI0098', 'EME0087', 'EME0017',
@@ -287,4 +288,81 @@ export function buildGroupedResidualCandidates(gaps) {
   out.sort((a, b) => b.residualP50 - a.residualP50 || b.presence - a.presence ||
     a.grouping.localeCompare(b.grouping));
   return out;
+}
+
+// ——— Professional-Fees room-matched fallback (16-Jul note ¶2) ————————————————
+/**
+ * Manager's rule, verbatim: "look at the same room category for a patient,
+ * fetch the professional fee from that, given the fact that the patient
+ * you're fetching the data from is a standard case with not multiple
+ * procedures or something. And the value of their bill is close to the P50
+ * value."
+ *
+ * From the decided cohort's admissions, keep only:
+ *   (a) same room category as the estimate's room type (mart.main_table
+ *       room_category is already 'General'/'Twin'/'Single'/'Deluxe'; both
+ *       sides are normalized through inferRoomCategory),
+ *   (b) standard single-procedure cases — no multi-template curation
+ *       (curated_template_names_jsonb length > 1) and no combo package name
+ *       (comma / " + " separators),
+ *   (c) gross bill within ±PF_FALLBACK_GROSS_BAND_PCT% of the cohort's gross
+ *       P50, and a real (>0) billed PF to fetch.
+ *
+ * Returns { pf_p50, pf_p25, pf_p75, cases, sample_ips, criteria } or null
+ * when fewer than PF_FALLBACK_MIN_CASES admissions qualify (fail-open — the
+ * caller keeps its existing PF story).
+ */
+export const PF_FALLBACK_MIN_CASES = 3;
+export const PF_FALLBACK_GROSS_BAND_PCT = 15;
+
+const pfGrossOf = (r) => Number(r.total_plus_drug_admin ?? r.services_total_ex_fnb ?? 0);
+const pfOf = (r) => Number(r.buckets?.professional_fees ?? 0);
+
+/** Standard case = exactly one procedure: no multi-template curation, no combo package name. */
+export function isStandardSingleProcedure(r) {
+  const templates = Array.isArray(r.curated_templates) ? r.curated_templates : [];
+  if (templates.length > 1) return false;
+  const pkg = String(r.package_name || '');
+  if (pkg.includes(',') || /\s\+\s/.test(pkg)) return false;
+  return true;
+}
+
+export function roomMatchedPfFallback({ cohortRows, roomType, payorGroup } = {}) {
+  let rows = Array.isArray(cohortRows) ? cohortRows : [];
+  const roomKey = inferRoomCategory(roomType) ?? String(roomType || '').trim().toLowerCase();
+  if (!rows.length || !roomKey) return null;
+  // optional payor narrowing (callers usually pass an already payor-scoped set)
+  if (payorGroup) {
+    const scoped = rows.filter((r) => r.payor_bucket === payorGroup);
+    if (scoped.length) rows = scoped;
+  }
+  const grossVals = rows.map(pfGrossOf).filter((v) => v > 0);
+  if (!grossVals.length) return null;
+  const grossP50 = quartilesInclusive(grossVals).p50;
+  const lo = grossP50 * (1 - PF_FALLBACK_GROSS_BAND_PCT / 100);
+  const hi = grossP50 * (1 + PF_FALLBACK_GROSS_BAND_PCT / 100);
+  const qualifying = rows.filter((r) => {
+    if (inferRoomCategory(r.room_category) !== roomKey) return false;
+    if (!isStandardSingleProcedure(r)) return false;
+    const gross = pfGrossOf(r);
+    if (!(gross >= lo && gross <= hi)) return false;
+    return pfOf(r) > 0; // a bill with no PF has no PF to fetch
+  });
+  if (qualifying.length < PF_FALLBACK_MIN_CASES) return null;
+  const pf = quartilesInclusive(qualifying.map(pfOf));
+  const r2 = (v) => Math.round(v * 100) / 100;
+  return {
+    pf_p50: r2(pf.p50),
+    pf_p25: r2(pf.p25),
+    pf_p75: r2(pf.p75),
+    cases: qualifying.length,
+    sample_ips: qualifying.slice(0, 10).map((r) => r.admission_no),
+    criteria: {
+      room_type: roomKey,
+      band_pct: PF_FALLBACK_GROSS_BAND_PCT,
+      standard_only: true,
+      cohort_gross_p50: Math.round(grossP50),
+      cohort_cases: rows.length,
+    },
+  };
 }
