@@ -46,10 +46,15 @@ parallel and will stop it once we show flow confidence — speed matters.
   totals never silently change. flow2 numbers.pf_fallback (logic|both only).
   Verified: GIPSA TKR Single 248→92 cases PF P50 ₹56,584; GMM Cash 119→3 → 
   ₹12,380 (recommendation correctly stays logic).
-- [~] **6. Range consistency audit** — IN PROGRESS 16-Jul night: surface→source
-  map + reproduction of his three complaints, fixes + one-line captions naming
-  which band each surface shows (system range vs itemized-history band vs
-  package-bill band). Audit doc: range-audit-16jul.md when it lands.
+- [x] **6. Range consistency audit** — DONE 16-Jul night (HO e5387dc; audit in
+  range-audit-16jul.md): all display-side, zero engine inversions. His
+  "160 to 140" = the two headline totals shown under an actuals band with no
+  bracket check; "rows don't sum" = a RANGE in the preview total cell + the
+  single-room table missing package/total rows. Fixed: one shared bracket
+  implementation, 'system range' labels, amber past-bills divergence line
+  (first surface for conversion_check), preview footer = exact sum with a
+  labelled expected-range beneath, base+buckets+custom = headline verified
+  to the rupee, captions naming every band.
 - [x] **7. Search debounce** — DONE 16-Jul night (HO c28fa5b): 600ms → 1100ms.
   Min chars kept at 3 — "tkr" alone is a legitimate complete wording.
 - [x] **8. Multi-treatment combos — detection + announcement** — DONE 16-Jul
