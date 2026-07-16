@@ -137,8 +137,13 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
   let familyBy = 'auto';
   let familyNote = null;
   if (sel.family) {
-    if (registry.has(sel.family)) { familyKey = sel.family; familyBy = 'user'; }
-    else familyNote = `selections.family "${sel.family}" is not an onboarded family — falling back to the top match`;
+    if (registry.has(sel.family)) {
+      familyKey = sel.family;
+      // A pin equal to the top match is stability plumbing (the UI re-sends
+      // the resolved family so an AI-matcher flip between calls can't change
+      // the cohort mid-conversation) — only a DIFFERENT family is a user choice.
+      familyBy = sel.family === matches[0]?.family ? 'auto' : 'user';
+    } else familyNote = `selections.family "${sel.family}" is not an onboarded family — falling back to the top match`;
   }
   if (!familyKey) familyKey = matches[0]?.family ?? null;
   const familyLabel = familyKey ? (registry.get(familyKey)?.label ?? familyKey) : null;
