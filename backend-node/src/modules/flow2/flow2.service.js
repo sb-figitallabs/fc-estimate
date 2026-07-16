@@ -29,14 +29,14 @@
  */
 import { query } from '../../db/pool.js';
 import { resolveTariff } from '../resolve/payorTariff.js';
-import { familyMatches, payorAwareFamilies, rankPackageCandidates } from '../resolve/familyResolve.js';
-import { listFamilies, getCohort } from '../engine/cohort.js';
+import { familyMatches, payorAwareFamilies, rankPackageCandidates, detectNewbornContext, NEONATAL_FAMILY_KEYS } from '../resolve/familyResolve.js';
+import { listFamilies, getCohort, familyPayorCounts } from '../engine/cohort.js';
 import { fetchCohortRows } from '../engine/artifacts.js';
 import { quartilesInclusive } from '../engine/stats.js';
 import { roomMatchedPfFallback, isRoboticWording } from '../engine/services.js';
 import { familyRobotic, familyRoboticFor } from '../robotic/robotic.service.js';
 import {
-  lookupPackage, billedActualsForPackage, bucketExtrasForPackage,
+  lookupPackage, billedActualsForPackage, bucketExtrasForPackage, computePackageQuote,
 } from '../packages/packages.service.js';
 import { buildEstimate } from '../engine/buildEstimate.js';
 
@@ -105,7 +105,7 @@ async function martCount(whereSql, params) {
 }
 
 // ——— main ——————————————————————————————————————————————————————————————————
-export async function evaluateFlow2({ treatment_text, payment, selections, mode }) {
+export async function evaluateFlow2({ treatment_text, payment, selections, mode, patient }) {
   const sel = selections ?? {};
   const fragments = splitFragments(treatment_text);
   const primary = fragments[0] ?? treatment_text.trim();
@@ -127,6 +127,8 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode 
 
   const ctx = {
     payorStep, tariff, payorGroup, payment, organizationCd, fragments,
+    // P5: optional patient context (name/age) — powers the newborn routing guard
+    patient: patient ?? {},
     // logic/both room is shared across paths (history is room-agnostic)
     roomType: sel.room_type ?? 'Single',
   };
@@ -225,8 +227,77 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
     try { aiMatches = await familyMatches(primary); }
     catch { matcherError = 'AI family matcher unavailable (transient) — re-call to retry'; }
   }
+  // P5 newborn context: patient name ("Baby of/Boy/Girl …") or age ≤ 30 days
+  // with generic medical-management wording means the ADULT medical cohort is
+  // the wrong price basis (~2× overquote vs real newborn bills). The newborn
+  // cohorts bill too differently to pick silently (routine care ~₹15k,
+  // jaundice ~₹25k, NICU ~₹37k P50 for short Cash stays) — mandatory pathway
+  // question below, answered through the existing selections.family machinery.
+  const newbornCtx = detectNewbornContext(aiMatches, { patient: ctx.patient, wordingText });
   const { matches, payor_note } = await payorAwareFamilies(aiMatches, payment.payor_bucket);
   const registry = new Map(listFamilies().map((f) => [f.family, f]));
+
+  const newbornNote = newbornCtx.newborn
+    ? `newborn context (${newbornCtx.evidence}) — adult medical-management pricing overquotes ~2× for newborns; newborn pathway must be chosen explicitly`
+    : null;
+  const candidateEvidenceOf = (m) => ({
+    family: m.family, label: m.label, confidence: m.confidence,
+    payor_cases: m.payor_cases ?? null, reason: m.reason ?? '',
+    ...(m.robotic_addon ? { robotic_addon: true } : {}),
+  });
+
+  // mandatory newborn pathway question — only the FC knows whether this is a
+  // routine newborn stay, a jaundice/phototherapy admission, or NICU care.
+  if (newbornCtx.newborn && !(sel.family && registry.has(sel.family))) {
+    const counts = await familyPayorCounts().catch(() => null);
+    const optionOf = (key, suffix = '') => {
+      const reg = registry.get(key);
+      if (!reg) return null;
+      const n = counts?.[key]?.[payorGroup] ?? null;
+      return {
+        value: key,
+        label: `${reg.label}${suffix}${n != null ? ` — ${n} ${payorGroup} cases` : ''}`,
+        ...(n != null ? { cases: n } : {}),
+      };
+    };
+    const options = NEONATAL_FAMILY_KEYS.map((k) => optionOf(k)).filter(Boolean);
+    const adultKey = matches[0]?.family ?? 'general_medical_management';
+    const adultOpt = optionOf(adultKey, ' (adult cohort — overquotes ~2× for newborns)');
+    if (adultOpt) options.push(adultOpt);
+    steps.push(mkStep(
+      'family_match', 'Treatment → historic family',
+      `Matched "${primary}" against the onboarded family registry — newborn context detected (${newbornCtx.evidence}); the newborn pathway must be confirmed before a cohort is priced.`,
+      {
+        evidence: {
+          candidates: matches.map(candidateEvidenceOf),
+          newborn_note: newbornNote,
+          ...(payor_note ? { payor_note } : {}),
+          ...(matcherError ? { error: matcherError } : {}),
+        },
+        decision: { family: null },
+        alternatives: matches.map((m) => ({
+          family: m.family, label: m.label, confidence: m.confidence, payor_cases: m.payor_cases ?? null,
+        })),
+        status: 'pending',
+      }
+    ));
+    for (const [k, t] of [
+      ['characterization', 'Surgical/medical · daycare · robotic'],
+      ['billing_identification', 'Package vs non-package billing'],
+      ['historic_template', 'FC-historic template (fallback ladder)'],
+      ['template_summary', 'Template summary per payor group'],
+    ]) steps.push(pendingStep(k, t, 'waiting on the newborn pathway answer'));
+    return {
+      steps,
+      pending_question: {
+        step_key: 'family_match', selection_key: 'family',
+        question: `Newborn admission detected (${newbornCtx.evidence}) with generic medical-management wording — which newborn pathway is this? Routine newborn care, jaundice/phototherapy and NICU bill very differently; without an answer the estimate defaults to the ADULT medical-management cohort and overquotes ~2×.`,
+        options,
+      },
+      numbers: null,
+      billing_type: null,
+    };
+  }
 
   let familyKey = null;
   let familyBy = 'auto';
@@ -249,11 +320,8 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
     `Matched "${primary}" against the onboarded family registry (shared gate brain: AI ranking + per-payor case counts from mart.main_table).`,
     {
       evidence: {
-        candidates: matches.map((m) => ({
-          family: m.family, label: m.label, confidence: m.confidence,
-          payor_cases: m.payor_cases ?? null, reason: m.reason ?? '',
-          ...(m.robotic_addon ? { robotic_addon: true } : {}),
-        })),
+        candidates: matches.map(candidateEvidenceOf),
+        ...(newbornNote ? { newborn_note: newbornNote } : {}),
         ...(payor_note ? { payor_note } : {}),
         ...(familyNote ? { note: familyNote } : {}),
         ...(matcherError ? { error: matcherError } : {}),
@@ -264,6 +332,7 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
           confidence: decidedMatch?.confidence ?? null,
           payor_cases: decidedMatch?.payor_cases ?? null,
           ...(decidedMatch?.robotic_addon ? { robotic_addon: true } : {}),
+          ...(newbornCtx.newborn ? { newborn_context: true, note: newbornNote } : {}),
         }
         : { family: null },
       alternatives: matches.filter((m) => m.family !== familyKey).map((m) => ({
@@ -773,9 +842,21 @@ async function buildNumbers({ def, familyKey, familyLabel, payorGroup, decisions
   // package history (name-keyed billed actuals + code-keyed bucket extras)
   let billed = null;
   let bucketExtras = null;
+  let pkgQuote = null;
   if (pkg) {
     billed = await billedActualsForPackage(pkg.package_name, tariffCd).catch(() => null);
     bucketExtras = await bucketExtrasForPackage(pkg.package_code, tariffCd).catch(() => null);
+    // P1: the same with-package headline the build offers (extras from the
+    // bucket_extras / billed-exclusions history — pure history, no coverage
+    // engine here). Additive; surfaced below ONLY when not blocked.
+    try {
+      pkgQuote = computePackageQuote({
+        pkg,
+        roomKey: String(roomType || 'General').toLowerCase(),
+        bucketExtras,
+        billedActuals: billed,
+      });
+    } catch { pkgQuote = null; }
   }
 
   // PF room-matched fallback (16-Jul note ¶2) — additive; computed over the
@@ -822,6 +903,16 @@ async function buildNumbers({ def, familyKey, familyLabel, payorGroup, decisions
         package_name: pkg.package_name,
         package_amount: billed?.this_tariff?.package_amount ?? null,
         bucket_extras: bucketExtras,
+        // P1: with-package headline (additive; only when the quote is not
+        // blocked — blocked packages keep today's display exactly).
+        ...(pkgQuote && !pkgQuote.blocked ? {
+          quote: {
+            with_package_total: pkgQuote.with_package_total,
+            extras_basis: pkgQuote.extras_basis,
+            ...(pkgQuote.extras_cases != null ? { extras_cases: pkgQuote.extras_cases } : {}),
+            blocked: false,
+          },
+        } : {}),
       }
       : null,
     ...(pfFallback ? { pf_fallback: pfFallback } : {}),

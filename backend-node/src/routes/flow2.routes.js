@@ -48,6 +48,23 @@ const Flow2Input = z.object({
     payor_bucket: z.string().trim().min(1, 'payor_bucket is required'),
     organization_cd: z.string().nullable().optional(),
   }),
+  /**
+   * P5 (additive, optional): patient context for context-aware routing —
+   * currently newborn detection ("Baby of …" name or age ≤ 30 days + generic
+   * medical-management wording ⇒ mandatory newborn-pathway question at
+   * family_match, selection_key 'family', answered via selections.family).
+   * `age` accepts "5 days" / "2 months" / "10 years" / bare numbers (bare =
+   * years); `age_days` wins when both are given.
+   */
+  patient: z.object({
+    name: z.string().nullable().optional(),
+    age_days: z.number().nonnegative().nullable().optional(),
+    age: z.union([z.string(), z.number()]).nullable().optional(),
+  }).nullable().optional()
+    .transform((v) => {
+      if (!v) return {};
+      return Object.fromEntries(Object.entries(v).filter(([, val]) => val != null));
+    }),
   selections: SelectionsSchema.nullable().optional()
     .transform((v) => {
       if (!v) return {};

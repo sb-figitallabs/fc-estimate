@@ -329,6 +329,101 @@ export async function bucketExtrasForPackage(package_code, tariff_code) {
   } catch { return null; }
 }
 
+/**
+ * P1 (problems-register-16jul): the with-package headline quote. The engine
+ * identifies the package and even computes the open→package conversion, but no
+ * with_package figure ever reached the quote (SURLA read as +82% when the
+ * engine's own package+excludes arithmetic reproduced the ₹406,505 bill).
+ * ADDITIVE — `final_estimate` stays itemized; clients pick the headline.
+ *
+ * extras ladder: (a) coverage-engine payable_extras when coverage computed;
+ * (b) payor-group bucket_extras history — per-bucket P50s, presence-weighted
+ * (presence ≥ 50% at P50, below that at P50 × presence); (c) billed-actuals
+ * exclusions_over_package P50 — skipped when the recorded package gross ≈ the
+ * final bill (exclusions are then 0 by construction, not evidence).
+ *
+ * package component: room-tier amount where room_amounts exist, else scalar —
+ * BUT band-validated: the tiers can lag the billed tariff (P7 drift; ORT5531
+ * tiers 118k/131k/143k vs billed lines 202k/227k/253k), so when the tier-based
+ * total falls outside the actual converted-bill band while the scalar-based
+ * total falls inside, the scalar wins (`package_amount_source` says which).
+ *
+ * Gating (the G NAGAVENI trap): the quote carries `blocked: true` +
+ * `blocked_reason` — and must never be treated as a headline — when the
+ * package price is a placeholder (≤ ₹1000), readiness says not_ready, no
+ * extras source exists, or the quoted total sits outside the billed band
+ * (same ±25% band rule as the conversion check, ≥ 5 cases).
+ */
+export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucketExtras = null, billedActuals = null }) {
+  if (!pkg) return null;
+  const round2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100;
+
+  // — predicted payable extras: source ladder —
+  let extras = null; let basis = null; let cases = null; let confidence = null;
+  if (coverageExtras != null && Number.isFinite(Number(coverageExtras))) {
+    extras = round2(Number(coverageExtras)); basis = 'coverage'; confidence = 'high';
+  } else if (bucketExtras?.buckets?.length) {
+    let sum = 0; let admissions = 0;
+    for (const b of bucketExtras.buckets) {
+      const p50 = Number(b.p50);
+      if (!(p50 > 0)) continue;
+      const presence = b.presence_pct;
+      sum += presence == null || presence >= 50 ? p50 : p50 * (presence / 100);
+      admissions = Math.max(admissions, Number(b.admissions) || 0);
+    }
+    extras = round2(sum); basis = 'bucket_extras_history'; confidence = 'medium';
+    cases = admissions || null;
+  } else {
+    const ba = billedActuals?.this_tariff;
+    const exclP50 = ba?.exclusions_over_package?.p50 == null ? NaN : Number(ba.exclusions_over_package.p50);
+    // artifact guard: when pkg_gross ≈ final bill the exclusions quartiles are
+    // 0 by construction — not an all-inclusive package, just unusable data.
+    const grossIsWholeBill = ba?.package_amount?.p50 > 0 && ba?.p50 > 0
+      && Math.abs(ba.package_amount.p50 - ba.p50) / ba.p50 < 0.02;
+    if (ba && Number.isFinite(exclP50) && !grossIsWholeBill) {
+      extras = round2(exclP50); basis = 'billed_exclusions'; confidence = 'low';
+      cases = ba.cases ?? null;
+    }
+  }
+
+  // — package component: room tier preferred, band-validated (P7 drift) —
+  const scalar = Number(pkg.package_amount) || 0;
+  const tier = Number(pkg.room_amounts?.[roomKey]);
+  const ba = billedActuals?.this_tariff;
+  const band = ba && ba.cases >= 5 && ba.p25 > 0 && ba.p75 > 0
+    ? { lo: ba.p25 * 0.75, hi: ba.p75 * 1.25, p25: ba.p25, p75: ba.p75, cases: ba.cases }
+    : null;
+  const inBand = (total) => !band || (total >= band.lo && total <= band.hi);
+  let pkgAmt = Number.isFinite(tier) && tier > 0 ? tier : scalar;
+  let pkgSource = Number.isFinite(tier) && tier > 0 ? 'room_tier' : 'scalar';
+  if (pkgSource === 'room_tier' && extras != null && band
+      && !inBand(pkgAmt + extras) && scalar > 0 && inBand(scalar + extras)) {
+    pkgAmt = scalar; pkgSource = 'scalar_band_fallback';
+  }
+
+  const total = round2(pkgAmt + (extras ?? 0));
+
+  // — gating —
+  const blockedReasons = [];
+  if (!(pkgAmt > 1000)) blockedReasons.push('placeholder_package_amount');
+  if (pkg.readiness && pkg.readiness.can_generate_estimate !== true) blockedReasons.push('not_ready');
+  if (basis == null) blockedReasons.push('no_extras_history');
+  if (extras != null && band && !inBand(total)) blockedReasons.push('outside_billed_band');
+
+  return {
+    with_package_total: total,
+    package_component: pkgAmt,
+    package_amount_source: pkgSource,
+    extras_component: extras,
+    extras_basis: basis,
+    ...(cases != null ? { extras_cases: cases } : {}),
+    ...(band ? { billed_band: { p25: band.p25, p75: band.p75, cases: band.cases } } : {}),
+    confidence,
+    blocked: blockedReasons.length > 0,
+    ...(blockedReasons.length ? { blocked_reason: blockedReasons.join(', ') } : {}),
+  };
+}
+
 async function finishOffer(pkg, tariff_code, organization_cd, source, candidates) {
   if (!pkg) return { status: 'no_package_exists', source, package: null, ...(candidates ? { candidates } : {}) };
   const history = await packageHistory({ tariff_code, package_code: pkg.package_code, organization_cd });

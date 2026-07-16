@@ -22,7 +22,7 @@ import {
 } from './advanced.js';
 import { resolveDrivers, computeLineItems } from './lineItems.js';
 import { serviceLineCountAlert } from './rules.js';
-import { packageOfferForEstimate } from '../packages/packages.service.js';
+import { packageOfferForEstimate, computePackageQuote } from '../packages/packages.service.js';
 import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
 import { settle, settleWithPackage } from '../insurance/settlement.js';
 import { round2 } from './stats.js';
@@ -788,6 +788,26 @@ export async function buildEstimate(input) {
         );
       }
     }
+  }
+
+  // 18c. P1 (problems-register-16jul): with-package headline quote — whenever
+  // billing identification resolved a package, finish the sentence: package
+  // component + predicted payable extras. ADDITIVE (final_estimate stays
+  // itemized; the client decides the headline); a blocked quote (placeholder
+  // price / not_ready / outside the billed band / no extras source) is data
+  // only and everything else behaves exactly as today.
+  if (packageOffer?.package) {
+    try {
+      packageOffer.quote = computePackageQuote({
+        pkg: packageOffer.package,
+        roomKey: room.toLowerCase(),
+        coverageExtras: packageOffer.coverage && !packageOffer.coverage.error
+          ? packageOffer.coverage.totals?.payable_extras
+          : null,
+        bucketExtras: packageOffer.billed_actuals?.bucket_extras ?? null,
+        billedActuals: packageOffer.billed_actuals ?? null,
+      });
+    } catch { /* additive — a quote failure never blocks the build */ }
   }
 
   // 19. per-room side-by-side data (manager: show all room types at once).

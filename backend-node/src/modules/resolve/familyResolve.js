@@ -104,6 +104,85 @@ export async function payorAwareFamilies(matches, payorBucket) {
   return { matches: families, payor_note: payorNote };
 }
 
+// ——— P5: newborn context detection (problems-register-16jul P5) —————————————
+// "Baby of …" newborns with generic medical-management wording were resolving
+// to ADULT general_medical_management (~2× overquote vs real ₹26–36k bills;
+// the human FCs were equally wrong). Measured against the mart (16-Jul):
+// the newborn admissions split into cohorts that bill VERY differently —
+// routine newborn care P50 ~₹15k, jaundice/phototherapy ~₹25k, NICU ~₹37k
+// for short Cash stays — and generic wording cannot tell them apart (the
+// dedicated sick-newborn template 'Neonatal Medical Management' has only 5
+// mart cases: not minable as a family tonight). So the guard DETECTS newborn
+// context and the flow asks a mandatory pathway question instead of silently
+// force-fitting any one cohort. Detection fires when: patient name is
+// "Baby of / Baby Boy / Baby Girl …" (NOT plain "Baby <name>") OR age ≤ 30
+// days when provided, AND the wording is generic medical management. It must
+// NEVER fire on: age > 30 days when provided (a 10-year-old "Master …" must
+// not hit the newborn path), specific/surgical wording, NICU-explicit
+// wording (nicu_intensive_care_management is its own family), or a wording
+// match that is already neonatal.
+// Kill switch (one flag per behavior change): P5_NEWBORN_ROUTING=off.
+/** Onboarded newborn cohorts, question-option order. */
+export const NEONATAL_FAMILY_KEYS = [
+  'routine_newborn_care_and_vaccination',
+  'neonatal_jaundice_phototherapy_management',
+  'nicu_intensive_care_management',
+];
+const NEONATAL_FAMILIES = new Set(NEONATAL_FAMILY_KEYS);
+const NEWBORN_NAME_RE = /^\s*(?:baby\s+(?:of|boy|girl)\b|b\/o\b)/i; // NOT plain "Baby <name>" — "Baby MEENAKSHI" is a named child, not a newborn record
+const NICU_WORDING_RE = /\bNICU\b|NEONATAL\s+INTENSIVE/i;
+const GENERIC_MEDICAL_WORDING_RE = /\b(medical\s+management|conservative\s+(management|treatment)|observation|medical\s+care|unspecified)\b/i;
+const NEWBORN_MAX_AGE_DAYS = 30;
+
+/**
+ * Patient age in days, or null when unknown. `age_days` wins; `age` accepts
+ * 5, "5", "5 days", "2 weeks", "3 months", "10 years" — bare numbers are
+ * YEARS (hospital convention), so age 10 can never read as 10 days.
+ */
+export function ageInDays(patient = {}) {
+  if (patient.age_days != null && Number.isFinite(Number(patient.age_days))) {
+    return Number(patient.age_days);
+  }
+  const age = patient.age;
+  if (age == null || age === '') return null;
+  if (typeof age === 'number') return Number.isFinite(age) ? age * 365.25 : null;
+  const m = String(age).trim().toLowerCase()
+    .match(/^(\d+(?:\.\d+)?)\s*(d(?:ays?)?|w(?:ee)?ks?|m(?:on(?:th)?s?)?|y(?:ea)?rs?)?\.?$/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  const unit = (m[2] ?? 'y')[0];
+  return unit === 'd' ? n : unit === 'w' ? n * 7 : unit === 'm' ? n * 30.44 : n * 365.25;
+}
+
+/**
+ * Newborn context detection over the AI family matches. Pure context logic —
+ * no AI, no DB. Returns { newborn, evidence }: newborn=true means the flow
+ * should raise its mandatory newborn-pathway question (or honor an explicit
+ * family answer) instead of pricing the adult medical cohort; evidence is the
+ * human-readable trigger ("patient name …" / "age N day(s)") for the trail.
+ */
+export function detectNewbornContext(matches, { patient = {}, wordingText = '' } = {}) {
+  const none = { newborn: false, evidence: null };
+  if (process.env.P5_NEWBORN_ROUTING === 'off') return none;
+
+  const ageDays = ageInDays(patient ?? {});
+  if (ageDays != null && ageDays > NEWBORN_MAX_AGE_DAYS) return none; // hard age gate
+  const nameHit = NEWBORN_NAME_RE.test(String(patient?.name ?? ''));
+  const isNewborn = ageDays != null ? ageDays <= NEWBORN_MAX_AGE_DAYS : nameHit;
+  if (!isNewborn) return none;
+
+  const text = String(wordingText ?? '');
+  if (!GENERIC_MEDICAL_WORDING_RE.test(text)) return none; // specific/surgical wording — never fire
+  if (NICU_WORDING_RE.test(text)) return none;             // NICU-explicit — its own family
+  if (matches[0] && NEONATAL_FAMILIES.has(matches[0].family)) return none;
+  if (!listFamilies().some((f) => NEONATAL_FAMILIES.has(f.family))) return none; // no newborn cohorts onboarded
+
+  const evidence = ageDays != null
+    ? `age ${Math.round(ageDays)} day(s)`
+    : `patient name "${String(patient.name).trim()}"`;
+  return { newborn: true, evidence };
+}
+
 /**
  * Alias search + AI clinical ranking for package candidates on one tariff.
  * Returns { candidates (best-first), ranking } — candidates is EMPTY when the

@@ -689,12 +689,20 @@ function numbersHtml(numbers) {
   let pkgBlock = '';
   if (pkg) {
     const bx = pkg.bucket_extras;
+    // P1: the with-package headline quote (only present when un-blocked)
+    const q = pkg.quote;
+    const quoteBasis = q ? (q.extras_basis === 'bucket_extras_history'
+      ? `package + typical extras from ${q.extras_cases ?? '?'} past bills`
+      : q.extras_basis === 'billed_exclusions'
+        ? `package + billed exclusions history${q.extras_cases != null ? ` (${q.extras_cases} bills)` : ''}`
+        : 'package + payable extras') : '';
     pkgBlock = `<div class="pkg-block">
       <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
         <span class="pkg-code">${esc(pkg.package_code)}</span>
         <span style="font-weight:600">${esc(pkg.package_name)}</span>
         <span style="margin-left:auto">${bandHtml(pkg.package_amount)}</span>
       </div>
+      ${q && !q.blocked ? `<p style="margin-top:6px;font-size:13px">With package (quoted): <b class="num">${inr(q.with_package_total)}</b> <span class="muted" style="font-size:11px">· ${esc(quoteBasis)}</span></p>` : ''}
       ${bx && (bx.buckets || []).length ? `<div style="margin-top:8px">
         <p class="hint">Charged above the package (${esc(bx.payor_group)}) — extras billed on top, by bucket:</p>
         <div class="scroll-x" style="margin-top:4px"><table>
