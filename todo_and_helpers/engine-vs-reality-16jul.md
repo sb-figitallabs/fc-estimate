@@ -1,3 +1,196 @@
+# Post-fix re-run (17-Jul) — P1–P6 on engine dev 61e8e89
+
+Full re-run of the frozen 35-case engine-vs-reality suite plus every standing suite, against the
+engine dev stack (`~/fc-estimate-dev/backend-node` on the LND-Dev box, port 4200 /
+`fc-estimate-dev.figitallabs.com`, verified running commit `61e8e89`: P1 with-package quote,
+P2 negation guard, P3 named drugs, P4 catch-all guard, P5 newborn question, P6 LOS-banded
+residuals). Scoring convention as frozen, upgraded exactly as P1 intends: **engine quote per
+case = the route's number** — package route (`billing_identification = package`) with an
+un-blocked `package_offer.quote` ⇒ `quote.with_package_total`; otherwise `final_estimate`
+(itemized). New verdict class **QUESTION_RAISED**: flow2 now stops at a mandatory question the
+FC document itself cannot answer — per the register this is the *intended terminal state*,
+converted from silent misses.
+
+## (a) New scoreboard vs old
+
+| Verdict | 16-Jul (pre-fix) | 17-Jul (post-fix) |
+|---|---|---|
+| ENGINE_GOOD | 12 | **13** |
+| ENGINE_OFF | 12 | **9** |
+| QUESTION_RAISED | — | **3** (BANDANADAM, KRISHNA, G NAGAVENI — converted from silent −74% / +371% / −36% misses) |
+| COURSE_CHANGED | 11 | **10** (AKARAPU re-classified GOOD, justification below) |
+
+Accuracy on the comparable clean set — cases that produce a number without needing an
+unanswerable question (22 post-fix vs 24 pre-fix: the 3 P4 cases became questions, AKARAPU
+joined from course-changed):
+
+| Metric | Engine 16-Jul (n=24) | Engine 17-Jul (n=22) | FC human (same 22) |
+|---|---|---|---|
+| Median abs % err vs bill (excl. F&B) | 26.4% | **24.4%** | 13.6% |
+| Mean abs % err | 70.5% | **38.8%** | 40.4% |
+| Within ±25% | 12/24 | 11/22 | 16/22 |
+| Engine err ≤ human err | 9/24 | 10/22 | — |
+| ENGINE_GOOD-case median | 14.5% | 15.1% | — |
+
+**Honest bottom line.** The catastrophic tail is gone — the mean error halved (70.5% → 38.8%,
+now *better than the humans' 40.4%* on the same cases) because the +371/+421/−87/+82 blowups
+were fixed or converted to questions. The median barely moved (26.4% → 24.4%) for two honest
+reasons: (i) the neonates swapped one systematic error for another (adult-cohort +79…+143%
+overquote → routine-newborn −73…−83% underquote — the P10 session-load gap plus an
+unanswerable pathway ambiguity), and (ii) P1's quote headline *exposed* two package-route
+errors that were previously invisible behind the itemized figure (P7 master drift on GUDURU,
+P11 extras contamination on PINNAMANENI). Where the extras history is clean, the package quote
+is spectacular: SURLA −0.9%, AKARAPU −1.8%.
+
+## (b) The three most notable swings
+
+1. **SURLA RAJESWARI: +81.5% → −0.9%** (P1+P2 together). The negation guard kept the ₹230k
+   robotic add-on out of "TKR NON ROBOTIC B/L" (itemized 737,751 → 507,751), and the
+   package-route quote finished the arithmetic the engine always knew: pkg ORT5531 ₹224,600 +
+   predicted extras ₹178,260 = **₹402,860 vs bill ₹406,505**.
+2. **SHOURYA SRIVASTAV: −86.9% → −11.7%** (P3). "INJ STELMA 90 MG" fuzzy-matched to STELARA
+   90MG/1ML (dose corroborated), ₹104,267 priced from the pharmacy master (sale_rate, flagged),
+   pharmacy replaced-not-added, confirm-drug warning attached. Quote ₹120,586 vs bill ₹136,548.
+3. **Baby of NIKHAT SHAMSI: +18.6% GOOD → −83.3% OFF** — the one verdict that *worsened*.
+   P5 now stops at the newborn-pathway question; the FC document supports only "routine newborn
+   care" (no jaundice/NICU wording anywhere in the four neonate FCs), and the routine-newborn
+   build quotes ₹6,109 against a ₹36,605 bill. The old GOOD was the adult cohort's ~2× overquote
+   accidentally landing on a baby that consumed more than routine care. The new number's root
+   cause is P10 (session-based families lose their per-day load: builds ₹6.1–7k vs the routine
+   cohort's own P50 ₹15,315) — and even the cohort P50 sits −50…−58% under these four bills.
+
+## (c) Per-case delta table (all 35)
+
+Old err → new err at the route's headline number; (R) = recounselling; * = verdict changed.
+
+| Case | Old → New verdict | Old % | New % | Note |
+|---|---|---|---|---|
+| ABDUL HASEEB MOHAMMAD | GOOD → GOOD | −13.9 | −13.9 | unchanged |
+| ARTH AGGARWAL | GOOD → GOOD | −25.9 | −25.9 | unchanged (replay@3 −14%) |
+| Baby of NIKHAT SHAMSI | GOOD → **OFF*** | +18.6 | −83.3 | see swing 3; replay@2 = 7,012 (−80.8%) |
+| GUDURU LAKSHMI DEVI | GOOD → GOOD | −6.4 | −31.5 | verdict survives only on the frozen in-band rule (bill 348,954 inside itemized band 264k–353k); the new headline quote ₹239,030 is −31.5%: pkg master 149,900 vs billed 168,700 (**P7 drift**) + extras rung ₹89k vs ~₹180k actual implant excludes. Itemized was −6.4% |
+| HEMALATHA THOTA | GOOD → GOOD | −3.9 | +12.7 | package call still exact (ORT5535 @355,000); quote adds ₹61k predicted extras vs ₹14k actual (**P11**) — error grew but GOOD |
+| K CHARVIN (R) | GOOD → GOOD | +11.1 | +11.1 | unchanged |
+| LAKSHMI DEVAMMA (R) | GOOD → GOOD | +11.6 | −19.3 | now scored on the package quote ₹550,860 (pkg 142,600 room-tier + extras incl. the validated robotic ₹230k); bill is a package bill (ORT5531) |
+| Neeharika Gorla | GOOD → GOOD | −15.1 | −15.1 | unchanged |
+| PINNAMANENI VIJAYALAKSHMI | GOOD → **OFF*** | −1.5 | +29.8 | package call still exact (ORT5536 @690,000 = the bill's package) but the quote adds ₹218,847 predicted extras vs ₹10,340 actual — **P11 leak the quote band gate did not catch**. Replay@actual-LOS quote +28.5% ⇒ not a LOS effect |
+| RAVULA PUSHYAMI | GOOD → GOOD | −21.8 | −21.8 | unchanged |
+| S RAMESH (R) | GOOD → GOOD | −15.5 | −15.5 | unchanged |
+| SHIVA KUMARI | GOOD → GOOD | +22.8 | +22.8 | unchanged (hand-kept as 16-Jul; replay@2 +8%) |
+| BANDANADAM NAVEEN IGNESIOUS | OFF → **QUESTION*** | −73.8 | — | P4 stop; both options offered are generic (general_plastic, general_surgical) — the FC wording names no onboarded procedure; no non-generic what-if exists |
+| Baby Boy NAKKA TRIVED RAJ K. | OFF → OFF | +106.5 | −77.1 | routine-newborn answer per FC doc; sign flip (P10) |
+| Baby of HARIKA | OFF → OFF | +79.1 | −80.1 | same |
+| Baby of SOUNDARYA | OFF → OFF | +142.7 | −73.0 | same |
+| G NAGAVENI | OFF → **QUESTION*** | −35.8 | — | P4 stop; options: generic ortho + wound_debridement_and_soft_tissue_repair — the latter is NOT an obvious match for an Achilles tendon rupture repair, no what-if forced; the ₹27,500 TENDON pkg stays correctly blocked (not_ready) |
+| KRISHNA B R | OFF → **QUESTION*** | +371.1 | — | P4 stop; options: generic plastic / generic ortho / emergency-trauma — **no maxillofacial-ish family exists in the registry** (recorded honestly, nothing forced) |
+| NARESH GURAJALA | OFF → OFF | +420.7 | +217.6 | P6 partial win: 41,068 → 25,048 (Investigations 20,790 → 4,770 via the 90-case short-stay sub-cohort); the residual is the PF/room/per-day machinery P6 deliberately scoped out |
+| RAMULU GUNDI | OFF → OFF | +27.0 | +27.0 | unchanged watch-list marginal |
+| SHOURYA SRIVASTAV | OFF → **GOOD*** | −86.9 | −11.7 | P3 (see swing 2) |
+| SURLA RAJESWARI | OFF → **GOOD*** | +81.5 | −0.9 | P1+P2 (see swing 1) |
+| VARSHITHA | OFF → OFF | −64.4 | −29.1 | frozen wording names no drug ⇒ **P3 guard path correct** ("confirm the drug" warning fired, no silent augmentation). The numeric improvement comes from family re-resolution (general_medical_management_infusion → chemotherapy_systemic_therapy_infusion_daycare under the updated registry), not from a drug line. Post-confirm figure (drug confirmed by the FC): −21.8% per the register's verified run |
+| Y CHANDRIKA | OFF → OFF | −33.3 | −33.3 | unchanged (bilateral EVLT, deferred) |
+| A JIVITESH SAI (R) | COURSE → COURSE | +13.4 | +13.4 | unchanged |
+| AKARAPU VISHWANATAHM | COURSE → **GOOD*** | +34.3 | −1.8 | re-classified with justification: the bill IS a package bill (ORT5510), so the LOS 4→2 change is insulated by the package — the P1 quote at *planned* inputs (₹239,030) lands −1.8% on its own merits |
+| ANITA KUMARI (R) | COURSE → COURSE | −73.4 | −73.4 | route = non_package, so the ₹77,000 GYN5219 offer is correctly NOT the headline (its own conversion warning fired) |
+| HARANADHA BABU | COURSE → COURSE | −80.2 | −80.2 | unchanged |
+| K ASHWINI | COURSE → COURSE | −12.8 | −12.8 | unchanged (replay@4 −9%) |
+| KRANTHI KUMAR | COURSE → COURSE | −74.8 | −74.8 | unchanged (FB extraction inconsistent) |
+| MEENAKSHI VECHA | COURSE → COURSE | −8.0 | −8.0 | unchanged. NOTE: family pinned to adenotonsillectomy (the engine's own 16-Jul resolution) via the UI's `selections.family` mechanism — persistent Gemini stray-brace matcher flake on this wording (see (f)3) |
+| RAMBABU (R) | COURSE → COURSE | −67.8 | −67.8 | unchanged (urology combo, P8) |
+| SARBESWAR MAITY | COURSE → COURSE | −86.2 | −86.2 | unchanged |
+| VUTKUR SURYA PRAKASH (R) | COURSE → COURSE | −31.9 | −31.9 | route = non_package ⇒ itemized stays headline; an ENT5147 quote (₹135,802, −11.6%) exists on the response but is correctly not the route's number |
+| YALABANDI K S L VALLIDEVI | COURSE → COURSE | +14.6 | +14.6 | unchanged |
+
+Newborn-question answers documented per case (answered from the FC document ONLY, never the
+bill): NAKKA / HARIKA / SOUNDARYA / NIKHAT all → `routine_newborn_care_and_vaccination`, basis
+"FC doc describes routine newborn medical management (no jaundice/NICU wording)". None of the
+four neonate FC documents mentions phototherapy, jaundice or NICU.
+
+## (d) Standing suite results
+
+| Suite | Baseline | Post-fix (17-Jul) | Verdict |
+|---|---|---|---|
+| flow2 validation sweep | 374 cases, 6 failures (5× I4 family-flip + 1 transient HTTP), matcher-flake 46 | **374 cases (619 evals, 954s), 1 failure, matcher-flake 23, questions 230/230 answered, no-match 0** | the I4 family-flip class is GONE (matcher cache pin); the single failure is a stale suite pin, not a regression — see (f)2 |
+| Cash parity (TKR pinned to the paisa) | 1042/1042 | **PASS=1042 FAIL=0** (validate_estimate) + validate_artifacts clean (26/26 cohort rows, 53/53 service rows) | ✅ pin intact |
+| Workbook cell-parity (validate_workbook) | (part of `npm test`) | **ENV-BLOCKED** | crashes at file-read before any engine code: its reference extraction (`full_cell_data.json` + `parity_spec.json`) is hard-coded to an old session scratchpad path that no longer exists on any machine (checked box + Mac). Not a P1–P6 regression; the fix is to commit the reference extraction into `spec/` like `sheet_targets.json` |
+| Normal suite | 52/52 (pre-onboarding registry) | **PASS=526 FAIL=0**, 130 data flags | ✅ zero failures; the check count grew 52 → 526 because the registry now carries 170 families × 3 rooms + insurer/package orgs + workbook smokes; the 130 flags are the known DATA_CONCERNS classes (template-less Investigations/Pharmacy backfilled from historical actuals) |
+| Insurance edge suite | 32 cases, 0 bugs | **32 cases, 0 bugs, 0 warnings** | ✅ |
+| verify-estimates harness (207 zero-input builds) | 15-Jul first run 25/182; after the 15-Jul Q1/Q3/Q4 fixes **32 in-band / 175 out** (classes: 54 token-OT, 10 investigations-0, 1 pharmacy-0, 15 gross, 3 conversion) | **207 builds, 0 crashes, 32 in-band / 175 out — class counts identical (54/10/1/15/3)** | P1/P3/P6 moved *nothing* here, and that is the designed outcome, not a miss: the harness runs zero-input builds — no treatment text so P3 cannot fire, default LOS = cohort P50 so P6's ≤P25 banding cannot trigger, and P1's quote is additive and never touches buckets. The movement the fixes deliver appears exactly where the inputs exist — proven in the 35-case replay (SHOURYA −87→−12, NARESH +421→+218, SURLA +82→−1) |
+
+flow2 sweep composition shift vs 16-Jul (informational): reached-numbers 327→351, package path
+69→55, non-package 258→296, questions 215→230 — the added questions are P4/P5's (the suite
+answers them with the majority option, as a user would).
+
+## (e) Remaining misses + causes (9 OFF)
+
+| Case(s) | New err | Cause |
+|---|---|---|
+| 4 neonates (NAKKA −77, HARIKA −80, SOUNDARYA −73, NIKHAT −83) | −73…−83% | **P10** (session-based newborn families lose their per-day load: builds ₹6.1–7k vs the routine cohort's own P50 ₹15,315) + a genuine intake ambiguity: even the cohort P50 sits −50…−58% under these bills — these babies plausibly consumed jaundice/NICU-level care the FC documents never recorded. The P5 question is the right machinery; the FC must answer it from the chart |
+| PINNAMANENI | +29.8% | **P11**: extras rung contaminated by the package's own billed lines (₹218,847 predicted vs ₹10,340 actual on cash robotic-TKR bilateral); the quote band gate missed this one — tighten it with the billed-total-range check the conversion warning already computes |
+| NARESH | +217.6% | **P6 residual** (deliberately scoped out): PF/room/per-day machinery still stay-independent; small absolute money |
+| VARSHITHA | −29.1% | **P3 guard path working as designed** (wording names no drug); −21.8% once the FC confirms the drug |
+| Y CHANDRIKA | −33.3% | bilateral EVLT laterality/consumables (watch-list, deferred) |
+| RAMULU | +27.0% | marginal Investigations inflation (watch-list) |
+
+Near-miss inside GOOD worth tracking: **GUDURU's headline quote is −31.5%** (P7 package-master
+drift ₹149,900 vs billed ₹168,700 + extras ₹89k vs ~₹180k actual implant excludes) — the verdict
+survives only on the frozen in-band rule. Same quote (₹239,030) was −1.8% on AKARAPU: one number
+cannot fit both patients because the implant load (the real money in GIPSA TKR) varies per case
+— the P7 sync audit plus implant-aware extras are the fix.
+
+## (f) Expectation-vs-regression flags
+
+1. **P1 exposes P7/P11 on package quotes — real behavioral regression on 2 cases, flagged
+   loudly.** PINNAMANENI (GOOD→OFF, +29.8%) and GUDURU (headline −31.5%, GOOD only via band):
+   the with-package quote is now the headline on the package route, so stale master amounts (P7)
+   and contaminated extras history (P11) hit the quoted number where they were previously
+   invisible behind the itemized figure. Both are already-queued register entries; this re-run
+   puts case-level rupee numbers on them. Suggested tightening: block the quote when its
+   with-package total falls outside the package's own billed-total range (the conversion check
+   already computes exactly that range — SURLA's fired while its quote was −0.9%, so the gate
+   must compare the QUOTE, not the converted itemized total).
+2. **flow2 sweep's single failure is a stale pin — expectation needs updating, and it predates
+   P1–P6.** The `mode-both: numbers.note missing` probe asserts a placeholder that existed at
+   suite-commit time (`numbers.note = 'logic comparison lands in phase B'`); phase B landed the
+   same day (16-Jul) and replaced it with the real `numbers.logic` + `numbers.comparison`
+   payload — both present in the probe's response. The suite was NOT edited; flagged here for
+   the owner to update the pin.
+3. **Gemini matcher stray-brace flake (infrastructure, new register candidate P13).**
+   `gemini-3.1-pro-preview` intermittently returns valid JSON followed by a stray `}`;
+   `geminiJson`'s fallback regex (`/\{[\s\S]*\}/`, greedy to the LAST brace) then fails too, so
+   the whole 3-try retry ladder surfaces "AI family matcher unavailable". Root-caused live on
+   the box (raw model text ends `}\n}`). During the replay, "TOTAL KNEE REPLACEMENT (TKR) -
+   LEFT" recovered after ~4 API calls (then the 10-min wording cache held); MEENAKSHI's
+   misspelled coblation wording did NOT recover in 12+ calls and was pinned via
+   `selections.family` (documented in the table). The sweep saw 23 such flakes (all retried
+   internally). One-line fix in `src/modules/ai/gemini.js` (balanced-brace extraction) — NOT
+   applied; engine untouched.
+4. **Normal-suite count 52 → 526 and verify-harness baseline 25/182 vs 32/175**: both are
+   registry/fix evolution between the pinned wordings of the task brief and the current dev
+   state, not regressions — 0 failures in the normal suite either way; the harness matches the
+   15-Jul *post-Q-fix* baseline exactly.
+5. **validate_workbook ENV-BLOCKED** (see suite table) — reference extraction files were in a
+   session scratchpad that tmp-cleanup removed; never existed on the box. Recommend committing
+   them under `spec/`.
+6. **No pinned suite was edited; nothing was committed or pushed.**
+
+## Method notes for this re-run
+
+- Runner: `run_engine_postfix.mjs` — a copy of the frozen `run_engine.mjs` with exactly three
+  deltas: (i) sends `patient: { name }` on flow2 (the baseline never did; it powers P5's
+  newborn detection), (ii) answers the newborn question only from the FC document (mapping:
+  jaundice/phototherapy wording → jaundice option, NICU wording → NICU option, else routine —
+  all four hit "else routine"), (iii) stops and records the P4 catch-all question instead of
+  auto-answering it. COURSE_CHANGED replays at actual LOS/ward re-run identically.
+- Suites ran sequentially on the box (they share the engine + DB): flow2 sweep → normal →
+  edge → `npm test` (artifacts + 1042 parity + workbook) → verify-estimates.
+- Artifacts: `/private/tmp/fc-eval/engine_runs_postfix.jsonl`, `comparison_postfix.jsonl`,
+  `adjudicated_postfix.json`, `run_engine_postfix.mjs`, `compare_postfix.py`; box logs
+  `/tmp/flow2_sweep.log`, `/tmp/normal_suite.log`, `/tmp/edge_suite.log`, `/tmp/parity.log`,
+  `/tmp/verify_estimates.log`. All 16-Jul baseline artifacts untouched.
+
+---
+
 # Engine vs Reality — 35 historical FC counsellings vs 162 final bills (16-Jul)
 
 Real-world validation of the FC estimate engine (`https://fc-estimate-dev.figitallabs.com`) against
