@@ -38,17 +38,29 @@ parallel and will stop it once we show flow confidence — speed matters.
 - [x] **4. Flow 2 Phase B** — DONE 16-Jul eve: mode=logic|both live (per-bucket verdicts vs the 75/125 band, __gross__ row, room-type select; logic build gets the audited decisions, never free text). Also same-day: combo path-per-treatment in Flow2 (tabs, per-path questions/selections, combined P50 strip) and matcher/rank caching (7s→0.04s round-trips, no mid-conversation flips). Original ask:: `mode=logic|both` — the logic layer as a
   side-by-side comparison per bucket ("historically X–Y; logic produced Z"),
   gross validation vs both bands, optional agent self-verify loop.
-- [ ] **5. PF fallback (his note ¶2)**: same room category, standard
-  single-procedure case with bill near the cohort P50 → take that bill's PF.
-- [ ] **6. Range consistency audit**: he saw 76–123 vs a different band
-  elsewhere, "83 to 120" rendering as 160–140, and an itemized total that
-  doesn't sum (₹1.4L). Reconcile after #2's data lands in the views.
-- [ ] **7. Search debounce**: type-ahead resolve should wait longer before
-  firing (stage-1 has 600ms; he still finds it eager — try ~1s + min chars).
-- [ ] **8. Multi-treatment combos** (persists from #10/15-Jul, now part of his
-  flow doc): detect single vs multiple vs pkg+non-pkg at intake, announce,
-  path per treatment. Flow2 Phase A ships a cheap fragment-detection signal
-  only.
+- [x] **5. PF fallback (his note ¶2)** — DONE 16-Jul night: roomMatchedPfFallback
+  (same room via inferRoomCategory + standard single-procedure + gross within
+  ±15% of cohort P50 + PF>0; median PF, null under 3 cases). Rides as
+  pf_analysis.room_matched_fallback with sample IPs + criteria; recommendation
+  flips only when historic basis is thin (<5) or logic deviates >25% — priced
+  totals never silently change. flow2 numbers.pf_fallback (logic|both only).
+  Verified: GIPSA TKR Single 248→92 cases PF P50 ₹56,584; GMM Cash 119→3 → 
+  ₹12,380 (recommendation correctly stays logic).
+- [~] **6. Range consistency audit** — IN PROGRESS 16-Jul night: surface→source
+  map + reproduction of his three complaints, fixes + one-line captions naming
+  which band each surface shows (system range vs itemized-history band vs
+  package-bill band). Audit doc: range-audit-16jul.md when it lands.
+- [x] **7. Search debounce** — DONE 16-Jul night (HO c28fa5b): 600ms → 1100ms.
+  Min chars kept at 3 — "tkr" alone is a legitimate complete wording.
+- [x] **8. Multi-treatment combos — detection + announcement** — DONE 16-Jul
+  night: resolve-treatment gains an additive combo block (fragments each
+  resolved to family + package-or-not, billing_shape); Simple flow announces
+  in his language + treatment picker chips (picking builds THAT fragment) +
+  'estimating treatment 1 of 2' reminder. Single-treatment responses
+  byte-identical (asserted). Verified live: 'lap chole + inguinal hernia' →
+  package_plus_non_package (SGA5166 + non-package) — his exact example.
+  Combined PRICING (interactions) remains the later phase; Flow2 already
+  paths each treatment fully.
 - [ ] **9. His hospital visit follow-up**: he's drilling into the hospital's
   own FC module for data we may not have — expect a new dataset/doc.
 
