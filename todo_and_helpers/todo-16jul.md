@@ -22,7 +22,7 @@ parallel and will stop it once we show flow confidence — speed matters.
   Rides the offer as `billed_actuals.bucket_extras`; HistoricPanel gains the
   "Package bill — historic metrics" section (HO feature branch `e830313`).
   GIPSA TKR sanity: Proc/OT P50 ₹1,21,300 (robotic), Implants ₹88k.
-- [ ] **3. Flow 2 — interactive SOP stepper (Phase A, IN PROGRESS 16-Jul)**:
+- [x] **3. Flow 2 — interactive SOP stepper (Phase A) — DONE 16-Jul** (engine 8572ecb, HO fab4c0e; live on the engine dev stack, UI on the feature branch):
   new parallel surface, nothing in the current flow touched. Engine
   `POST /api/flow2/evaluate` (stateless; full step trail; stops at the first
   human question; selections accumulate) + HO "Flow 2" admin view.
