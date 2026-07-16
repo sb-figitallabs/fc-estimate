@@ -7,6 +7,7 @@ import { pool } from './db/pool.js';
 import estimateRoutes from './routes/estimate.routes.js';
 import lookupRoutes from './routes/lookup.routes.js';
 import packagesRoutes from './routes/packages.routes.js';
+import flow2Routes from './routes/flow2.routes.js';
 
 const app = express();
 // 20mb (matches the Hospital_OS proxy): admission-note photos and Ask-AI page
@@ -33,6 +34,7 @@ app.get('/health', async (_req, res) => {
 app.use('/api/lookup', lookupRoutes);
 app.use('/api/estimate', estimateRoutes);
 app.use('/api/packages', packagesRoutes);
+app.use('/api/flow2', flow2Routes);
 
 // central error handler — client input errors are 400, everything else 500
 app.use((err, _req, res, _next) => {

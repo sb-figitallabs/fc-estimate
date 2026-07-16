@@ -253,7 +253,7 @@ export async function packageOfferForEstimate({ cohortRows, tariff_cd, organizat
  * = package + billed exclusions minus F&B — what patients really ended up
  * paying. Fail-open: engines without fc.package_bill_admissions get null.
  */
-async function billedActualsForPackage(packageName, tariff_code) {
+export async function billedActualsForPackage(packageName, tariff_code) {
   try {
     // three quartile sets per the 15-Jul flow doc: the gross (final bill),
     // the package amount itself, and what rode on top as billed exclusions.
@@ -301,7 +301,7 @@ async function billedActualsForPackage(packageName, tariff_code) {
  * Falls back to the All-Payers rollup when this payor group has no bills;
  * fail-open null on engines without the table.
  */
-async function bucketExtrasForPackage(package_code, tariff_code) {
+export async function bucketExtrasForPackage(package_code, tariff_code) {
   try {
     const t = (tariff_code || '').trim().toUpperCase();
     const payorGroup = !t || t === 'TR1' ? 'Cash' : t === 'TR290' ? 'GIPSA Insurance' : 'Non-GIPSA Insurance';
