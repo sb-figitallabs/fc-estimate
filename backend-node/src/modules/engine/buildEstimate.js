@@ -10,6 +10,7 @@ import {
   fetchCohortRows, basisCohorts, buildBasisSummary, buildServiceStats,
   buildPharmacyStats, buildActualBasisMetrics, buildPfPayorSummary,
   buildOtSlotMatrix, buildOrgDirectory, tariffRateLookup, pharmacyCatalogNames,
+  shortStayBucketQuartiles, P6_SHORT_STAY_MIN_CASES,
 } from './artifacts.js';
 import {
   cleanServiceRows, splitCleanedRows, prioritizeOptionalRows, splitRoboticOptional,
@@ -374,6 +375,29 @@ export async function buildEstimate(input) {
       ['investigations', 'Investigations'],
       ['pharmacy_total', 'Pharmacy'],
     ];
+    // P6 trivial-stay floor (problems-register-16jul): the backfill quartiles
+    // below are whole-cohort medians — stay-independent, so a 1-day medical
+    // observation inherited the full cohort's median diagnostics load (NARESH:
+    // Investigations ₹20,790 on a ₹7.9k bill, +421%). When the requested LOS
+    // sits at/below this basis' P25 stay AND the same-stay-band sub-cohort is
+    // rich enough (≥ P6_SHORT_STAY_MIN_CASES), the backfilled buckets price
+    // from that sub-cohort's quartiles instead. Medical families only (this
+    // block never runs for surgical/daycare familyKind); sub-cohort quartiles,
+    // NEVER linear LOS scaling (would gut correct 2–3 day estimates and
+    // mis-model fixed per-admission costs). Kill switch: P6_LOS_BANDING=off.
+    let shortStay = null;
+    // p25 < p50 guard: when the cohort's P25 stay IS its typical stay
+    // (P25 == P50), a "short stay" is indistinguishable from a normal one —
+    // banding there would move typical-stay estimates, not trivial ones.
+    if (process.env.P6_LOS_BANDING !== 'off'
+        && Number.isFinite(drivers.los?.p25)
+        && drivers.los.p25 < (drivers.los?.p50 ?? drivers.los.p25)
+        && (drivers.los?.selected ?? Infinity) <= drivers.los.p25) {
+      const band = shortStayBucketQuartiles(
+        cohorts[svcBasis], drivers.los.p25, BACKFILL.map(([f]) => f)
+      );
+      if (band.cases >= P6_SHORT_STAY_MIN_CASES) shortStay = band;
+    }
     const modeVal = (p25, p50, p75) => (mode === 'Low' ? p25 : mode === 'Typical' ? p50 : p75);
     for (const [field, bucket] of BACKFILL) {
       const bucketNow = lineItems.rows
@@ -381,14 +405,29 @@ export async function buildEstimate(input) {
         .reduce((t, r) => t + (r.selected?.single ?? 0), 0);
       const m = actualMetricsEarly.find((r) => r.basis_label === svcBasis && r.field_key === field);
       if (bucketNow > 0 || !(m?.p50 > 0)) continue;
-      const cells = [m.p25 ?? m.p50, m.p50, m.p75 ?? m.p50];
+      const band = shortStay?.fields?.[field];
+      const residualBasis = shortStay
+        ? `short-stay sub-cohort (${shortStay.cases} cases, LOS ≤ P25 ${drivers.los.p25}d)`
+        : null;
+      if (band && !(band.p50 > 0)) {
+        // The typical same-stay-band case had NO such charges — an honest
+        // short-stay answer is no backfill row at all, said out loud.
+        warnings.push(`${bucket} had no template lines and the ${residualBasis} typically billed none — backfill skipped (whole-cohort P50 would have been ₹${Math.round(m.p50).toLocaleString('en-IN')}, basis ${svcBasis}).`);
+        continue;
+      }
+      const cells = band
+        ? [band.p25 ?? band.p50, band.p50, band.p75 ?? band.p50]
+        : [m.p25 ?? m.p50, m.p50, m.p75 ?? m.p50];
       const sel = modeVal(...cells);
       lineItems.rows.push({
         index: lineItems.rows.length,
         name: `${bucket} — historical estimate`,
         bucket, sub: bucket, source: 'Historical',
-        how: `No ${bucket.toLowerCase()} lines in this cohort's template — filled from the ${svcBasis} basis P25/P50/P75 of actual bills.`,
+        how: band
+          ? `No ${bucket.toLowerCase()} lines in this cohort's template — filled from the ${svcBasis} basis ${residualBasis} P25/P50/P75 of actual bills (requested stay is at/below the cohort's P25).`
+          : `No ${bucket.toLowerCase()} lines in this cohort's template — filled from the ${svcBasis} basis P25/P50/P75 of actual bills.`,
         code: null, historical_estimate: true,
+        ...(band ? { residual_basis: residualBasis } : {}),
         qty: { selected: 1, low: 1, typ: 1, high: 1 }, rate: {},
         cells: { general: cells, twin: [...cells], single: [...cells] },
         selected: { general: sel, twin: sel, single: sel },
@@ -402,7 +441,9 @@ export async function buildEstimate(input) {
         }
       }
       lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
-      warnings.push(`${bucket} had no template lines — filled from historical actuals (P50 ₹${Math.round(m.p50).toLocaleString('en-IN')}, basis ${svcBasis}).`);
+      warnings.push(band
+        ? `${bucket} had no template lines — filled from the ${residualBasis}: P50 ₹${Math.round(band.p50).toLocaleString('en-IN')} instead of the whole-cohort ₹${Math.round(m.p50).toLocaleString('en-IN')} (basis ${svcBasis}).`
+        : `${bucket} had no template lines — filled from historical actuals (P50 ₹${Math.round(m.p50).toLocaleString('en-IN')}, basis ${svcBasis}).`);
     }
   }
 
