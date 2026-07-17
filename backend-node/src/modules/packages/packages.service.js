@@ -222,6 +222,36 @@ export async function aliasCandidates({ text, tariff_code, organization_cd, limi
 }
 
 /**
+ * Master-catalog name search — the fallback when the ALIAS table has no rows
+ * for a tariff (16-Jul: TR287 had TKR packages in the master but zero KNEE
+ * aliases, so the gate said "no package" while the build's cohort-dominant
+ * code lookup found one). Word-scored ILIKE over the runtime view.
+ */
+export async function masterNameCandidates({ text, tariff_code, organization_cd, limit = 5 }) {
+  const words = (text || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').split(/\s+/).filter((w) => w.length >= 3);
+  if (!words.length || !tariff_code) return [];
+  const score = words.map((_, i) => `(upper(package_name) LIKE $${i + 2})::int`).join(' + ');
+  const params = [tariff_code, ...words.map((w) => `%${w}%`)];
+  const { rows } = await query(
+    `SELECT package_code, package_name, MAX(${score}) AS score
+     FROM fc.v_package_runtime_lookup WHERE tariff_code = $1
+     GROUP BY 1, 2
+     HAVING MAX(${score}) >= ${Math.min(2, words.length)}
+     ORDER BY score DESC
+     LIMIT ${limit * 2}`, params);
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    if (seen.has(r.package_code)) continue;
+    seen.add(r.package_code);
+    const pkg = await lookupPackage({ tariff_code, package_code: r.package_code, organization_cd });
+    if (pkg) out.push({ ...pkg, matched_alias: null, alias_confidence: 'MasterName' });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
  * Free-text resolution: alias candidates; Gemini ranks when ambiguous.
  * AI never invents — result must be one of the DB candidates or null.
  */

@@ -313,6 +313,14 @@ export async function rankPackageCandidates({ treatment, tariff_code, organizati
   if (cached && Date.now() - cached.at < MATCH_CACHE_TTL_MS) return cached.result;
 
   let candidates = await aliasCandidates({ text: treatment, tariff_code, organization_cd, limit });
+  // Alias coverage is uneven per tariff (16-Jul: TR287 had TKR packages in
+  // the master but zero KNEE aliases — the gate said "no package" while the
+  // build's cohort-dominant code lookup found one). Fall back to a
+  // master-catalog name search so the gate sees everything the build can.
+  if (!candidates.length) {
+    const { masterNameCandidates } = await import('../packages/packages.service.js');
+    candidates = await masterNameCandidates({ text: treatment, tariff_code, organization_cd, limit });
+  }
   let ranking = null;
   if (candidates.length > 1) {
     try {
