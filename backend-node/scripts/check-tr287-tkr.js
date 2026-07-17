@@ -1,0 +1,12 @@
+import 'dotenv/config';
+import pg from 'pg';
+const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
+await c.connect();
+const m = await c.query(`SELECT package_code, package_name, package_amount FROM fc.package_master WHERE tariff_code='TR287' AND package_name ILIKE '%KNEE%' LIMIT 6`);
+console.log('TR287 master KNEE rows:', m.rows.length);
+m.rows.forEach(r => console.log(' ', r.package_code, r.package_name, r.package_amount));
+const a = await c.query(`SELECT count(*)::int n FROM fc.package_alias WHERE tariff_code='TR287'`);
+console.log('TR287 alias rows total:', a.rows[0].n);
+const a2 = await c.query(`SELECT count(*)::int n FROM fc.package_alias WHERE tariff_code='TR287' AND normalized_alias_text LIKE '%KNEE%'`);
+console.log('TR287 alias KNEE rows:', a2.rows[0].n);
+await c.end();
