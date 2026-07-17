@@ -230,7 +230,11 @@ export function computeLineItems(ctx) {
       });
     }
     }
-    template('CSSD Charges', 'Procedure / OT Charges', 'OT Charges', 'RNS5005');
+    // CSSD is OT sterilization — medical-management families (surgical:false)
+    // have no OT, so no CSSD (17-Jul manager feedback #4).
+    if (famRows.surgical !== false) {
+      template('CSSD Charges', 'Procedure / OT Charges', 'OT Charges', 'RNS5005');
+    }
     // Medical Records: daycare bills MSC10 ("-1 DAY"), non-daycare RNS0120 ("> 1 DAY").
     // Historical data confirms: RNS0120 never appears in daycare admissions.
     if (famRows.medicalRecords === 'MSC10') {
@@ -460,15 +464,24 @@ export function computeLineItems(ctx) {
   // placeholders for drug admin + PF (filled after pharmacy rows)
   const drugAdminIdx = rows.length;
   push({ name: 'Drug Administration Charges', bucket: 'Drug Administration Charges', sub: 'Pharmacy Related', source: 'Logic', how: '12.5% of pharmacy total', code: null, qty: {}, rate: {}, cells: { general: [0, 0, 0], twin: [0, 0, 0], single: [0, 0, 0] } });
+  // Medical-management families (registry rows.surgical === false) have no
+  // surgeon/anesthetist — their PF is visit-based (17-Jul manager feedback #4).
+  // One physician row is emitted instead; buildEstimate prices it from the
+  // cohort's billed PF history until the visit-fee rule sheet arrives.
+  const medicalPf = ctx.familyRows?.surgical === false;
   const pfStart = rows.length;
-  for (const [name, how] of [
-    ['Surgeon', 'Cash PF % of pre-PF subtotal'],
-    ['Assistant Surgeon', 'Cash PF % of surgeon fee'],
-    ['Anesthetist', 'Cash PF % of surgeon fee'],
-    ['Assistant Anesthetist', 'Cash PF % of anesthetist fee'],
-  ]) {
-    push({ name, bucket: 'Professional Fees', sub: 'Professional Fees', source: 'Logic', how, code: null, qty: {}, rate: {}, cells: { general: [0, 0, 0], twin: [0, 0, 0], single: [0, 0, 0] } });
+  const pfNames = medicalPf
+    ? [['Physician Fees — Daily Visits', 'Medical management PF — priced from this cohort\'s billed PF (visit-based); visit-fee rule sheet pending']]
+    : [
+      ['Surgeon', 'Cash PF % of pre-PF subtotal'],
+      ['Assistant Surgeon', 'Cash PF % of surgeon fee'],
+      ['Anesthetist', 'Cash PF % of surgeon fee'],
+      ['Assistant Anesthetist', 'Cash PF % of anesthetist fee'],
+    ];
+  for (const [name, how] of pfNames) {
+    push({ name, bucket: 'Professional Fees', sub: 'Professional Fees', source: medicalPf ? 'History' : 'Logic', how, code: null, qty: {}, rate: {}, cells: { general: [0, 0, 0], twin: [0, 0, 0], single: [0, 0, 0] } });
   }
+  const pfEnd = pfStart + pfNames.length - 1;
 
   // pharmacy rows
   const pharmStart = rows.length;
@@ -504,21 +517,25 @@ export function computeLineItems(ctx) {
       cells: { general: cells, twin: [...cells], single: [...cells] },
     });
   }
-  {
-    const cells = [basisRow.ot_drugs_p25 ?? 0, basisRow.ot_drugs_p50 ?? 0, basisRow.ot_drugs_p75 ?? 0];
-    push({
-      name: 'OT Drugs & Medications', bucket: 'Pharmacy', sub: 'OT Pharmacy', source: 'History',
-      how: 'Bucket quartiles', code: null, qty: {}, rate: {},
-      cells: { general: cells, twin: [...cells], single: [...cells] },
-    });
-  }
-  {
-    const cells = [basisRow.ot_consumables_p25 ?? 0, advanced.otConsumablesApplied, basisRow.ot_consumables_p75 ?? 0];
-    push({
-      name: 'OT Consumables', bucket: 'Pharmacy', sub: 'OT Pharmacy', source: 'Advanced',
-      how: 'OT consumables variance controls', code: null, qty: {}, rate: {},
-      cells: { general: cells, twin: [...cells], single: [...cells] },
-    });
+  // OT pharmacy rows only for families that see an OT (their history is 0 for
+  // medical cohorts anyway — hiding them removes "OT" rows from no-OT cases).
+  if (ctx.familyRows?.ot !== false) {
+    {
+      const cells = [basisRow.ot_drugs_p25 ?? 0, basisRow.ot_drugs_p50 ?? 0, basisRow.ot_drugs_p75 ?? 0];
+      push({
+        name: 'OT Drugs & Medications', bucket: 'Pharmacy', sub: 'OT Pharmacy', source: 'History',
+        how: 'Bucket quartiles', code: null, qty: {}, rate: {},
+        cells: { general: cells, twin: [...cells], single: [...cells] },
+      });
+    }
+    {
+      const cells = [basisRow.ot_consumables_p25 ?? 0, advanced.otConsumablesApplied, basisRow.ot_consumables_p75 ?? 0];
+      push({
+        name: 'OT Consumables', bucket: 'Pharmacy', sub: 'OT Pharmacy', source: 'Advanced',
+        how: 'OT consumables variance controls', code: null, qty: {}, rate: {},
+        cells: { general: cells, twin: [...cells], single: [...cells] },
+      });
+    }
   }
   {
     const cells = [basisRow.implants_p25 ?? 0, implants.resolvedTypical, basisRow.implants_p75 ?? 0];
@@ -604,34 +621,45 @@ export function computeLineItems(ctx) {
     da.selected = { general: modePick(mode, ...da.cells.general), twin: modePick(mode, ...da.cells.twin), single: modePick(mode, ...da.cells.single) };
   }
   // subtotal before PF = all rows except PF rows
-  const subtotal = sumCells((_, i) => i < pfStart || i > pfStart + 3);
+  const subtotal = sumCells((_, i) => i < pfStart || i > pfEnd);
   // selected subtotal sums the rows' SELECTED amounts (day-driven rows carry
   // manual LOS/ward/ICU overrides there that the percentile cells don't have)
   const subtotalSelected = { general: 0, twin: 0, single: 0 };
   rows.forEach((row, i) => {
-    if (i >= pfStart && i <= pfStart + 3) return;
+    if (i >= pfStart && i <= pfEnd) return;
     for (const c of cols) subtotalSelected[c] += row.selected[c] ?? 0;
   });
-  // PF cascade
-  const pf = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
-  const pfSel = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
-  for (const c of cols) {
-    pf.surgeon[c] = subtotal[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
-    pf.asstSurgeon[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.15 * v));
-    pf.anesthetist[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
-    pf.asstAnesthetist[c] = pf.anesthetist[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
-    pfSel.surgeon[c] = insuranceMode ? 0 : 0.25 * subtotalSelected[c];
-    pfSel.asstSurgeon[c] = insuranceMode ? 0 : 0.15 * pfSel.surgeon[c];
-    pfSel.anesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.surgeon[c];
-    pfSel.asstAnesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.anesthetist[c];
+  // PF cascade — surgical families only. Medical families keep their single
+  // physician row at 0 here; buildEstimate prices it from billed PF history.
+  let pfRows = [];
+  let pfSelRows = [];
+  if (!medicalPf) {
+    const pf = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
+    const pfSel = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
+    for (const c of cols) {
+      pf.surgeon[c] = subtotal[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
+      pf.asstSurgeon[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.15 * v));
+      pf.anesthetist[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
+      pf.asstAnesthetist[c] = pf.anesthetist[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
+      pfSel.surgeon[c] = insuranceMode ? 0 : 0.25 * subtotalSelected[c];
+      pfSel.asstSurgeon[c] = insuranceMode ? 0 : 0.15 * pfSel.surgeon[c];
+      pfSel.anesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.surgeon[c];
+      pfSel.asstAnesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.anesthetist[c];
+    }
+    pfRows = [pf.surgeon, pf.asstSurgeon, pf.anesthetist, pf.asstAnesthetist];
+    pfSelRows = [pfSel.surgeon, pfSel.asstSurgeon, pfSel.anesthetist, pfSel.asstAnesthetist];
+    pfRows.forEach((p, k) => {
+      const row = rows[pfStart + k];
+      for (const c of cols) row.cells[c] = p[c];
+      row.selected = { ...pfSelRows[k] };
+    });
+  } else {
+    // zero-valued placeholders keep the grand-total loops uniform
+    for (let k = pfStart; k <= pfEnd; k++) {
+      pfRows.push({ general: [0, 0, 0], twin: [0, 0, 0], single: [0, 0, 0] });
+      pfSelRows.push({ general: 0, twin: 0, single: 0 });
+    }
   }
-  const pfRows = [pf.surgeon, pf.asstSurgeon, pf.anesthetist, pf.asstAnesthetist];
-  const pfSelRows = [pfSel.surgeon, pfSel.asstSurgeon, pfSel.anesthetist, pfSel.asstAnesthetist];
-  pfRows.forEach((p, k) => {
-    const row = rows[pfStart + k];
-    for (const c of cols) row.cells[c] = p[c];
-    row.selected = { ...pfSelRows[k] };
-  });
   // grand total
   const grand = { general: [0, 0, 0], twin: [0, 0, 0], single: [0, 0, 0] };
   for (const c of cols) for (let m = 0; m < 3; m++) {
