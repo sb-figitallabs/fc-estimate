@@ -332,7 +332,12 @@ export async function buildEstimate(input) {
   // and lines still reconcile with totals; bands shift by the same delta.
   const actualMetricsEarly = buildActualBasisMetrics(cohorts);
   let pfSource = 'tariff';
-  if (pricingMode !== 'Cash / TR1') {
+  // Medical-management families (rows.surgical === false) carry a single
+  // physician-visits PF row that lineItems leaves at 0 — it is priced here
+  // from billed PF history for EVERY pricing mode, Cash included (17-Jul
+  // manager feedback #4: the surgical 25% cascade fabricated surgeon fees).
+  const medicalPfFamily = cohortDef.rows?.surgical === false;
+  if (pricingMode !== 'Cash / TR1' || medicalPfFamily) {
     const histPfRow = actualMetricsEarly.find(
       (r) => r.basis_label === bases.pf_basis.selected_basis && r.field_key === 'professional_fees'
     );
@@ -343,16 +348,21 @@ export async function buildEstimate(input) {
         const pfTotal = pfRows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
         const delta = histPfRow.p50 - pfTotal;
         if (!Number.isFinite(delta) || Math.abs(delta) < 1) continue;
+        let bandDelta = [delta, delta, delta];
         if (pfTotal > 0) {
           const f = histPfRow.p50 / pfTotal;
           for (const r of pfRows) if (r.selected?.[rk] != null) r.selected[rk] = Math.round(r.selected[rk] * f * 100) / 100;
         } else if (pfRows[0]?.selected) {
-          pfRows[0].selected[rk] = histPfRow.p50; // no PF lines priced — carry it on the first PF row
+          // no PF lines priced — carry history on the first PF row, bands from quartiles
+          pfRows[0].selected[rk] = histPfRow.p50;
+          const band = [histPfRow.p25 || histPfRow.p50, histPfRow.p50, histPfRow.p75 || histPfRow.p50];
+          if (Array.isArray(pfRows[0].cells?.[rk])) pfRows[0].cells[rk] = [...band];
+          bandDelta = band;
         } else {
           continue; // no PF rows at all for this family — nothing to scale
         }
         if (Array.isArray(lineItems.grandTotal[rk])) {
-          lineItems.grandTotal[rk] = lineItems.grandTotal[rk].map((v) => Math.round((v + delta) * 100) / 100);
+          lineItems.grandTotal[rk] = lineItems.grandTotal[rk].map((v, i) => Math.round((v + bandDelta[i]) * 100) / 100);
         }
         if (lineItems.grandTotal.selected?.[rk] != null) {
           lineItems.grandTotal.selected[rk] = Math.round((lineItems.grandTotal.selected[rk] + delta) * 100) / 100;
@@ -361,7 +371,9 @@ export async function buildEstimate(input) {
       lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
       pfRows.forEach((r) => { r.historic_pf = true; });
       pfSource = 'historic_p50';
-      warnings.push(`Professional Fees priced from the historic P50 (₹${Math.round(histPfRow.p50).toLocaleString('en-IN')}, basis ${bases.pf_basis.selected_basis}) — the insurer tariff carries token PF rates.`);
+      warnings.push(medicalPfFamily
+        ? `Medical management — Professional Fees priced from billed physician-fee history (P50 ₹${Math.round(histPfRow.p50).toLocaleString('en-IN')}, basis ${bases.pf_basis.selected_basis}); the visit-based fee sheet will refine this.`
+        : `Professional Fees priced from the historic P50 (₹${Math.round(histPfRow.p50).toLocaleString('en-IN')}, basis ${bases.pf_basis.selected_basis}) — the insurer tariff carries token PF rates.`);
     }
   }
 
