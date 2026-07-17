@@ -582,14 +582,26 @@ export async function buildEstimate(input) {
   // gate brain (alias + AI clinical ranking on this tariff) — same choice the
   // flow view makes. Cohort-dominant stays as the fallback.
   let packageOffer;
+  const noExplicitPackage = !input.package?.package_code && !input.package?.package_name && !input.package?.text;
+  // #5 (flow parity): medical-management families never auto-attach a package
+  // — same guard as the flow gate. An explicit user-chosen package still wins.
+  const medicalNoPackage = noExplicitPackage && cohortDef.familyKind === 'medical';
+  if (medicalNoPackage) {
+    packageOffer = { status: 'no_package_exists', source: 'medical_family_guard', package: null };
+  } else {
   try {
     let inputPackage = input.package;
     let gatePicked = false;
-    if (!inputPackage?.package_code && !inputPackage?.package_name && !inputPackage?.text && treatmentText) {
+    if (noExplicitPackage) {
       try {
         const { rankPackageCandidates } = await import('../resolve/familyResolve.js');
+        // #2 (flow parity): with no doctor's wording, rank on the family's own
+        // label — so the build names the same package the flow view would,
+        // instead of the cohort-dominant heuristic. Cohort-dominant remains
+        // the fallback when ranking finds nothing.
+        const rankText = treatmentText || cohortDef.templateName || cohortDef.family;
         const { candidates } = await rankPackageCandidates({
-          treatment: treatmentText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
+          treatment: rankText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
         });
         if (candidates[0]) {
           inputPackage = { package_code: candidates[0].package_code, package_name: candidates[0].package_name };
@@ -603,9 +615,10 @@ export async function buildEstimate(input) {
       organization_cd: input.payment.organization_cd,
       inputPackage,
     });
-    if (gatePicked && packageOffer) packageOffer.source = 'gate_match';
+    if (gatePicked && packageOffer) packageOffer.source = treatmentText ? 'gate_match' : 'gate_match_family_label';
   } catch (err) {
     packageOffer = { status: 'lookup_error', error: err.message, package: null };
+  }
   }
 
   // curated inclusions can concatenate 2 source variants — expose the deduped
@@ -898,8 +911,13 @@ export async function buildEstimate(input) {
   const pkgAmountForRoom = (pkg, rk) => Number(pkg?.room_amounts?.[rk] ?? pkg?.package_amount) || 0;
 
   // 18. package coverage: per-line inclusion status + dual grand totals
-  // (only when a package resolved and curated inclusion text exists)
-  if (packageOffer?.package?.inclusions_text) {
+  // (only when a package resolved and curated inclusion text exists).
+  // #4 (flow parity): a placeholder package price must never become a
+  // with-package total — the offer stays visible (with its billed actuals)
+  // but produces no coverage math.
+  if (packageOffer?.package?.price_placeholder) {
+    warnings.push(`Package [${packageOffer.package.package_code}] ${packageOffer.package.package_name} carries a placeholder price (₹${packageOffer.package.package_amount}) with no per-room rates — no with-package total produced; see its actual billed history instead.`);
+  } else if (packageOffer?.package?.inclusions_text) {
     try {
       const model = parseCoverage(packageOffer.package.inclusions_text, packageOffer.package.exclusions_text);
       const coverage = applyCoverage(estimate, model);

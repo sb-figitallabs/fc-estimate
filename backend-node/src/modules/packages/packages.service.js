@@ -81,15 +81,54 @@ export function deriveRoomAmounts(raw) {
   return Object.keys(out).length ? out : null;
 }
 
+/** TR1 carries ₹10/₹0 placeholder package prices — below this is not a price. */
+const PLACEHOLDER_PRICE_MAX = 1000;
+
+/**
+ * Real room prices often live ONLY in the tariff_information markdown table
+ * ("| GENERAL WARD | 70,000 |") while room_rates_jsonb is empty and
+ * package_amount is a ₹10 placeholder (URO5443). Same parser as the flow
+ * gate — moved here (16-Jul flow-parity #3/#4) so the BUILD prices packages
+ * the same way the flow view judges them.
+ */
+export function parseTariffInfoRooms(text) {
+  const out = {};
+  for (const line of String(text || '').split('\n')) {
+    const m = line.match(/^\s*\|\s*([^|]+?)\s*\|\s*([\d,]+)\s*\|/);
+    if (!m) continue;
+    const label = m[1].trim();
+    const amount = Number(m[2].replace(/,/g, ''));
+    if (/room|category|tariff|detail|---/i.test(label) && !/ward|twin|single|deluxe|suite|general/i.test(label)) continue; // header rows
+    if (Number.isFinite(amount) && amount >= PLACEHOLDER_PRICE_MAX) out[label] = amount;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/** Map the tariff_information row labels onto the engine's 3 room keys. */
+function roomAmountsFromTariffInfo(text) {
+  const rows = parseTariffInfoRooms(text);
+  if (!rows) return null;
+  const out = {};
+  for (const [label, amount] of Object.entries(rows)) {
+    const key = roomKeyForTier(label);
+    if (key && out[key] == null) out[key] = amount;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 function shape(row) {
   if (!row) return null;
   const {
     runtime_status, can_generate_estimate, primary_blocker, warning_reason, ...pkg
   } = row;
-  const room_amounts = deriveRoomAmounts(row.room_rates_jsonb);
+  // structured jsonb first; tariff_information markdown as the rescue (#3)
+  const room_amounts = deriveRoomAmounts(row.room_rates_jsonb) ?? roomAmountsFromTariffInfo(row.tariff_information);
+  // placeholder guard (#4): a scalar ₹10 with no per-room rescue is NOT a price
+  const price_placeholder = Number(pkg.package_amount) < PLACEHOLDER_PRICE_MAX && !room_amounts;
   return {
     ...pkg,
     ...(room_amounts ? { room_amounts } : {}), // additive — absent when jsonb missing/empty
+    ...(price_placeholder ? { price_placeholder: true } : {}),
     readiness: {
       runtime_status,
       can_generate_estimate,
