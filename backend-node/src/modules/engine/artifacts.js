@@ -36,6 +36,7 @@ export async function fetchCohortRows(whereSql, params) {
             surgical_medical, los_days::float, icu_days::float, ward_days::float,
             derived_ot_hours::float AS ot_hours, service_line_count::int,
             normalized_billable_stay_days::float, room_category, icu_unit_name,
+            curated_template_names_jsonb AS curated_templates,
             fc_actual_bucket_totals_jsonb AS buckets,
             fc_actual_total_excluding_fnb_and_returns::float AS services_total_ex_fnb,
             fc_actual_cash_drug_administration_charge::float AS drug_admin_charge,
@@ -66,6 +67,31 @@ export function basisCohorts(rows) {
 }
 
 const bucketOf = (r, key) => Number(r.buckets?.[key] ?? 0);
+
+/** Normalized billable stay (ceil-style) of one admission — the LOS basis every
+ *  artifact uses (basis summary, actual metrics, P6 short-stay banding). */
+export const stayOfRow = (r) => r.normalized_billable_stay_days ?? Math.ceil(r.los_days);
+
+/**
+ * P6 trivial-stay floor (problems-register-16jul): quartiles of backfill bucket
+ * fields over the SAME-stay-band sub-cohort (admissions with stay ≤ losCutoff,
+ * normally the basis' LOS P25). The whole-cohort backfill medians are
+ * stay-independent — a 1-day medical observation inherited the full cohort's
+ * median diagnostics load (Investigations ₹20,790 on a ₹7.9k bill). Returns
+ * { cases, fields: { [fieldKey]: { p25, p50, p75 } } }; the CALLER enforces the
+ * minimum sub-cohort size (P6_SHORT_STAY_MIN_CASES) and falls back to the
+ * whole-cohort metrics below it. Sub-cohort quartiles, never linear LOS scaling.
+ */
+export const P6_SHORT_STAY_MIN_CASES = 15;
+export function shortStayBucketQuartiles(rows, losCutoff, fieldKeys) {
+  const sub = (rows ?? []).filter((r) => stayOfRow(r) <= losCutoff);
+  const fields = {};
+  for (const f of fieldKeys) {
+    const q = quartilesInclusive(sub.map((r) => bucketOf(r, f)));
+    fields[f] = { p25: q.p25, p50: q.p50, p75: q.p75 };
+  }
+  return { cases: sub.length, fields };
+}
 
 /** Basis summary rows — Reference AZ:CP (one row per basis label). */
 export function buildBasisSummary(cohorts) {

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flow 2 — FC Estimate Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='3' width='20' height='18' rx='3' fill='%230033CC'/%3E%3Cpath d='M7 8h4M7 12h7M7 16h10' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='8' r='1.6' fill='white'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --brand:#0033CC; --brand-600:#0029a3; --brand-50:#eef2ff;
+    --ink:#0f172a; --ink-2:#475569; --ink-3:#64748b;
+    --surface:#ffffff; --bg:#f4f6f8; --line:#e2e8f0;
+    --ok:#166534; --ok-bg:#dcfce7; --warn:#92400e; --warn-bg:#fef3c7;
+    --err:#b91c1c; --err-bg:#fee2e2;
+    --amber:#b45309; --amber-bg:#fffbeb; --amber-line:#fde68a;
+    --radius:10px; --shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .num{font-variant-numeric:tabular-nums}
+  .mono{font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  header{background:var(--brand);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:18px;font-weight:600}
+  header .sub{font-size:13px;opacity:.85}
+  header .links{margin-left:auto;display:flex;gap:14px}
+  header a{color:#fff;opacity:.9;font-size:13px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.4);padding-bottom:1px}
+  header a:hover,header a:focus-visible{opacity:1}
+
+  .wrap{max-width:1000px;margin:0 auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3);margin-bottom:10px}
+
+  label{font-size:13px;font-weight:500;color:var(--ink-2);display:block;margin-bottom:4px}
+  input,select{font:inherit;font-size:14px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:6px;padding:9px 10px;min-height:44px;width:100%}
+  input:focus,select:focus,button:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+  .hint{font-size:12px;color:var(--ink-3)}
+
+  .controls{display:grid;grid-template-columns:1fr 200px;gap:10px}
+  @media (max-width:720px){.controls{grid-template-columns:1fr}}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{font:inherit;font-size:13px;font-weight:600;padding:9px 14px;min-height:44px;border:0;background:#fff;color:var(--ink-2);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+  .room-field{display:none;align-items:center;gap:8px}
+  .room-field.show{display:flex}
+  .room-field select{width:120px;min-height:44px}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-size:14px;font-weight:600;border-radius:8px;border:1px solid transparent;padding:0 16px;min-height:44px;cursor:pointer}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-primary:hover:not([disabled]){background:var(--brand-600)}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .busy .spinner{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .alert{border-radius:8px;padding:10px 12px;font-size:13px;display:none;margin-top:10px}
+  .alert.err{display:block;background:var(--err-bg);color:var(--err)}
+
+  .muted{color:var(--ink-3)}
+  .chip{font-size:11px;font-weight:600;border-radius:999px;padding:3px 9px;display:inline-block}
+  .chip.brand{background:var(--brand-50);color:var(--brand)}
+  .chip.neutral{background:var(--bg);color:var(--ink-3)}
+  .chip.amber{background:var(--warn-bg);color:var(--warn)}
+  .chip.rose{background:var(--err-bg);color:var(--err)}
+
+  #resultArea.working{opacity:.55;pointer-events:none}
+  .placeholder{padding:40px 16px;text-align:center;color:var(--ink-3);font-size:14px}
+
+  /* combo tabs */
+  .combo-tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .combo-tab{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink-2);padding:8px 12px;cursor:pointer}
+  .combo-tab[aria-pressed="true"]{border-color:rgba(0,51,204,.4);background:var(--brand-50);color:var(--brand);font-weight:600}
+  .combo-tab .dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block}
+  .combo-tab .tick{color:#059669;font-weight:700}
+  .combined-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--ink-2);margin-top:8px}
+
+  /* step cards */
+  ol.steps{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .step{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:#fff}
+  .step-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .step-no{width:22px;height:22px;flex:none;border-radius:50%;background:var(--bg);color:var(--ink-3);font-size:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+  .step-no.pending{background:var(--warn-bg);color:var(--warn)}
+  .step-title{font-size:14px;font-weight:600}
+  .step .checked{font-size:12.5px;color:var(--ink-3);margin:4px 0 0 30px}
+  .step .body{margin:8px 0 0 30px}
+  @media (max-width:600px){.step .checked,.step .body{margin-left:0}}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-weight:600;color:var(--ink-3);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line);padding:5px 6px;white-space:nowrap}
+  td{border-bottom:1px solid var(--line);padding:6px;vertical-align:top}
+  td.r,th.r{text-align:right}
+  td.c,th.c{text-align:center}
+  .scroll-x{overflow-x:auto}
+
+  tr.pick td{background:var(--brand-50)}
+  tr.clickable{cursor:pointer}
+  tr.clickable:hover td{background:var(--bg)}
+  .picked-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);white-space:nowrap}
+
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;font-size:12px}
+  .kv .k{color:var(--ink-3)}
+
+  .question{background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:8px;padding:10px 12px;margin-top:8px}
+  .question p{font-size:12.5px;font-weight:600;color:var(--amber)}
+  .q-opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .q-opt{font:inherit;font-size:12.5px;border:1px solid var(--amber-line);border-radius:6px;background:#fff;color:var(--ink-2);padding:7px 12px;cursor:pointer}
+  .q-opt:hover{border-color:var(--brand);color:var(--brand)}
+  .q-opt .cases{font-size:10.5px;color:var(--ink-3);margin-left:5px}
+  .no-match{font-size:12.5px;color:var(--err);margin-top:8px}
+
+  .axis{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px}
+  .axis:last-child{border-bottom:0}
+  .axis .name{width:72px;flex:none;color:var(--ink-3)}
+  .axis .counts{flex:1;min-width:160px;color:var(--ink-2)}
+  .axis .decided{font-weight:600}
+  .axis .undecided{color:#cbd5e1}
+
+  .pkg-row{border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:12.5px;margin-top:6px}
+  .pkg-row.pick{border-color:rgba(0,51,204,.35);background:var(--brand-50)}
+  .pkg-row .top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .pkg-code{font:11px ui-monospace,Menlo,monospace;background:var(--bg);border-radius:4px;padding:1px 5px;color:var(--ink-2)}
+  .pkg-row details{margin-top:6px}
+  .pkg-row summary{cursor:pointer;font-size:11px;color:var(--ink-3)}
+  .pkg-row .doc{font-size:11.5px;color:var(--ink-2);white-space:pre-wrap;margin-top:5px}
+  .combo-warn{display:flex;gap:8px;align-items:flex-start;background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:8px;padding:8px 12px;font-size:12.5px;color:var(--amber)}
+
+  ol.ladder{list-style:none;display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+  .rung{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+  .rung .no{width:18px;height:18px;flex:none;border-radius:50%;background:var(--bg);color:var(--ink-3);font-size:10px;display:inline-flex;align-items:center;justify-content:center}
+  .rung.used{font-weight:600;color:var(--ink)}
+  .rung.used .no{background:var(--brand);color:#fff}
+  .rung.skipped{color:#cbd5e1;text-decoration:line-through}
+  .alt-btn{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink-2);padding:5px 10px;cursor:pointer}
+  .alt-btn:hover:not([disabled]){border-color:var(--brand);color:var(--brand)}
+  .alt-btn[disabled]{border-color:rgba(0,51,204,.4);background:var(--brand-50);color:var(--brand);font-weight:600;cursor:default}
+
+  /* numbers */
+  .numbers{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-top:16px;background:#fff}
+  .num-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .num-head h3{font-size:14px;font-weight:600}
+  .num-head .tag{margin-left:auto;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#cbd5e1}
+  .filters{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+  .fgroup{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .fgroup .flabel{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3)}
+  .fchip{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink-3);padding:3px 10px;cursor:pointer}
+  .fchip:hover{border-color:#cbd5e1;color:var(--ink-2)}
+  .fchip[aria-pressed="true"]{border-color:rgba(0,51,204,.4);background:var(--brand-50);color:var(--brand);font-weight:600}
+  .typicals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  @media (max-width:600px){.typicals{grid-template-columns:1fr}}
+  .typical{background:var(--bg);border-radius:8px;padding:8px 12px}
+  .typical .tl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-3)}
+  .typical .tv{font-size:14px;margin-top:2px}
+  .band b{color:var(--ink)}
+  .band .rng{font-size:11px;color:#94a3b8}
+  .gross-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  @media (max-width:600px){.gross-grid{grid-template-columns:1fr}}
+  .gross-box{border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+  .gross-box .tl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-3)}
+  .gross-box .tv{font-size:14px;margin-top:2px}
+  .verdict-strip{border-radius:8px;padding:8px 12px;font-size:12.5px;margin-top:10px}
+  .verdict-strip.within{background:#ecfdf5;color:#065f46}
+  .verdict-strip.outside{background:var(--amber-bg);color:var(--amber)}
+  .verdict-strip.nodata{background:var(--bg);color:var(--ink-2)}
+  .vdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(16,185,129,.7)}
+  .vbadge{white-space:nowrap;border-radius:999px;background:var(--amber-bg);color:var(--amber);font-size:10px;font-weight:600;padding:2px 7px}
+  .vnone{font-size:10px;color:#cbd5e1}
+  .pkg-block{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:14px;font-size:12.5px}
+  .cases-btn{font:inherit;font-size:12.5px;color:var(--brand);background:none;border:0;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(0,51,204,.3);text-underline-offset:2px;padding:0}
+  details.cases{margin-top:14px;border:0}
+  details.cases summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-2);padding:2px 0;list-style-position:inside}
+  .note-chip{margin-top:12px}
+  .logic-line{font-size:11px;color:var(--ink-3);margin-top:8px}
+
+  footer{padding:12px 24px 28px;color:var(--ink-3);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Flow 2 — Interactive Step Review</h1>
+    <div class="sub">Treatment + payor in; every SOP step out — evidence, decisions, overrides, pure-history numbers</div>
+  </div>
+  <nav class="links" aria-label="Site">
+    <a href="/">Estimate Builder</a>
+    <a href="/packages.html">Package Explorer</a>
+    <a href="/docs" target="_blank" rel="noopener">API docs</a>
+  </nav>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>Inputs</h2>
+    <div class="controls">
+      <div>
+        <label for="treatment">Treatment (as the doctor writes it)</label>
+        <input id="treatment" placeholder="e.g. robotic tkr right knee" autocomplete="off">
+      </div>
+      <div>
+        <label for="payor">Payor type</label>
+        <select id="payor">
+          <option selected>Cash</option>
+          <option>GIPSA Insurance</option>
+          <option>Non-GIPSA Insurance</option>
+          <option>Corporate</option>
+        </select>
+      </div>
+    </div>
+    <div id="orgRow" style="display:none;margin-top:10px;max-width:520px">
+      <label for="org">Insurer / organization <span class="muted">(drives the tariff)</span></label>
+      <select id="org"><option value="">— pick the organization —</option></select>
+    </div>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Estimate mode">
+        <button type="button" data-mode="historic" aria-pressed="true">Historic only</button>
+        <button type="button" data-mode="logic" aria-pressed="false">Logic</button>
+        <button type="button" data-mode="both" aria-pressed="false">Both</button>
+      </div>
+      <div class="room-field" id="roomField">
+        <span class="hint">Logic room</span>
+        <select id="room"><option>General</option><option>Twin</option><option selected>Single</option></select>
+      </div>
+      <button type="button" class="btn btn-primary" id="evalBtn"><span class="spinner" aria-hidden="true"></span>Evaluate</button>
+    </div>
+    <div class="alert err" id="errBox" role="alert"></div>
+  </section>
+
+  <section class="card" id="resultCard">
+    <div id="placeholder" class="placeholder">Type a treatment, pick the payor and press <strong>Evaluate</strong>.<br>Every step shows what was checked, the evidence, and what was picked — override any choice and later steps re-derive.</div>
+    <div id="resultArea" style="display:none"></div>
+  </section>
+</main>
+
+<footer>fc-builder-api · Flow 2 numbers are pure history from the underlying IP cases — nothing is calculated (Logic mode adds the engine build for comparison)</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inr = (v) => v == null ? '—' : '₹ ' + Number(v).toLocaleString('en-IN', {maximumFractionDigits: 0});
+
+/* ---------- defensive readers (engine evidence is loosely typed) ---------- */
+const rec = (v) => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+const arr = (v) => Array.isArray(v) ? v.map(rec) : [];
+const str = (v) => typeof v === 'string' && v !== '' ? v : null;
+const num = (v) => typeof v === 'number' && Number.isFinite(v) ? v : null;
+const scalar = (v) => ['string','number','boolean'].includes(typeof v);
+const yes = (v) => /^(y|true|1)/i.test(String(v ?? ''));
+const label = (k) => String(k).replace(/_/g, ' ');
+const cell = (v) => {
+  if (v == null || v === '') return '—';
+  if (typeof v === 'object') {
+    const parts = Object.entries(rec(v)).filter(([, x]) => scalar(x)).map(([k, x]) => label(k) + ': ' + x);
+    return parts.length ? parts.join(' · ') : '—';
+  }
+  return String(v);
+};
+const fmtN = (v) => v == null ? '—' : Number.isInteger(v) ? String(v) : Number(v).toFixed(1);
+const casesTxt = (n) => n + ' case' + (n === 1 ? '' : 's');
+
+/* P50 bold with the P25–P75 band muted */
+function bandHtml(p, money = true) {
+  const r = rec(p);
+  const f = money ? inr : fmtN;
+  const p25 = num(r.p25), p50 = num(r.p50), p75 = num(r.p75);
+  if (p25 == null && p50 == null && p75 == null) return '<span class="muted">—</span>';
+  return `<span class="band num"><b>${f(p50)}</b> <span class="rng">(${f(p25)} – ${f(p75)})</span></span>`;
+}
+
+function kvRows(data) {
+  const entries = Object.entries(rec(data)).filter(([, v]) => scalar(v));
+  if (!entries.length) return '';
+  return `<div class="kv">${entries.map(([k, v]) => `<span class="k">${esc(label(k))}</span><span>${esc(String(v))}</span>`).join('')}</div>`;
+}
+
+/* ---------- state ---------- */
+const emptyPathSel = () => ({ care_type: null, setting: null, robotic: null, family: null, package_code: null, case_filters: null });
+const emptySel = () => ({ ...emptyPathSel(), room_type: null, paths: null });
+
+let selections = emptySel();
+let mode = 'historic';
+let activePath = 0;
+let result = null;
+let busy = false;
+let casesOpen = false;
+
+/* paths[i] wins over the flat fields for its index (flat keeps applying to path 0) */
+function writePathSelections(sel, i, patch) {
+  const paths = [...(sel.paths ?? [])];
+  while (paths.length <= i) paths.push(null);
+  paths[i] = { ...emptyPathSel(), ...(paths[i] ?? {}), ...patch };
+  return { ...sel, paths };
+}
+/* route a selection patch: per-path when a combo is showing, flat otherwise */
+function patched(patch) {
+  return result?.combo ? writePathSelections(selections, activePath, patch) : { ...selections, ...patch };
+}
+function resetSelections() { selections = emptySel(); activePath = 0; }
+
+/* ---------- insurer select (same source + classification as the Estimate Builder page) ---------- */
+let allOrgs = null;
+function orgBuckets(o) {
+  const b = Object.keys(o.buckets || {});
+  if (!b.length && o.packages > 0) b.push(/GIPS/i.test(o.tariff_name || '') ? 'GIPSA Insurance' : 'Non-GIPSA Insurance');
+  return b;
+}
+async function renderOrgOptions(payor) {
+  if (!allOrgs) allOrgs = await (await fetch('/api/lookup/organizations')).json();
+  const org = $('org');
+  const prev = org.value;
+  const list = allOrgs
+    .filter((o) => orgBuckets(o).includes(payor))
+    .sort((a, b) => (b.packages_priced - a.packages_priced)
+      || ((b.buckets?.[payor] || 0) - (a.buckets?.[payor] || 0))
+      || a.organization_name.localeCompare(b.organization_name));
+  org.innerHTML = `<option value="">Select insurer… (${list.length} with ${esc(payor)} data)</option>` +
+    list.map((o) => {
+      const cases = o.buckets?.[payor] || 0;
+      const bits = [o.tariff_name, o.packages_priced ? `${o.packages_priced} pkgs` : 'no packages', cases ? `${cases} cases` : null].filter(Boolean);
+      return `<option value="${esc(o.organization_cd)}">${esc(o.organization_name)} — ${esc(bits.join(' · '))}</option>`;
+    }).join('');
+  if ([...org.options].some((x) => x.value === prev)) org.value = prev;
+}
+$('payor').addEventListener('change', async () => {
+  const payor = $('payor').value;
+  const isCash = payor === 'Cash';
+  $('orgRow').style.display = isCash ? 'none' : '';
+  if (isCash) $('org').value = '';
+  resetSelections();
+  if (!isCash) {
+    try { await renderOrgOptions(payor); }
+    catch { showError('Could not load insurers — is the API running?'); }
+  }
+});
+$('org').addEventListener('change', resetSelections);
+$('treatment').addEventListener('input', resetSelections);
+$('treatment').addEventListener('keydown', (e) => { if (e.key === 'Enter') evaluate(emptySel(), mode); });
+
+/* ---------- mode toggle + logic room ---------- */
+function updateModeUI() {
+  for (const b of document.querySelectorAll('.seg [data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+  $('roomField').classList.toggle('show', mode !== 'historic');
+}
+for (const b of document.querySelectorAll('.seg [data-mode]')) {
+  b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    updateModeUI();
+    if (result) evaluate(selections, mode);
+  });
+}
+$('room').addEventListener('change', () => {
+  evaluate({ ...selections, room_type: $('room').value }, mode);
+});
+
+/* ---------- evaluate ---------- */
+function showError(msg) { $('errBox').textContent = msg; $('errBox').classList.add('err'); $('errBox').style.display = 'block'; }
+function clearError() { $('errBox').style.display = 'none'; }
+
+async function evaluate(sel, m) {
+  const treatment = $('treatment').value.trim();
+  if (!treatment || busy) return;
+  busy = true;
+  clearError();
+  $('evalBtn').classList.add('busy'); $('evalBtn').disabled = true;
+  $('resultArea').classList.add('working');
+  try {
+    const payor = $('payor').value;
+    const res = await fetch('/api/flow2/evaluate', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        treatment_text: treatment,
+        payment: { payor_bucket: payor, ...(payor !== 'Cash' && $('org').value ? { organization_cd: $('org').value } : {}) },
+        selections: sel,
+        mode: m,
+      }),
+    });
+    let data;
+    try { data = await res.json(); }
+    catch {
+      // proxy timeouts on long AI calls return an HTML error page, not JSON
+      throw new Error(`HTTP ${res.status} ${res.statusText || ''} — the API returned a non-JSON response (a long AI call may have hit the proxy timeout; try Evaluate again)`.trim());
+    }
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    result = data;
+    selections = sel;
+    // Pin the resolved family so answer round-trips can't re-rank the cohort
+    // mid-conversation. The engine keeps decided_by 'auto' when the pin equals
+    // its own top match. Combos pin per path.
+    if (data.combo) {
+      data.combo.paths.forEach((p, i) => {
+        const fam = str(rec((p.steps || []).find((s) => s.key === 'family_match')?.decision).family);
+        if (fam && !selections.paths?.[i]?.family) selections = writePathSelections(selections, i, { family: fam });
+      });
+      activePath = Math.min(activePath, data.combo.paths.length - 1);
+    } else {
+      const fam = str(rec((data.steps || []).find((s) => s.key === 'family_match')?.decision).family);
+      if (fam && !selections.family) selections = { ...selections, family: fam };
+      activePath = 0;
+    }
+    render();
+  } catch (e) {
+    showError('Flow 2 evaluate failed: ' + e.message);
+  } finally {
+    busy = false;
+    $('evalBtn').classList.remove('busy'); $('evalBtn').disabled = false;
+    $('resultArea').classList.remove('working');
+  }
+}
+$('evalBtn').addEventListener('click', () => evaluate(selections, mode));
+
+/* ---------- evidence renderers ---------- */
+
+function questionHtml(q) {
+  return `<div class="question">
+    <p>${esc(q.question)}</p>
+    <div class="q-opts">${(q.options || []).map((o) =>
+      `<button type="button" class="q-opt" data-action="answer" data-key="${esc(q.selection_key)}" data-value="${esc(o.value)}">
+        ${esc(o.label)}${num(o.cases) != null ? `<span class="cases">${casesTxt(o.cases)}</span>` : ''}
+      </button>`).join('')}</div>
+  </div>`;
+}
+
+/* family_match — candidate table; decision row highlighted, others clickable to override */
+function familyMatchHtml(step) {
+  const ev = rec(step.evidence);
+  const candidates = arr(ev.candidates ?? ev.matches);
+  const decided = str(rec(step.decision).family);
+  if (!candidates.length) return kvRows(ev);
+  return `<div class="scroll-x"><table>
+    <thead><tr><th>Family</th><th>Confidence</th><th class="r">Payor cases</th><th>Reason</th></tr></thead>
+    <tbody>${candidates.map((c, i) => {
+      const fam = str(c.family);
+      const isPick = decided != null && fam === decided;
+      const cls = isPick ? 'pick' : (fam ? 'clickable' : '');
+      const attrs = (!isPick && fam) ? ` data-action="pick-family" data-family="${esc(fam)}" title="Click to override — later steps re-derive from this family"` : '';
+      return `<tr class="${cls}"${attrs}>
+        <td>${esc(str(c.label) ?? fam ?? '#' + i)}${isPick ? ' <span class="picked-tag">← picked</span>' : ''}</td>
+        <td class="muted">${esc(str(c.confidence) ?? '—')}</td>
+        <td class="r num">${num(c.payor_cases) ?? num(c.cases) ?? '—'}</td>
+        <td class="muted">${esc(str(c.reason) ?? '—')}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+/* characterization — 3 axis rows; the pending axis becomes the question */
+const AXES = [['care_type', 'Care type'], ['setting', 'Setting'], ['robotic', 'Robotic']];
+function characterizationHtml(step, pending) {
+  const ev = rec(step.evidence);
+  const axesRoot = Object.keys(rec(ev.axes)).length ? rec(ev.axes) : ev;
+  const decision = rec(step.decision);
+  return `<div>${AXES.map(([key, name]) => {
+    const axis = rec(axesRoot[key]);
+    const counts = Object.keys(rec(axis.counts)).length ? rec(axis.counts) : axis;
+    const countText = Object.entries(counts).filter(([, v]) => typeof v === 'number').map(([k, v]) => `${label(k)} ${v}`).join(' · ');
+    const decided = str(decision[key]) ?? str(axis.decision) ?? str(axis.selected);
+    const isPending = pending && pending.selection_key === key;
+    return `<div class="axis">
+      <span class="name">${name}</span>
+      <span class="counts num">${esc(countText) || '—'}</span>
+      ${isPending
+        ? `<div style="width:100%">${questionHtml(pending)}</div>`
+        : `<span class="${decided ? 'decided' : 'undecided'}">${esc(decided ?? 'not decided')}</span>`}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* billing_identification — package rows, incl/excl behind a review-only disclosure, combo warning */
+function billingHtml(step) {
+  const ev = rec(step.evidence);
+  const candidates = arr(ev.candidates ?? ev.packages);
+  const decidedCode = str(rec(step.decision).package_code);
+  const combo = ev.possible_combo;
+  let html = '';
+  if (combo) {
+    html += `<div class="combo-warn">⚠ <span>${esc(str(rec(combo).note) ?? str(combo) ?? 'Possible combo — history shows this billed together with other packages.')}</span></div>`;
+  }
+  if (!candidates.length) return html + kvRows(ev);
+  html += candidates.map((c, i) => {
+    const code = str(c.package_code) ?? str(c.code);
+    const isPick = decidedCode != null && code === decidedCode;
+    const amount = c.package_amount ?? c.amount ?? c.prices;
+    const incl = str(c.inclusions_text) ?? str(c.inclusions);
+    const excl = str(c.exclusions_text) ?? str(c.exclusions);
+    return `<div class="pkg-row${isPick ? ' pick' : ''}">
+      <div class="top">
+        ${code ? `<span class="pkg-code">${esc(code)}</span>` : ''}
+        <span${isPick ? ' style="font-weight:600"' : ''}>${esc(str(c.package_name) ?? str(c.name) ?? '—')}</span>
+        ${isPick ? '<span class="picked-tag">← picked</span>' : ''}
+        <span class="num" style="margin-left:auto">${typeof amount === 'number' ? inr(amount) : esc(cell(amount))}</span>
+      </div>
+      ${(incl || excl) ? `<details><summary>Inclusions / exclusions (review only)</summary><div class="doc">${incl ? '<b>Inclusions:</b> ' + esc(incl) : ''}${incl && excl ? '\n' : ''}${excl ? '<b>Exclusions:</b> ' + esc(excl) : ''}</div></details>` : ''}
+    </div>`;
+  }).join('');
+  return html;
+}
+
+/* historic_template — fallback ladder (used rung highlighted) + clickable alternates */
+function historicTemplateHtml(step) {
+  const ev = rec(step.evidence);
+  const rungs = arr(ev.rungs ?? ev.ladder);
+  const alternates = arr(step.alternatives);
+  const decidedCode = str(rec(step.decision).package_code);
+  let html = '';
+  if (rungs.length) {
+    html += `<ol class="ladder">${rungs.map((r, i) => {
+      const status = str(r.status);
+      const used = r.used === true || r.hit === true || status === 'hit' || status === 'used';
+      const skipped = r.skipped === true || status === 'skipped';
+      const cases = num(r.cases) ?? num(r.case_count);
+      return `<li class="rung${used ? ' used' : ''}${skipped ? ' skipped' : ''}">
+        <span class="no">${num(r.rung) ?? i + 1}</span>
+        <span>${esc(str(r.label) ?? str(r.name) ?? 'Rung ' + (i + 1))}</span>
+        ${cases != null ? `<span class="muted num" style="font-size:10.5px">${casesTxt(cases)}</span>` : ''}
+        ${used ? '<span class="picked-tag">← used</span>' : (!skipped ? '<span class="muted" style="font-size:10px">tried</span>' : '')}
+      </li>`;
+    }).join('')}</ol>`;
+  } else {
+    html += kvRows(ev);
+  }
+  if (alternates.length) {
+    html += `<div style="margin-top:10px"><p class="hint">Alternate templates — click one to re-derive on it:</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px">${alternates.map((a, i) => {
+        const code = str(a.package_code) ?? str(a.code);
+        const isPick = decidedCode != null && code === decidedCode;
+        const cases = num(a.cases) ?? num(a.case_count);
+        return `<button type="button" class="alt-btn"${isPick || !code ? ' disabled' : ` data-action="pick-package" data-code="${esc(code)}"`}>
+          ${code ? `<span class="pkg-code">${esc(code)}</span> ` : ''}${esc(str(a.package_name) ?? str(a.name) ?? code ?? '—')}
+          ${cases != null ? `<span class="muted num" style="font-size:10px;margin-left:4px">${casesTxt(cases)}</span>` : ''}
+        </button>`;
+      }).join('')}</div></div>`;
+  }
+  return html;
+}
+
+/* template_summary — compact per-payor-group table */
+function templateSummaryHtml(step) {
+  const ev = rec(step.evidence);
+  const groups = arr(ev.groups ?? ev.payor_groups ?? ev.rows ?? ev.summary);
+  if (!groups.length) return kvRows(ev);
+  return `<div class="scroll-x"><table>
+    <thead><tr><th>Payor group</th><th class="r">Cases</th><th>Surgical / Medical</th><th>Daycare</th><th>Robotic</th></tr></thead>
+    <tbody>${groups.map((g) => `<tr>
+      <td>${esc(str(g.payor_group) ?? str(g.group) ?? str(g.payor_bucket) ?? '—')}</td>
+      <td class="r num">${num(g.cases) ?? num(g.case_count) ?? '—'}</td>
+      <td class="num">${(num(g.surgical) != null || num(g.medical) != null) ? `${num(g.surgical) ?? 0} / ${num(g.medical) ?? 0}` : esc(cell(g.care_type ?? g.care))}</td>
+      <td class="num">${esc(cell(g.daycare ?? g.daycare_split ?? g.setting))}</td>
+      <td>${esc(cell(g.robotic))}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ---------- step trail ---------- */
+function stepsHtml(steps, pq) {
+  return `<ol class="steps">${steps.map((s, i) => {
+    const stepPending = pq && pq.step_key === s.key ? pq : null;
+    const pendingOnly = s.status === 'pending' && s.key !== 'characterization';
+    let badges = '';
+    if (s.status === 'pending') {
+      badges = (stepPending || s.key === 'characterization')
+        ? '<span class="chip amber">needs your answer</span>'
+        : (pq ? '<span class="chip neutral">waiting</span>' : '<span class="chip rose">no match</span>');
+    }
+    let body;
+    if (pendingOnly) {
+      body = stepPending
+        ? questionHtml(stepPending)
+        : pq
+          // a question is pending on an earlier step — this one just hasn't run yet
+          ? '<p class="hint" style="margin-top:6px">Waiting on the answer above — this step re-derives once it\'s answered.</p>'
+          // Terminal no-match: pending with no question anywhere means the
+          // registry has nothing for this wording — say it plainly.
+          : '<p class="no-match">No similar treatment found in the FC historic dataset for this wording — evaluation cannot continue. Rephrase the treatment or check the wording on the note.</p>';
+    } else if (s.key === 'family_match') body = familyMatchHtml(s);
+    else if (s.key === 'characterization') body = characterizationHtml(s, stepPending);
+    else if (s.key === 'billing_identification') body = billingHtml(s);
+    else if (s.key === 'historic_template') body = historicTemplateHtml(s);
+    else if (s.key === 'template_summary') body = templateSummaryHtml(s);
+    else body = kvRows(s.evidence);
+    return `<li class="step">
+      <div class="step-head">
+        <span class="step-no${s.status === 'pending' ? ' pending' : ''}">${i + 1}</span>
+        <span class="step-title">${esc(s.title)}</span>
+        <span class="chip ${s.decided_by === 'user' ? 'brand' : 'neutral'}">${s.decided_by === 'user' ? 'you chose this' : 'auto'}</span>
+        ${badges}
+      </div>
+      ${(!pendingOnly && s.checked) ? `<p class="checked">${esc(s.checked)}</p>` : ''}
+      ${body ? `<div class="body">${body}</div>` : ''}
+    </li>`;
+  }).join('')}</ol>`;
+}
+
+/* ---------- numbers panel ---------- */
+const PAYOR_SCOPES = [['exact', 'This payor only'], ['insurance_all', 'All insurance'], ['all', 'All payors']];
+
+function effectiveFilters(numbers) {
+  const combo = result?.combo;
+  const selCF = combo
+    ? (selections.paths?.[activePath]?.case_filters ?? (activePath === 0 ? selections.case_filters : null))
+    : selections.case_filters;
+  if (selCF) return selCF;
+  const fa = rec(numbers?.basis?.filters_applied);
+  return {
+    payor_scope: ['exact', 'insurance_all', 'all'].includes(fa.payor_scope) ? fa.payor_scope : 'exact',
+    setting: ['Daycare', 'Inpatient'].includes(fa.setting) ? fa.setting : null,
+    robotic: ['yes', 'no'].includes(fa.robotic) ? fa.robotic : null,
+    care_type: ['Surgical', 'Medical'].includes(fa.care_type) ? fa.care_type : null,
+  };
+}
+
+function fchip(fkey, fval, active, text) {
+  return `<button type="button" class="fchip" aria-pressed="${active}" data-action="filter" data-fkey="${esc(fkey)}" data-fval="${esc(fval ?? '')}">${esc(text)}</button>`;
+}
+
+function verdictHtml(verdict) {
+  if (verdict === 'within') return '<span class="vdot" title="within the historic band"></span>';
+  if (verdict === 'below' || verdict === 'above') return `<span class="vbadge">${verdict} history</span>`;
+  return '<span class="vnone">no history</span>';
+}
+
+function numbersHtml(numbers) {
+  const f = effectiveFilters(numbers);
+  const t = numbers.typical_inputs ?? {};
+  const pkg = numbers.package;
+  const logic = numbers.logic;
+  const logicOk = !!logic && !logic.error;
+  const comparison = numbers.comparison ?? [];
+  const compByBucket = new Map(comparison.map((c) => [c.bucket, c]));
+  const grossCmp = compByBucket.get('__gross__') ?? null;
+  const logicOnly = comparison.filter((c) => c.bucket !== '__gross__' && c.historic == null && c.logic != null);
+  const a = logic?.assumptions;
+  const caseCount = numbers.basis?.case_count ?? 0;
+
+  const filterBar = `<div class="filters">
+    <div class="fgroup"><span class="flabel">Payor</span>${PAYOR_SCOPES.map(([v, l]) => fchip('payor_scope', v, f.payor_scope === v, l)).join('')}</div>
+    <div class="fgroup"><span class="flabel">Setting</span>${[[null, 'Any'], ['Inpatient', 'Inpatient'], ['Daycare', 'Daycare']].map(([v, l]) => fchip('setting', v, f.setting === v, l)).join('')}</div>
+    <div class="fgroup"><span class="flabel">Robotic</span>${[[null, 'Any'], ['yes', 'Robotic'], ['no', 'Non-robotic']].map(([v, l]) => fchip('robotic', v, f.robotic === v, l)).join('')}</div>
+    <div class="fgroup"><span class="flabel">Care</span>${[[null, 'Any'], ['Surgical', 'Surgical'], ['Medical', 'Medical']].map(([v, l]) => fchip('care_type', v, f.care_type === v, l)).join('')}</div>
+  </div>`;
+
+  const typicals = `<div class="typicals">${[['LOS (days)', t.los_days], ['ICU (days)', t.icu_days], ['OT (hours)', t.ot_hours]]
+    .map(([l, p]) => `<div class="typical"><div class="tl">${l}</div><div class="tv">${bandHtml(p, false)}</div></div>`).join('')}</div>`;
+
+  let bucketTable = '';
+  if ((numbers.buckets || []).length) {
+    bucketTable = `<div class="scroll-x" style="margin-top:14px"><table>
+      <thead><tr><th>Bucket</th><th class="r">P25</th><th class="r">P50</th><th class="r">P75</th>${logicOk ? '<th class="r">Logic</th><th aria-label="verdict"></th>' : ''}<th class="r">Cases</th></tr></thead>
+      <tbody>
+        ${numbers.buckets.map((b) => {
+          const cmp = compByBucket.get(b.bucket);
+          const histP50 = logicOk && mode === 'logic'
+            ? `<td class="r num muted">${inr(b.p50)}</td>`
+            : `<td class="r num" style="font-weight:600">${inr(b.p50)}</td>`;
+          return `<tr>
+            <td>${esc(b.bucket)}</td>
+            <td class="r num muted">${inr(b.p25)}</td>
+            ${histP50}
+            <td class="r num muted">${inr(b.p75)}</td>
+            ${logicOk ? `<td class="r num" style="font-weight:600">${cmp?.logic != null ? inr(cmp.logic) : '—'}</td><td>${verdictHtml(cmp?.verdict ?? 'no_data')}</td>` : ''}
+            <td class="r"><button type="button" class="cases-btn num" data-action="show-cases" title="See the IP cases these figures came from">${b.cases}</button></td>
+          </tr>`;
+        }).join('')}
+        ${logicOk ? logicOnly.map((c) => `<tr>
+          <td class="muted">${esc(c.bucket)}</td>
+          <td colspan="3" class="r" style="font-size:11px;color:#cbd5e1">no historic counterpart</td>
+          <td class="r num" style="font-weight:600">${inr(c.logic)}</td>
+          <td>${verdictHtml(c.verdict)}</td>
+          <td></td>
+        </tr>`).join('') : ''}
+      </tbody>
+    </table></div>`;
+  }
+
+  const pb = numbers.gross?.package_bill;
+  const grossGrid = `<div class="gross-grid">
+    <div class="gross-box"><div class="tl">Approximate bill (all charges)</div><div class="tv">${bandHtml(numbers.gross?.approximate_bill)}</div></div>
+    <div class="gross-box"><div class="tl">Package bill${pb ? ' — ' + casesTxt(pb.cases) : ''}</div><div class="tv">${pb ? bandHtml(pb) : '<span class="muted" style="font-size:12px">no package-billed history</span>'}</div></div>
+  </div>`;
+
+  let verdictStrip = '';
+  if (logicOk && grossCmp && logic.gross != null) {
+    const cls = grossCmp.verdict === 'within' ? 'within' : grossCmp.verdict === 'no_data' ? 'nodata' : 'outside';
+    const txt = grossCmp.verdict === 'within' ? 'within the historic band'
+      : grossCmp.verdict === 'below' ? 'below the historic band'
+      : grossCmp.verdict === 'above' ? 'above the historic band'
+      : 'no historic band to compare';
+    verdictStrip = `<div class="verdict-strip ${cls}">Logic total <b class="num">${inr(logic.gross)}</b>${logic.with_package != null ? ` · with package <span class="num">${inr(logic.with_package)}</span>` : ''} — ${txt}</div>`;
+  }
+
+  let pkgBlock = '';
+  if (pkg) {
+    const bx = pkg.bucket_extras;
+    // P1: the with-package headline quote (only present when un-blocked)
+    const q = pkg.quote;
+    const quoteBasis = q ? (q.extras_basis === 'bucket_extras_history'
+      ? `package + typical extras from ${q.extras_cases ?? '?'} past bills`
+      : q.extras_basis === 'billed_exclusions'
+        ? `package + billed exclusions history${q.extras_cases != null ? ` (${q.extras_cases} bills)` : ''}`
+        : 'package + payable extras') : '';
+    pkgBlock = `<div class="pkg-block">
+      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+        <span class="pkg-code">${esc(pkg.package_code)}</span>
+        <span style="font-weight:600">${esc(pkg.package_name)}</span>
+        <span style="margin-left:auto">${bandHtml(pkg.package_amount)}</span>
+      </div>
+      ${q && !q.blocked ? `<p style="margin-top:6px;font-size:13px">With package (quoted): <b class="num">${inr(q.with_package_total)}</b> <span class="muted" style="font-size:11px">· ${esc(quoteBasis)}</span></p>` : ''}
+      ${bx && (bx.buckets || []).length ? `<div style="margin-top:8px">
+        <p class="hint">Charged above the package (${esc(bx.payor_group)}) — extras billed on top, by bucket:</p>
+        <div class="scroll-x" style="margin-top:4px"><table>
+          <thead><tr><th>Bucket</th><th class="r">Presence</th><th class="r">P25</th><th class="r">P50</th><th class="r">P75</th></tr></thead>
+          <tbody>${bx.buckets.map((b) => `<tr>
+            <td>${esc(b.bucket)}</td>
+            <td class="r num muted">${b.presence_pct == null ? '—' : Math.round(b.presence_pct) + '%'}</td>
+            <td class="r num muted">${inr(b.p25)}</td>
+            <td class="r num" style="font-weight:600">${inr(b.p50)}</td>
+            <td class="r num muted">${inr(b.p75)}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>` : ''}
+    </div>`;
+  }
+
+  const cases = numbers.case_set ?? [];
+  const caseBlock = `<details class="cases" id="caseDrill"${casesOpen ? ' open' : ''}>
+    <summary>Underlying IP cases (${cases.length})</summary>
+    <div class="scroll-x" style="margin-top:6px"><table>
+      <thead><tr><th>IP No</th><th>Payor</th><th>Setting</th><th class="c">Robotic</th><th>Care</th><th class="r">Gross</th></tr></thead>
+      <tbody>${cases.map((c) => `<tr>
+        <td class="mono">${esc(c.ip_no)}</td>
+        <td class="muted">${esc(c.payor_bucket)}</td>
+        <td class="muted">${esc(c.setting)}</td>
+        <td class="c muted">${yes(c.robotic) ? '✓' : '–'}</td>
+        <td class="muted">${esc(c.care_type)}</td>
+        <td class="r num">${inr(c.gross)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </details>`;
+
+  return `<div class="numbers">
+    <div class="num-head">
+      <h3>Case set</h3>
+      <span class="hint">${esc(numbers.basis?.label ?? numbers.basis?.family ?? '')}</span>
+      <span class="num" style="font-size:12.5px;font-weight:600">${casesTxt(caseCount)}</span>
+      <span class="tag">pure history — no calculation</span>
+    </div>
+    ${filterBar}
+    ${logicOk && a ? `<p class="logic-line">Logic build: ${esc(a.room_type)} room · ${esc(a.estimate_mode)} mode${a.care_type ? ' · ' + esc(a.care_type.toLowerCase()) : ''}${a.setting ? ' · ' + esc(a.setting.toLowerCase()) : ''}${a.robotic ? ' · robotic ' + esc(a.robotic) : ''}</p>` : ''}
+    ${logic?.error ? `<p class="logic-line">logic build failed: ${esc(logic.error)}</p>` : ''}
+    ${typicals}
+    ${bucketTable}
+    ${grossGrid}
+    ${verdictStrip}
+    ${pkgBlock}
+    ${caseBlock}
+    ${numbers.note ? `<p class="note-chip"><span class="chip neutral" style="font-weight:500">${esc(numbers.note)}</span></p>` : ''}
+  </div>`;
+}
+
+/* ---------- combo ---------- */
+function billingShapeChip(shape, count) {
+  const text = shape === 'multiple_packages' ? count + ' packages'
+    : shape === 'package_plus_non_package' ? 'package + non-package'
+    : shape === 'multiple_non_package' ? count + ' non-package treatments' : null;
+  return text ? `<span class="chip brand">${esc(text)}</span>` : '';
+}
+
+function comboHtml(combo) {
+  const tabs = combo.paths.map((p, i) => {
+    const mark = p.pending_question ? '<span class="dot" title="This treatment has an unanswered question"></span>'
+      : p.numbers ? '<span class="tick" title="Priced from history">✓</span>' : '';
+    return `<button type="button" class="combo-tab" aria-pressed="${i === activePath}" data-action="tab" data-path="${i}">
+      <span class="muted num" style="font-size:10px">${i + 1} ·</span> ${esc(p.fragment)} ${mark}
+    </button>`;
+  }).join('');
+  const combined = combo.combined
+    ? `<div class="combined-strip">
+        <span>Combined historic P50 (sum of paths): <b class="num">${inr(combo.combined.gross_p50_sum)}</b> — combo interactions not modeled</span>
+        ${billingShapeChip(combo.billing_shape, combo.paths.length)}
+      </div>` : '';
+  return `<div class="combo-tabs">${tabs}</div>${combined}`;
+}
+
+/* ---------- render ---------- */
+function render() {
+  if (!result) return;
+  $('placeholder').style.display = 'none';
+  const area = $('resultArea');
+  area.style.display = 'block';
+
+  const combo = result.combo ?? null;
+  const idx = combo ? Math.min(activePath, combo.paths.length - 1) : 0;
+  activePath = idx;
+  const path = combo ? combo.paths[idx] : null;
+  const steps = path ? path.steps : (result.steps ?? []);
+  const numbers = path ? path.numbers : (result.numbers ?? null);
+  const pq = (path ? path.pending_question : result.pending_question) ?? null;
+  const pqInSteps = !!pq && steps.some((s) => s.key === pq.step_key);
+
+  area.innerHTML = `
+    ${combo ? comboHtml(combo) : ''}
+    ${stepsHtml(steps, pq)}
+    ${pq && !pqInSteps ? `<div class="step" style="margin-top:10px;border-color:var(--amber-line)">${questionHtml(pq)}</div>` : ''}
+    ${numbers ? numbersHtml(numbers) : ''}
+  `;
+
+  const drill = area.querySelector('#caseDrill');
+  if (drill) drill.addEventListener('toggle', () => { casesOpen = drill.open; });
+}
+
+/* delegated actions — every override sends the accumulated selections back to the engine */
+$('resultArea').addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el || busy) return;
+  const act = el.dataset.action;
+  if (act === 'answer') {
+    evaluate(patched({ [el.dataset.key]: el.dataset.value }), mode);
+  } else if (act === 'pick-family') {
+    // a family override obsoletes any package chosen for the previous family
+    evaluate(patched({ family: el.dataset.family, package_code: null }), mode);
+  } else if (act === 'pick-package') {
+    evaluate(patched({ package_code: el.dataset.code }), mode);
+  } else if (act === 'filter') {
+    const numbers = result?.combo ? result.combo.paths[activePath]?.numbers : result?.numbers;
+    const next = { ...effectiveFilters(numbers), [el.dataset.fkey]: el.dataset.fval || null };
+    evaluate(patched({ case_filters: next }), mode);
+  } else if (act === 'tab') {
+    activePath = Number(el.dataset.path) || 0;   // client-side only — no re-call
+    render();
+  } else if (act === 'show-cases') {
+    casesOpen = true;
+    const drill = $('resultArea').querySelector('#caseDrill');
+    if (drill) { drill.open = true; drill.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  }
+});
+</script>
+</body>
+</html>

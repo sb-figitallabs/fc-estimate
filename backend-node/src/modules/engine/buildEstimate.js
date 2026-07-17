@@ -10,18 +10,21 @@ import {
   fetchCohortRows, basisCohorts, buildBasisSummary, buildServiceStats,
   buildPharmacyStats, buildActualBasisMetrics, buildPfPayorSummary,
   buildOtSlotMatrix, buildOrgDirectory, tariffRateLookup, pharmacyCatalogNames,
+  shortStayBucketQuartiles, P6_SHORT_STAY_MIN_CASES,
 } from './artifacts.js';
 import {
   cleanServiceRows, splitCleanedRows, prioritizeOptionalRows, splitRoboticOptional,
   roboticPresenceInfo, roboticDefaultSelection, buildGroupingGaps, buildGroupedResidualCandidates,
-  isRemoveCategory, isRoboticText, resolveRoboticAddonPricing, ROBOTIC_PROMPT_THRESHOLD,
+  isRemoveCategory, isRoboticText, isRoboticWording, resolveRoboticAddonPricing, ROBOTIC_PROMPT_THRESHOLD,
+  roomMatchedPfFallback,
 } from './services.js';
 import {
   buildOtConsumableShortlist, otConsumablesApplied, buildImplantHierarchy, resolveImplantEstimate,
 } from './advanced.js';
 import { resolveDrivers, computeLineItems } from './lineItems.js';
 import { serviceLineCountAlert } from './rules.js';
-import { packageOfferForEstimate } from '../packages/packages.service.js';
+import { P3_NAMED_DRUG_FAMILIES, p3NamedDrugEnabled, P3_MIN_DRUG_AMOUNT, matchNamedDrugs } from '../ai/namedDrug.js';
+import { packageOfferForEstimate, computePackageQuote } from '../packages/packages.service.js';
 import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
 import { settle, settleWithPackage } from '../insurance/settlement.js';
 import { round2 } from './stats.js';
@@ -199,7 +202,7 @@ export async function buildEstimate(input) {
   const roboticRequired = !roboticDeclined && (
     input.clinical.robotic_addon === true ||  // gate resolution carried robotic_addon: true
     controls.robotic === 'yes' ||             // caller explicitly asked robotic
-    /ROBOT/i.test(treatmentText || '')        // doctor's wording says robotic
+    isRoboticWording(treatmentText)           // doctor's wording says robotic (negation-guarded, P2)
   );
   if (roboticRequired) roboticSelection = 'Yes';
   // families whose robotic charge is already priced elsewhere in the build:
@@ -373,6 +376,29 @@ export async function buildEstimate(input) {
       ['investigations', 'Investigations'],
       ['pharmacy_total', 'Pharmacy'],
     ];
+    // P6 trivial-stay floor (problems-register-16jul): the backfill quartiles
+    // below are whole-cohort medians — stay-independent, so a 1-day medical
+    // observation inherited the full cohort's median diagnostics load (NARESH:
+    // Investigations ₹20,790 on a ₹7.9k bill, +421%). When the requested LOS
+    // sits at/below this basis' P25 stay AND the same-stay-band sub-cohort is
+    // rich enough (≥ P6_SHORT_STAY_MIN_CASES), the backfilled buckets price
+    // from that sub-cohort's quartiles instead. Medical families only (this
+    // block never runs for surgical/daycare familyKind); sub-cohort quartiles,
+    // NEVER linear LOS scaling (would gut correct 2–3 day estimates and
+    // mis-model fixed per-admission costs). Kill switch: P6_LOS_BANDING=off.
+    let shortStay = null;
+    // p25 < p50 guard: when the cohort's P25 stay IS its typical stay
+    // (P25 == P50), a "short stay" is indistinguishable from a normal one —
+    // banding there would move typical-stay estimates, not trivial ones.
+    if (process.env.P6_LOS_BANDING !== 'off'
+        && Number.isFinite(drivers.los?.p25)
+        && drivers.los.p25 < (drivers.los?.p50 ?? drivers.los.p25)
+        && (drivers.los?.selected ?? Infinity) <= drivers.los.p25) {
+      const band = shortStayBucketQuartiles(
+        cohorts[svcBasis], drivers.los.p25, BACKFILL.map(([f]) => f)
+      );
+      if (band.cases >= P6_SHORT_STAY_MIN_CASES) shortStay = band;
+    }
     const modeVal = (p25, p50, p75) => (mode === 'Low' ? p25 : mode === 'Typical' ? p50 : p75);
     for (const [field, bucket] of BACKFILL) {
       const bucketNow = lineItems.rows
@@ -380,14 +406,29 @@ export async function buildEstimate(input) {
         .reduce((t, r) => t + (r.selected?.single ?? 0), 0);
       const m = actualMetricsEarly.find((r) => r.basis_label === svcBasis && r.field_key === field);
       if (bucketNow > 0 || !(m?.p50 > 0)) continue;
-      const cells = [m.p25 ?? m.p50, m.p50, m.p75 ?? m.p50];
+      const band = shortStay?.fields?.[field];
+      const residualBasis = shortStay
+        ? `short-stay sub-cohort (${shortStay.cases} cases, LOS ≤ P25 ${drivers.los.p25}d)`
+        : null;
+      if (band && !(band.p50 > 0)) {
+        // The typical same-stay-band case had NO such charges — an honest
+        // short-stay answer is no backfill row at all, said out loud.
+        warnings.push(`${bucket} had no template lines and the ${residualBasis} typically billed none — backfill skipped (whole-cohort P50 would have been ₹${Math.round(m.p50).toLocaleString('en-IN')}, basis ${svcBasis}).`);
+        continue;
+      }
+      const cells = band
+        ? [band.p25 ?? band.p50, band.p50, band.p75 ?? band.p50]
+        : [m.p25 ?? m.p50, m.p50, m.p75 ?? m.p50];
       const sel = modeVal(...cells);
       lineItems.rows.push({
         index: lineItems.rows.length,
         name: `${bucket} — historical estimate`,
         bucket, sub: bucket, source: 'Historical',
-        how: `No ${bucket.toLowerCase()} lines in this cohort's template — filled from the ${svcBasis} basis P25/P50/P75 of actual bills.`,
+        how: band
+          ? `No ${bucket.toLowerCase()} lines in this cohort's template — filled from the ${svcBasis} basis ${residualBasis} P25/P50/P75 of actual bills (requested stay is at/below the cohort's P25).`
+          : `No ${bucket.toLowerCase()} lines in this cohort's template — filled from the ${svcBasis} basis P25/P50/P75 of actual bills.`,
         code: null, historical_estimate: true,
+        ...(band ? { residual_basis: residualBasis } : {}),
         qty: { selected: 1, low: 1, typ: 1, high: 1 }, rate: {},
         cells: { general: cells, twin: [...cells], single: [...cells] },
         selected: { general: sel, twin: sel, single: sel },
@@ -401,7 +442,126 @@ export async function buildEstimate(input) {
         }
       }
       lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
-      warnings.push(`${bucket} had no template lines — filled from historical actuals (P50 ₹${Math.round(m.p50).toLocaleString('en-IN')}, basis ${svcBasis}).`);
+      warnings.push(band
+        ? `${bucket} had no template lines — filled from the ${residualBasis}: P50 ₹${Math.round(band.p50).toLocaleString('en-IN')} instead of the whole-cohort ₹${Math.round(m.p50).toLocaleString('en-IN')} (basis ${svcBasis}).`
+        : `${bucket} had no template lines — filled from historical actuals (P50 ₹${Math.round(m.p50).toLocaleString('en-IN')}, basis ${svcBasis}).`);
+    }
+  }
+
+  // 13d. P3 (problems-register-16jul): named high-cost drugs invisible to
+  // daycare infusion pricing (SHOURYA "DAY CARE INJ STELMA 90 MG IV" -87%).
+  // For the explicit infusion-class family whitelist ONLY, a high-confidence
+  // pharmacy-master match of a drug named in the treatment wording adds a
+  // `named_drug` line (MRP × qty) and REPLACES the cohort pharmacy figure:
+  //   pharmacy bucket ← max(cohort pharmacy P50, drug line + non-drug residual)
+  // — replace, not add, so cohorts whose history already carries drug spend
+  // (chemo/immunotherapy) never double-count: their P50 side of the max()
+  // wins and the historic drug rows shrink to the remaining allowance.
+  // Non-whitelisted families never enter this block (byte-identical builds);
+  // a weak/ambiguous match adds NO line — only a confirm-from-the-pharmacy-
+  // list warning. Kill switch: P3_NAMED_DRUG=off.
+  let namedDrug = null;
+  if (p3NamedDrugEnabled() && P3_NAMED_DRUG_FAMILIES.has(cohortDef.family) && treatmentText) {
+    try {
+      const nd = await matchNamedDrugs(treatmentText);
+      const priced = nd.matches.filter((m) => m.price > 0 && m.qty > 0);
+      const drugAmt = round2(priced.reduce((t, m) => t + m.price * m.qty, 0));
+      const fmt = (v) => `₹${Math.round(v ?? 0).toLocaleString('en-IN')}`;
+      if (priced.length && drugAmt >= P3_MIN_DRUG_AMOUNT) {
+        // drug-side pharmacy rows (IP/OT Drugs + the 13c historical backfill
+        // row) carry the cohort's historic drug spend — the named drug
+        // replaces them up to the max() target; consumables/implants are the
+        // "non-drug pharmacy residual" and stay untouched.
+        const isDrugSide = (r) => r.bucket === 'Pharmacy'
+          && (/DRUGS/i.test(r.name || '') || r.historical_estimate === true);
+        const drugRows = lineItems.rows.filter(isDrugSide);
+        const nonDrugRows = lineItems.rows.filter((r) => r.bucket === 'Pharmacy' && !isDrugSide(r));
+        const pharmMetric = actualMetricsEarly.find((r) => r.basis_label === pharmBasis && r.field_key === 'pharmacy_total')
+          ?? actualMetricsEarly.find((r) => r.basis_label === svcBasis && r.field_key === 'pharmacy_total');
+        const cohortPharmP50 = pharmMetric?.p50 > 0 ? pharmMetric.p50 : 0;
+        const sumSel = (rows, rk) => rows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
+        const math = {};
+        for (const rk of ['general', 'twin', 'single']) {
+          const drugCur = sumSel(drugRows, rk);
+          const nonDrugCur = sumSel(nonDrugRows, rk);
+          const current = round2(drugCur + nonDrugCur);
+          const candidate = round2(drugAmt + nonDrugCur);
+          // never lower an already-larger bucket — max() with `current` too
+          const target = Math.max(cohortPharmP50, candidate, current);
+          const remaining = round2(Math.max(0, target - drugAmt - nonDrugCur));
+          const f = drugCur > 0 ? remaining / drugCur : 0;
+          for (const r of drugRows) {
+            if (r.selected?.[rk] != null) r.selected[rk] = round2(r.selected[rk] * f);
+            if (Array.isArray(r.cells?.[rk])) r.cells[rk] = r.cells[rk].map((v) => round2(v * f));
+          }
+          const newBucket = round2(drugAmt + nonDrugCur + (drugCur > 0 ? remaining : 0));
+          const delta = round2(newBucket - current);
+          if (Array.isArray(lineItems.grandTotal[rk])) {
+            lineItems.grandTotal[rk] = lineItems.grandTotal[rk].map((v) => round2(v + delta));
+          }
+          if (lineItems.grandTotal.selected?.[rk] != null) {
+            lineItems.grandTotal.selected[rk] = round2(lineItems.grandTotal.selected[rk] + delta);
+          }
+          math[rk] = {
+            previous_bucket: current,
+            cohort_pharmacy_p50: round2(cohortPharmP50),
+            drug_total: drugAmt,
+            non_drug_residual: round2(nonDrugCur),
+            candidate,
+            new_bucket: newBucket,
+            winner: newBucket <= current + 0.01 ? 'unchanged'
+              : (candidate >= cohortPharmP50 ? 'named_drug' : 'cohort_p50'),
+          };
+        }
+        for (const m of priced) {
+          const amt = round2(m.price * m.qty);
+          lineItems.rows.push({
+            index: lineItems.rows.length,
+            name: `${m.item_name} — named drug`,
+            bucket: 'Pharmacy', sub: 'IP Pharmacy',
+            source: 'named_drug_mrp', named_drug: true,
+            how: `"${m.token}" in the treatment wording matched the pharmacy master (${m.match_kind}); `
+              + `${m.price_source === 'mrp' ? 'MRP' : 'sale rate (no MRP on file)'} ${fmt(m.price)} × qty ${m.qty} (${m.qty_source}). `
+              + 'Pharmacy bucket = max(cohort pharmacy P50, drug + non-drug residual) — replaced, not added. Confirm drug + qty with the FC.',
+            code: m.item_code,
+            qty: { selected: m.qty, low: m.qty, typ: m.qty, high: m.qty },
+            rate: { general: m.price, twin: m.price, single: m.price },
+            cells: { general: [amt, amt, amt], twin: [amt, amt, amt], single: [amt, amt, amt] },
+            selected: { general: amt, twin: amt, single: amt },
+          });
+        }
+        lineItems.finalEstimate = lineItems.grandTotal.selected?.[room.toLowerCase()] ?? lineItems.finalEstimate;
+        const rm = math[room.toLowerCase()] ?? math.single;
+        namedDrug = {
+          status: 'applied',
+          matches: priced,
+          drug_total: drugAmt,
+          replace_math: rm,
+          ...(nd.ambiguous.length ? { ambiguous_tokens: nd.ambiguous } : {}),
+        };
+        warnings.push(
+          `Named drug priced from the pharmacy master: ${priced.map((m) => `${m.item_name} ${fmt(m.price)} × ${m.qty}`).join('; ')} `
+          + `(matched from the treatment wording) — CONFIRM the drug and quantity with the FC before quoting. `
+          + `Pharmacy set to max(cohort P50 ${fmt(rm.cohort_pharmacy_p50)}, drug ${fmt(drugAmt)} + non-drug residual ${fmt(rm.non_drug_residual)}) = ${fmt(rm.new_bucket)}.`
+        );
+      } else if (priced.length) {
+        // matched but too small to be the "named high-cost drug" — the cohort
+        // P50 already carries routine drug spend; note it, change nothing.
+        namedDrug = { status: 'below_threshold', matches: priced, drug_total: drugAmt, threshold: P3_MIN_DRUG_AMOUNT };
+      } else if (nd.ambiguous.length || nd.injection_context) {
+        namedDrug = {
+          status: nd.ambiguous.length ? 'ambiguous' : 'no_confident_match',
+          matches: [],
+          ...(nd.ambiguous.length ? { ambiguous_tokens: nd.ambiguous } : {}),
+          candidates_considered: nd.candidates,
+        };
+        warnings.push(
+          'A drug name may be present in the infusion wording but could not be confidently matched in the pharmacy master — '
+          + 'confirm the drug from the pharmacy list before quoting; a named high-cost drug can dominate this estimate.'
+        );
+      }
+    } catch (err) {
+      warnings.push(`Named-drug pharmacy lookup unavailable (${err.message}) — check high-cost drugs manually.`);
     }
   }
 
@@ -422,14 +582,26 @@ export async function buildEstimate(input) {
   // gate brain (alias + AI clinical ranking on this tariff) — same choice the
   // flow view makes. Cohort-dominant stays as the fallback.
   let packageOffer;
+  const noExplicitPackage = !input.package?.package_code && !input.package?.package_name && !input.package?.text;
+  // #5 (flow parity): medical-management families never auto-attach a package
+  // — same guard as the flow gate. An explicit user-chosen package still wins.
+  const medicalNoPackage = noExplicitPackage && cohortDef.familyKind === 'medical';
+  if (medicalNoPackage) {
+    packageOffer = { status: 'no_package_exists', source: 'medical_family_guard', package: null };
+  } else {
   try {
     let inputPackage = input.package;
     let gatePicked = false;
-    if (!inputPackage?.package_code && !inputPackage?.package_name && !inputPackage?.text && treatmentText) {
+    if (noExplicitPackage) {
       try {
         const { rankPackageCandidates } = await import('../resolve/familyResolve.js');
+        // #2 (flow parity): with no doctor's wording, rank on the family's own
+        // label — so the build names the same package the flow view would,
+        // instead of the cohort-dominant heuristic. Cohort-dominant remains
+        // the fallback when ranking finds nothing.
+        const rankText = treatmentText || cohortDef.templateName || cohortDef.family;
         const { candidates } = await rankPackageCandidates({
-          treatment: treatmentText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
+          treatment: rankText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
         });
         if (candidates[0]) {
           inputPackage = { package_code: candidates[0].package_code, package_name: candidates[0].package_name };
@@ -443,9 +615,10 @@ export async function buildEstimate(input) {
       organization_cd: input.payment.organization_cd,
       inputPackage,
     });
-    if (gatePicked && packageOffer) packageOffer.source = 'gate_match';
+    if (gatePicked && packageOffer) packageOffer.source = treatmentText ? 'gate_match' : 'gate_match_family_label';
   } catch (err) {
     packageOffer = { status: 'lookup_error', error: err.message, package: null };
+  }
   }
 
   // curated inclusions can concatenate 2 source variants — expose the deduped
@@ -519,6 +692,43 @@ export async function buildEstimate(input) {
         recommended: pfDeviation != null && Math.abs(pfDeviation) > 0.25 ? 'historic_p50' : 'logic',
         final_estimate_with_historic_pf: Math.round((lineItems.finalEstimate - logicPf + (histPf.p50 ?? 0)) * 100) / 100,
       };
+
+  // PF room-matched fallback (16-Jul note ¶2): the NEXT rung after the plain
+  // historic P50 — median PF of the pf-basis cohort's same-room, standard
+  // single-procedure admissions billing within ±15% of the cohort's gross P50.
+  // Recommendation-only surface (like the existing 'use historic PF' flow):
+  // the priced estimate is NEVER silently changed; the FC/UI chooses.
+  {
+    const pfBasisCohort = cohorts[bases.pf_basis.selected_basis] ?? [];
+    const roomPf = roomMatchedPfFallback({ cohortRows: pfBasisCohort, roomType: room });
+    if (roomPf) {
+      const weakHistoricBasis = pfBasisCohort.length < 5;
+      pfAnalysis.room_matched_fallback = {
+        ...roomPf,
+        basis: bases.pf_basis.selected_basis,
+        reason: `PF from ${roomPf.cases} same-room standard cases billing near P50`,
+      };
+      if (pfAnalysis.applicable === true) {
+        // cash path: prefer the room-matched figure over the plain historic P50
+        // when the historic basis is thin or logic deviates significantly.
+        pfAnalysis.final_estimate_with_room_matched_pf =
+          Math.round((lineItems.finalEstimate - logicPf + roomPf.pf_p50) * 100) / 100;
+        if (weakHistoricBasis || pfAnalysis.significantly_different) {
+          pfAnalysis.recommended = 'room_matched_pf';
+          pfAnalysis.recommendation_reason =
+            `PF from ${roomPf.cases} same-room standard cases billing near P50` +
+            (weakHistoricBasis ? ` (historic basis has only ${pfBasisCohort.length} cases)` : '');
+        }
+      } else if (weakHistoricBasis || !(histPf?.p50 > 0)) {
+        // insurer path: the historic-P50 basis is thin (or absent) — surface
+        // the room-matched figure as the recommended PF reference.
+        pfAnalysis.recommended = 'room_matched_pf';
+        pfAnalysis.recommendation_reason =
+          `PF from ${roomPf.cases} same-room standard cases billing near P50` +
+          (weakHistoricBasis ? ` (historic basis has only ${pfBasisCohort.length} cases)` : '');
+      }
+    }
+  }
 
   // resolved_context.flow (manager model #5, 14-Jul): "the entire flow should
   // only be selected once we have the exact payer AND the treatment". Today the
@@ -671,6 +881,10 @@ export async function buildEstimate(input) {
     unresolved_items: [],
   };
   if (suggestions.length) estimate.suggestions = suggestions; // additive — absent when not applicable
+  // additive (P3): named-drug detection state — present ONLY for whitelisted
+  // infusion-class families where there was something to say (a priced line,
+  // an ambiguity, or an unmatched injection wording)
+  if (namedDrug) estimate.named_drug = namedDrug;
   // additive (15-Jul #27): robotic add-on state for the UI — absent when robotic
   // is not applicable / already priced on the family's own robotic procedure row
   if (roboticAddon) estimate.robotic_addon = estimate.resolved_context.robotic.addon;
@@ -697,8 +911,13 @@ export async function buildEstimate(input) {
   const pkgAmountForRoom = (pkg, rk) => Number(pkg?.room_amounts?.[rk] ?? pkg?.package_amount) || 0;
 
   // 18. package coverage: per-line inclusion status + dual grand totals
-  // (only when a package resolved and curated inclusion text exists)
-  if (packageOffer?.package?.inclusions_text) {
+  // (only when a package resolved and curated inclusion text exists).
+  // #4 (flow parity): a placeholder package price must never become a
+  // with-package total — the offer stays visible (with its billed actuals)
+  // but produces no coverage math.
+  if (packageOffer?.package?.price_placeholder) {
+    warnings.push(`Package [${packageOffer.package.package_code}] ${packageOffer.package.package_name} carries a placeholder price (₹${packageOffer.package.package_amount}) with no per-room rates — no with-package total produced; see its actual billed history instead.`);
+  } else if (packageOffer?.package?.inclusions_text) {
     try {
       const model = parseCoverage(packageOffer.package.inclusions_text, packageOffer.package.exclusions_text);
       const coverage = applyCoverage(estimate, model);
@@ -750,6 +969,26 @@ export async function buildEstimate(input) {
         );
       }
     }
+  }
+
+  // 18c. P1 (problems-register-16jul): with-package headline quote — whenever
+  // billing identification resolved a package, finish the sentence: package
+  // component + predicted payable extras. ADDITIVE (final_estimate stays
+  // itemized; the client decides the headline); a blocked quote (placeholder
+  // price / not_ready / outside the billed band / no extras source) is data
+  // only and everything else behaves exactly as today.
+  if (packageOffer?.package) {
+    try {
+      packageOffer.quote = computePackageQuote({
+        pkg: packageOffer.package,
+        roomKey: room.toLowerCase(),
+        coverageExtras: packageOffer.coverage && !packageOffer.coverage.error
+          ? packageOffer.coverage.totals?.payable_extras
+          : null,
+        bucketExtras: packageOffer.billed_actuals?.bucket_extras ?? null,
+        billedActuals: packageOffer.billed_actuals ?? null,
+      });
+    } catch { /* additive — a quote failure never blocks the build */ }
   }
 
   // 19. per-room side-by-side data (manager: show all room types at once).

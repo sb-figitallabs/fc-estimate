@@ -81,15 +81,54 @@ export function deriveRoomAmounts(raw) {
   return Object.keys(out).length ? out : null;
 }
 
+/** TR1 carries ₹10/₹0 placeholder package prices — below this is not a price. */
+const PLACEHOLDER_PRICE_MAX = 1000;
+
+/**
+ * Real room prices often live ONLY in the tariff_information markdown table
+ * ("| GENERAL WARD | 70,000 |") while room_rates_jsonb is empty and
+ * package_amount is a ₹10 placeholder (URO5443). Same parser as the flow
+ * gate — moved here (16-Jul flow-parity #3/#4) so the BUILD prices packages
+ * the same way the flow view judges them.
+ */
+export function parseTariffInfoRooms(text) {
+  const out = {};
+  for (const line of String(text || '').split('\n')) {
+    const m = line.match(/^\s*\|\s*([^|]+?)\s*\|\s*([\d,]+)\s*\|/);
+    if (!m) continue;
+    const label = m[1].trim();
+    const amount = Number(m[2].replace(/,/g, ''));
+    if (/room|category|tariff|detail|---/i.test(label) && !/ward|twin|single|deluxe|suite|general/i.test(label)) continue; // header rows
+    if (Number.isFinite(amount) && amount >= PLACEHOLDER_PRICE_MAX) out[label] = amount;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/** Map the tariff_information row labels onto the engine's 3 room keys. */
+function roomAmountsFromTariffInfo(text) {
+  const rows = parseTariffInfoRooms(text);
+  if (!rows) return null;
+  const out = {};
+  for (const [label, amount] of Object.entries(rows)) {
+    const key = roomKeyForTier(label);
+    if (key && out[key] == null) out[key] = amount;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 function shape(row) {
   if (!row) return null;
   const {
     runtime_status, can_generate_estimate, primary_blocker, warning_reason, ...pkg
   } = row;
-  const room_amounts = deriveRoomAmounts(row.room_rates_jsonb);
+  // structured jsonb first; tariff_information markdown as the rescue (#3)
+  const room_amounts = deriveRoomAmounts(row.room_rates_jsonb) ?? roomAmountsFromTariffInfo(row.tariff_information);
+  // placeholder guard (#4): a scalar ₹10 with no per-room rescue is NOT a price
+  const price_placeholder = Number(pkg.package_amount) < PLACEHOLDER_PRICE_MAX && !room_amounts;
   return {
     ...pkg,
     ...(room_amounts ? { room_amounts } : {}), // additive — absent when jsonb missing/empty
+    ...(price_placeholder ? { price_placeholder: true } : {}),
     readiness: {
       runtime_status,
       can_generate_estimate,
@@ -183,6 +222,36 @@ export async function aliasCandidates({ text, tariff_code, organization_cd, limi
 }
 
 /**
+ * Master-catalog name search — the fallback when the ALIAS table has no rows
+ * for a tariff (16-Jul: TR287 had TKR packages in the master but zero KNEE
+ * aliases, so the gate said "no package" while the build's cohort-dominant
+ * code lookup found one). Word-scored ILIKE over the runtime view.
+ */
+export async function masterNameCandidates({ text, tariff_code, organization_cd, limit = 5 }) {
+  const words = (text || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').split(/\s+/).filter((w) => w.length >= 3);
+  if (!words.length || !tariff_code) return [];
+  const score = words.map((_, i) => `(upper(package_name) LIKE $${i + 2})::int`).join(' + ');
+  const params = [tariff_code, ...words.map((w) => `%${w}%`)];
+  const { rows } = await query(
+    `SELECT package_code, package_name, MAX(${score}) AS score
+     FROM fc.v_package_runtime_lookup WHERE tariff_code = $1
+     GROUP BY 1, 2
+     HAVING MAX(${score}) >= ${Math.min(2, words.length)}
+     ORDER BY score DESC
+     LIMIT ${limit * 2}`, params);
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    if (seen.has(r.package_code)) continue;
+    seen.add(r.package_code);
+    const pkg = await lookupPackage({ tariff_code, package_code: r.package_code, organization_cd });
+    if (pkg) out.push({ ...pkg, matched_alias: null, alias_confidence: 'MasterName' });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
  * Free-text resolution: alias candidates; Gemini ranks when ambiguous.
  * AI never invents — result must be one of the DB candidates or null.
  */
@@ -253,7 +322,7 @@ export async function packageOfferForEstimate({ cohortRows, tariff_cd, organizat
  * = package + billed exclusions minus F&B — what patients really ended up
  * paying. Fail-open: engines without fc.package_bill_admissions get null.
  */
-async function billedActualsForPackage(packageName, tariff_code) {
+export async function billedActualsForPackage(packageName, tariff_code) {
   try {
     // three quartile sets per the 15-Jul flow doc: the gross (final bill),
     // the package amount itself, and what rode on top as billed exclusions.
@@ -293,16 +362,152 @@ async function billedActualsForPackage(packageName, tariff_code) {
   } catch { return null; }
 }
 
+/**
+ * Bucket-level Historic Metrics for the package bill (16-Jul manager note):
+ * what rides ABOVE the package, classified into the estimate's buckets —
+ * per-admission quartiles across bills WHERE the bucket is present, from
+ * fc.package_bill_bucket_metrics (scripts/backfill-package-bill-buckets.js).
+ * Falls back to the All-Payers rollup when this payor group has no bills;
+ * fail-open null on engines without the table.
+ */
+export async function bucketExtrasForPackage(package_code, tariff_code) {
+  try {
+    const t = (tariff_code || '').trim().toUpperCase();
+    const payorGroup = !t || t === 'TR1' ? 'Cash' : t === 'TR290' ? 'GIPSA Insurance' : 'Non-GIPSA Insurance';
+    const fetch = async (group) => (await query(
+      `SELECT bucket, admissions, presence_cases, p25, p50, p75
+       FROM fc.package_bill_bucket_metrics
+       WHERE package_code = $1 AND payor_group = $2
+       ORDER BY p50 DESC NULLS LAST`, [package_code, group])).rows;
+    let rows = await fetch(payorGroup);
+    let basis = payorGroup;
+    if (!rows.length) { rows = await fetch('All Payers'); basis = 'All Payers'; }
+    if (!rows.length) return null;
+    return {
+      payor_group: basis,
+      buckets: rows.map((r) => ({
+        bucket: r.bucket,
+        admissions: r.admissions,
+        cases: r.presence_cases,
+        presence_pct: r.admissions ? Math.round((r.presence_cases / r.admissions) * 100) : null,
+        p25: Number(r.p25),
+        p50: Number(r.p50),
+        p75: Number(r.p75),
+      })),
+    };
+  } catch { return null; }
+}
+
+/**
+ * P1 (problems-register-16jul): the with-package headline quote. The engine
+ * identifies the package and even computes the open→package conversion, but no
+ * with_package figure ever reached the quote (SURLA read as +82% when the
+ * engine's own package+excludes arithmetic reproduced the ₹406,505 bill).
+ * ADDITIVE — `final_estimate` stays itemized; clients pick the headline.
+ *
+ * extras ladder: (a) coverage-engine payable_extras when coverage computed;
+ * (b) payor-group bucket_extras history — per-bucket P50s, presence-weighted
+ * (presence ≥ 50% at P50, below that at P50 × presence); (c) billed-actuals
+ * exclusions_over_package P50 — skipped when the recorded package gross ≈ the
+ * final bill (exclusions are then 0 by construction, not evidence).
+ *
+ * package component: room-tier amount where room_amounts exist, else scalar —
+ * BUT band-validated: the tiers can lag the billed tariff (P7 drift; ORT5531
+ * tiers 118k/131k/143k vs billed lines 202k/227k/253k), so when the tier-based
+ * total falls outside the actual converted-bill band while the scalar-based
+ * total falls inside, the scalar wins (`package_amount_source` says which).
+ *
+ * Gating (the G NAGAVENI trap): the quote carries `blocked: true` +
+ * `blocked_reason` — and must never be treated as a headline — when the
+ * package price is a placeholder (≤ ₹1000), readiness says not_ready, no
+ * extras source exists, or the quoted total sits outside the billed band
+ * (same ±25% band rule as the conversion check, ≥ 5 cases).
+ */
+export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucketExtras = null, billedActuals = null }) {
+  if (!pkg) return null;
+  const round2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100;
+
+  // — predicted payable extras: source ladder —
+  let extras = null; let basis = null; let cases = null; let confidence = null;
+  if (coverageExtras != null && Number.isFinite(Number(coverageExtras))) {
+    extras = round2(Number(coverageExtras)); basis = 'coverage'; confidence = 'high';
+  } else if (bucketExtras?.buckets?.length) {
+    let sum = 0; let admissions = 0;
+    for (const b of bucketExtras.buckets) {
+      const p50 = Number(b.p50);
+      if (!(p50 > 0)) continue;
+      const presence = b.presence_pct;
+      sum += presence == null || presence >= 50 ? p50 : p50 * (presence / 100);
+      admissions = Math.max(admissions, Number(b.admissions) || 0);
+    }
+    extras = round2(sum); basis = 'bucket_extras_history'; confidence = 'medium';
+    cases = admissions || null;
+  } else {
+    const ba = billedActuals?.this_tariff;
+    const exclP50 = ba?.exclusions_over_package?.p50 == null ? NaN : Number(ba.exclusions_over_package.p50);
+    // artifact guard: when pkg_gross ≈ final bill the exclusions quartiles are
+    // 0 by construction — not an all-inclusive package, just unusable data.
+    const grossIsWholeBill = ba?.package_amount?.p50 > 0 && ba?.p50 > 0
+      && Math.abs(ba.package_amount.p50 - ba.p50) / ba.p50 < 0.02;
+    if (ba && Number.isFinite(exclP50) && !grossIsWholeBill) {
+      extras = round2(exclP50); basis = 'billed_exclusions'; confidence = 'low';
+      cases = ba.cases ?? null;
+    }
+  }
+
+  // — package component: room tier preferred, band-validated (P7 drift) —
+  const scalar = Number(pkg.package_amount) || 0;
+  const tier = Number(pkg.room_amounts?.[roomKey]);
+  const ba = billedActuals?.this_tariff;
+  const band = ba && ba.cases >= 5 && ba.p25 > 0 && ba.p75 > 0
+    ? { lo: ba.p25 * 0.75, hi: ba.p75 * 1.25, p25: ba.p25, p75: ba.p75, cases: ba.cases }
+    : null;
+  const inBand = (total) => !band || (total >= band.lo && total <= band.hi);
+  let pkgAmt = Number.isFinite(tier) && tier > 0 ? tier : scalar;
+  let pkgSource = Number.isFinite(tier) && tier > 0 ? 'room_tier' : 'scalar';
+  if (pkgSource === 'room_tier' && extras != null && band
+      && !inBand(pkgAmt + extras) && scalar > 0 && inBand(scalar + extras)) {
+    pkgAmt = scalar; pkgSource = 'scalar_band_fallback';
+  }
+
+  const total = round2(pkgAmt + (extras ?? 0));
+
+  // — gating —
+  const blockedReasons = [];
+  if (!(pkgAmt > 1000)) blockedReasons.push('placeholder_package_amount');
+  if (pkg.readiness && pkg.readiness.can_generate_estimate !== true) blockedReasons.push('not_ready');
+  if (basis == null) blockedReasons.push('no_extras_history');
+  if (extras != null && band && !inBand(total)) blockedReasons.push('outside_billed_band');
+
+  return {
+    with_package_total: total,
+    package_component: pkgAmt,
+    package_amount_source: pkgSource,
+    extras_component: extras,
+    extras_basis: basis,
+    ...(cases != null ? { extras_cases: cases } : {}),
+    ...(band ? { billed_band: { p25: band.p25, p75: band.p75, cases: band.cases } } : {}),
+    confidence,
+    blocked: blockedReasons.length > 0,
+    ...(blockedReasons.length ? { blocked_reason: blockedReasons.join(', ') } : {}),
+  };
+}
+
 async function finishOffer(pkg, tariff_code, organization_cd, source, candidates) {
   if (!pkg) return { status: 'no_package_exists', source, package: null, ...(candidates ? { candidates } : {}) };
   const history = await packageHistory({ tariff_code, package_code: pkg.package_code, organization_cd });
   const billed_actuals = await billedActualsForPackage(pkg.package_name, tariff_code);
+  const bucket_extras = await bucketExtrasForPackage(pkg.package_code, tariff_code);
+  if (billed_actuals && bucket_extras) billed_actuals.bucket_extras = bucket_extras;
   return {
     status: pkg.readiness.can_generate_estimate ? 'resolved' : 'not_ready',
     source,
     package: pkg,
     history,
-    ...(billed_actuals ? { billed_actuals } : {}),
+    // name-variant bills can miss the name-keyed actuals while the
+    // code-keyed bucket metrics still exist — surface them regardless
+    ...(billed_actuals ? { billed_actuals }
+      : bucket_extras ? { billed_actuals: { basis: 'converted package bills (excl. F&B)', this_tariff: null, all_tariffs_cases: null, bucket_extras } } : {}),
     ...(candidates ? { candidates } : {}),
   };
 }

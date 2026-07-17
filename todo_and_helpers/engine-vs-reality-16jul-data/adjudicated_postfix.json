@@ -1,0 +1,317 @@
+[
+ [
+  "ABDUL HASEEB MOHAMMAD FC.pdf",
+  "ENGINE_GOOD",
+  240424,
+  279340,
+  -13.9,
+  4.4,
+  "unchanged"
+ ],
+ [
+  "ARTH AGGARWAL FC.pdf",
+  "ENGINE_GOOD",
+  82764,
+  111618.95,
+  -25.9,
+  -28.3,
+  "unchanged; replay@3 = 95,935 (-14%)"
+ ],
+ [
+  "K CHARVIN FC.pdf",
+  "ENGINE_GOOD",
+  222884,
+  200679.96,
+  11.1,
+  -11.1,
+  "unchanged"
+ ],
+ [
+  "GUDURU LAKSHMI DEVI FC.pdf",
+  "ENGINE_GOOD",
+  239030,
+  348954,
+  -31.5,
+  20.1,
+  "bill inside itemized band 264,422-352,883 (frozen in-band rule) BUT the new P1 headline quote is -31.5% (pkg master 149,900 vs billed 168,700 = P7 drift; extras rung 89,130 vs ~180k actual implant excludes); itemized was -6.4%"
+ ],
+ [
+  "HEMALATHA THOTA FC.pdf",
+  "ENGINE_GOOD",
+  416254,
+  369220,
+  12.7,
+  1.0,
+  "package call still exact (ORT5535 @355,000); quote adds 61,254 predicted extras vs ~14k actual -> err grew -3.9% -> +12.7% (P11 extras overprediction), still GOOD"
+ ],
+ [
+  "LAKSHMI DEVAMMA FC.pdf",
+  "ENGINE_GOOD",
+  550860,
+  682744,
+  -19.3,
+  -6.3,
+  "route=package (bill IS pkg ORT5531); quote 550,860 = pkg 142,600 (room_tier) + extras 408,260 (incl robotic 230k) -> -19.3%; itemized was +11.6%"
+ ],
+ [
+  "Neeharika gorla FC.pdf",
+  "ENGINE_GOOD",
+  82764,
+  97488.25,
+  -15.1,
+  -20.5,
+  "unchanged"
+ ],
+ [
+  "RAVULA PUSHYAMI FC.pdf",
+  "ENGINE_GOOD",
+  61014,
+  78043.17,
+  -21.8,
+  -2.0,
+  "unchanged"
+ ],
+ [
+  "S RAMESH FC.pdf",
+  "ENGINE_GOOD",
+  242160,
+  286709,
+  -15.5,
+  9.3,
+  "unchanged"
+ ],
+ [
+  "SHIVA KUMARI FC.pdf",
+  "ENGINE_GOOD",
+  257877,
+  209920,
+  22.8,
+  56.0,
+  "hand-kept GOOD as in 16-Jul (LOS 4->2; +22.8% at planned within +/-25; replay@2 = 226,443 +8%)"
+ ],
+ [
+  "SHOURYA SRIVASTAV FC.pdf",
+  "ENGINE_GOOD",
+  120586,
+  136548,
+  -11.7,
+  8.0,
+  "P3 WIN: STELMA fuzzy-matched to STELARA 90MG (dose corroborated), drug 104,267 (sale_rate, flagged) -> -86.9% -> -11.7%; confirm-drug warning present"
+ ],
+ [
+  "SURLA RAJESWARI fc.pdf",
+  "ENGINE_GOOD",
+  402860,
+  406505,
+  -0.9,
+  1.5,
+  "P1+P2 WIN: negation guard kept robotic add-on out (itemized 507,751 not 737,751); package-route quote 402,860 = pkg 224,600 + extras 178,260 vs bill 406,505 -> -0.9%"
+ ],
+ [
+  "AKARAPU VISHWANATAHM FC.pdf",
+  "ENGINE_GOOD",
+  239030,
+  243307.05,
+  -1.8,
+  14.1,
+  "RECLASSIFIED from COURSE_CHANGED: bill is a package bill (ORT5510) so the LOS 4->2 change is insulated; the P1 quote at PLANNED inputs lands -1.8% -- the number stands on its own"
+ ],
+ [
+  "Baby Boy NAKKA TRIVED RAJ KARTHIKEYA FC.pdf",
+  "ENGINE_OFF",
+  7012,
+  30555,
+  -77.1,
+  137.3,
+  "P5 question answered 'routine newborn care' per FC doc (no jaundice/NICU wording); sign flipped +106.5% -> -77.1%: routine-newborn build 7,012 underquotes even its own cohort P50 ~15k (P10 session-load gap)"
+ ],
+ [
+  "Baby of HARIKA FC.pdf",
+  "ENGINE_OFF",
+  7012,
+  35231,
+  -80.1,
+  88.8,
+  "same as NAKKA: routine answer per FC doc; +79.1% -> -80.1% (P10)"
+ ],
+ [
+  "Baby of SOUNDARYA FC.pdf",
+  "ENGINE_OFF",
+  7012,
+  26007,
+  -73.0,
+  169.2,
+  "same: +142.7% -> -73.0% (P10)"
+ ],
+ [
+  "Baby of NIKHAT SHAMSI FC.pdf",
+  "ENGINE_OFF",
+  6109,
+  36605,
+  -83.3,
+  24.3,
+  "VERDICT WORSENED GOOD->OFF: P5 now asks the newborn question; FC doc only supports 'routine' -> build 6,109 vs bill 36,605; the old +18.6% GOOD was the adult cohort overquote accidentally landing; replay@2 = 7,012 (-80.8%)"
+ ],
+ [
+  "NARESH GURAJALA FC.pdf",
+  "ENGINE_OFF",
+  25048,
+  7887,
+  217.6,
+  248.7,
+  "P6 partial: 41,068 -> 25,048 (Investigations 20,790 -> 4,770 via short-stay sub-cohort); residual +217.6% is the PF/room/per-day machinery scoped out of P6 (register)"
+ ],
+ [
+  "RAMULU GUNDI FC.pdf",
+  "ENGINE_OFF",
+  328743,
+  258837,
+  27.0,
+  6.1,
+  "unchanged watch-list marginal (+27%)"
+ ],
+ [
+  "VARSHITHA FC.pdf",
+  "ENGINE_OFF",
+  35429,
+  50000,
+  -29.1,
+  13.0,
+  "P3 guard path CORRECT (frozen wording names no drug; 'confirm the drug' warning fired). Improvement -64.4 -> -29.1 comes from family re-resolution (general_medical_management_infusion -> chemotherapy_systemic_therapy_infusion_daycare under the updated registry), NOT from a drug line. Post-confirm figure per register verification: -21.8% (~39,100)"
+ ],
+ [
+  "Y CHANDRIKA FC.pdf",
+  "ENGINE_OFF",
+  115798,
+  173668,
+  -33.3,
+  -15.6,
+  "unchanged (bilateral EVLT deferred watch-list)"
+ ],
+ [
+  "PINNAMANENI VIJAYALAKSHMI FC.pdf",
+  "ENGINE_OFF",
+  908847,
+  700340,
+  29.8,
+  3.5,
+  "VERDICT WORSENED GOOD->OFF: package call still exact (ORT5536 @690,000 = the bill's package) but the P1 quote adds 218,847 predicted extras vs ~10,340 actual -> +29.8% (P11: extras history contaminated by the package's own billed lines; the band gate did NOT catch this one). Replay@4 quote 900,219 (+28.5%) -- not a LOS effect"
+ ],
+ [
+  "BANDANADAM NAVEEN IGNESIOUS FC.pdf",
+  "QUESTION_RAISED",
+  null,
+  449879,
+  null,
+  9.3,
+  "P4 catch-all guard: mandatory question (options: general_plastic_surgery_procedure, general_surgical_procedure -- both generic). FC wording 'OTHER MAJOR SURGERY PLASTIC SURGERY' names no onboarded procedure; no non-generic option corresponds. Converted from silent -73.8% miss = intended terminal state"
+ ],
+ [
+  "KRISHNA B R FC.pdf",
+  "QUESTION_RAISED",
+  null,
+  18282,
+  null,
+  83.2,
+  "P4: mandatory question (options: generic plastic, generic ortho, emergency_trauma_stabilization). NO maxillofacial-ish option exists in the registry -- recorded honestly, no what-if forced. Converted from silent +371.1% miss"
+ ],
+ [
+  "G NAGAVENI FC.pdf",
+  "QUESTION_RAISED",
+  null,
+  256865.71,
+  null,
+  8.8,
+  "P4: mandatory question (options: orthopaedic_management_procedure generic, wound_debridement_and_soft_tissue_repair). Wound-debridement is NOT an obvious match for Achilles tendon rupture repair -- no what-if forced. Converted from silent -35.8% miss; billing-id's 27,500 TENDON pkg stays blocked (not_ready)"
+ ],
+ [
+  "A JIVITESH SAI FC.pdf",
+  "COURSE_CHANGED",
+  129354,
+  114097,
+  13.4,
+  33.7,
+  "unchanged (ENT combo bill; itemized +13%)"
+ ],
+ [
+  "ANITA KUMARI FC.pdf",
+  "COURSE_CHANGED",
+  38368,
+  144511.89,
+  -73.4,
+  -18.7,
+  "unchanged (combo D&C; route=non_package so the 77,000 GYN5219 offer is NOT the headline; conversion warning fired on it)"
+ ],
+ [
+  "HARANADHA BABU FC.pdf",
+  "COURSE_CHANGED",
+  201655,
+  1019024,
+  -80.2,
+  -48.5,
+  "unchanged (treatment multiplied)"
+ ],
+ [
+  "K ASHWINI FC.pdf",
+  "COURSE_CHANGED",
+  218312,
+  250219.69,
+  -12.8,
+  -13.9,
+  "unchanged; replay@4 = 228,368 (-9%)"
+ ],
+ [
+  "KRANTHI KUMAR FC.pdf",
+  "COURSE_CHANGED",
+  102488,
+  406000,
+  -74.8,
+  -15.9,
+  "unchanged (FB extraction inconsistent)"
+ ],
+ [
+  "MEENAKSHI VECHA FC.pdf",
+  "COURSE_CHANGED",
+  131854,
+  143367.99,
+  -8.0,
+  -1.3,
+  "unchanged (ENT combo; itemized -8%). NOTE: family had to be pinned (adenotonsillectomy, the engine's own 16-Jul resolution) -- persistent Gemini stray-brace matcher flake on this wording"
+ ],
+ [
+  "RAMBABU FC.pdf",
+  "COURSE_CHANGED",
+  128677,
+  399282,
+  -67.8,
+  10.8,
+  "unchanged (urology combo gap, P8)"
+ ],
+ [
+  "SARBESWAR MAITY FC.pdf",
+  "COURSE_CHANGED",
+  68458,
+  495515.63,
+  -86.2,
+  -63.4,
+  "unchanged (LOS 3->16)"
+ ],
+ [
+  "VUTKUR SURYA PRAKASH FC.pdf",
+  "COURSE_CHANGED",
+  104605,
+  153554,
+  -31.9,
+  23.4,
+  "hand-kept COURSE_CHANGED (colonoscopy+therapeutic endoscopy+fibroscan added; bill inside wide band). Route=non_package so the ENT5147 quote 135,802 is NOT the headline"
+ ],
+ [
+  "YALABANDI K S L VALLIDEVI FC.pdf",
+  "COURSE_CHANGED",
+  190560,
+  166213,
+  14.6,
+  -7.6,
+  "unchanged (open-myomectomy pkg + hysteroscopy combo; itemized +15%)"
+ ]
+]

@@ -28,10 +28,32 @@ export async function geminiJson(prompt, { system } = {}) {
   try {
     return JSON.parse(text);
   } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
+    // Even with responseMimeType json, Gemini sometimes emits TWO JSON objects
+    // back-to-back (deterministic per prompt at temperature 0 — e.g. the
+    // wording "DJ stent removal"). A greedy {…} regex spans both and still
+    // fails, so take the FIRST balanced object instead.
+    const first = firstBalancedJson(text);
+    if (first) return JSON.parse(first);
     throw new Error(`Gemini returned non-JSON: ${text.slice(0, 200)}`);
   }
+}
+
+/** First balanced top-level {...} in a string, honoring string literals. */
+function firstBalancedJson(text) {
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+    } else if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}' && --depth === 0) return text.slice(start, i + 1);
+  }
+  return null;
 }
 
 export async function geminiText(prompt, { system } = {}) {
