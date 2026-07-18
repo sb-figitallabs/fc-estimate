@@ -38,7 +38,7 @@ const ai = process.env.VERTEX_AI_PROJECT
   : new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview';
 
-const MAX_TOOL_CALLS = 6;
+const MAX_TOOL_CALLS = 9; // discovery + retries need headroom (raised 18-Jul after a "could not answer")
 const MAX_ROWS = 50;
 
 const SCHEMA_DOC = `Database (PostgreSQL). You may read ONLY these:
@@ -65,7 +65,29 @@ fc.package_bill_admissions — ACTUAL billed package cases: ip_no, p_tariff_cd (
   date_of_admission, department_name, surgery_name.
 fc.package_bill_lines — line items of those bills: ip_no, service_name, service_group, billed_amount, is_fnb.
 fc.organization_tariff_mapping — organization_cd/name → tariff_cd/name (insurer → tariff).
-fc.service_tariff_rate_matrix / fc.consultation_tariff_rate_matrix — per-tariff service/consultation rates.
+fc.service_tariff_rate_matrix / fc.consultation_tariff_rate_matrix — per-tariff service/consultation rates
+  (⚠ some packages carry duplicate TR1 rows at ₹10 — placeholders, not prices).
+
+ROBOTIC classification tables (per-admission and per-family):
+fc.robotic_admission_classification — one row per admission with any robotic signal: ip_no (join to
+  mart.main_table.admission_no), robotic_billed (boolean — the flag flow-2 uses for its "Robotic" filter),
+  payor_bucket, package_code/name, robotic_amount.
+fc.robotic_family_classification — per (family, payor_group): robotic_presence_rate, robotic_admission_rate/cases,
+  robotic_capable, robotic_default_included.
+fc.robotic_package_classification — per (tariff_code, package_code): is_robotic_package, robotic_addon_* fields.
+
+mart.main_table also carries per-admission stay fields the LOS logic uses: los_days (raw, fractional),
+ward_days, icu_days, normalized_billable_stay_days (CEIL-style billable nights — what flow-2 case sets aggregate)
++ normalized_billable_stay_reason, is_daycare_broad, date_of_admission/discharge, department_name, doctor_name,
+patient_name, umr_no, package_code/package_name.
+To REPRODUCE a flow-2 case set (e.g. "the 7 robotic conventional-TKR cases"): match the family's template name in
+curated_template_names_jsonb, filter payor_bucket, join fc.robotic_admission_classification r ON r.ip_no =
+m.admission_no AND r.robotic_billed for the robotic subset, and read los_days vs normalized_billable_stay_days.
+
+DISCOVERY: these notes are not exhaustive — for anything else, or when a column errors, discover live:
+SELECT table_name FROM information_schema.tables WHERE table_schema IN ('fc','mart') and
+SELECT column_name FROM information_schema.columns WHERE table_schema='…' AND table_name='…'.
+NEVER answer "cannot produce from the data" until a discovery query has been tried.
 
 Money is INR. Use percentile_cont for quartiles. Always LIMIT your queries.`;
 
