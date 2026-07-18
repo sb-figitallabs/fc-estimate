@@ -62,6 +62,9 @@ router.post('/resolve-treatment', async (req, res, next) => {
         package_code: top.package_code,
         package_name: top.package_name,
         package_amount: top.package_amount,
+        // F1: per-room prices + provenance so the hint never reads as a ₹10 scalar
+        ...(top.room_amounts ? { room_amounts: top.room_amounts } : {}),
+        ...(top.package_amount_source ? { package_amount_source: top.package_amount_source } : {}),
         ...(ranking?.method === 'ai' ? { confidence: ranking.confidence } : {}),
       };
     })().catch(() => null);
@@ -105,7 +108,9 @@ router.post('/package-gate', async (req, res, next) => {
     if (!payorBucket) return res.status(400).json({ error: 'payor_bucket is required' });
     const organizationCd = typeof req.body?.organization_cd === 'string' && req.body.organization_cd.trim()
       ? req.body.organization_cd.trim() : undefined;
-    res.json(await packageGate({ treatment, payorBucket, organizationCd }));
+    // B3: the FC's robotic answer re-biases the candidate ranking
+    const robotic = req.body?.robotic === 'yes' || req.body?.robotic === 'no' ? req.body.robotic : undefined;
+    res.json(await packageGate({ treatment, payorBucket, organizationCd, robotic }));
   } catch (err) { next(err); }
 });
 
@@ -126,6 +131,7 @@ router.post('/ask', async (req, res, next) => {
       history: Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [],
       context: req.body?.context,
       screenshot: req.body?.screenshot,
+      images: Array.isArray(req.body?.images) ? req.body.images.slice(0, 6) : undefined,
     }));
   } catch (err) { next(err); }
 });

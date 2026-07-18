@@ -144,6 +144,60 @@ function shape(row) {
  * and are fetched separately + defensively so lookups keep working before the
  * columns are bootstrapped. Originals stay untouched as the audit copy.
  */
+/** A2 (manager 17-Jul): the Service-All tariff matrix is the authoritative
+ * per-room package price — package codes are priced per ward group there
+ * (593 codes carry GENERAL/TWIN/SINGLE charges). jsonb / tariff-info-derived
+ * amounts remain the fallback when the matrix has no row for this pair. */
+async function withServiceAllRooms(pkg) {
+  if (!pkg?.package_code || !pkg?.tariff_code) return pkg;
+  try {
+    const { rows } = await query(
+      `SELECT ward_group_name, max(charge::float) AS charge
+       FROM fc.service_tariff_rate_matrix
+       WHERE tariff_cd = $1 AND service_cd = $2
+         AND upper(ward_group_name) IN ('GENERAL','TWIN','SINGLE')
+       GROUP BY ward_group_name`, [pkg.tariff_code, pkg.package_code]);
+    const m = {};
+    // the matrix itself carries ₹10 placeholder rows for some packages (his
+    // 18-Jul note: duplicate TR1 rows from a newer workbook) — a charge at or
+    // below the placeholder ceiling is NOT a price and must never override
+    // the jsonb/tariff-info-derived amounts.
+    for (const r of rows) if (Number(r.charge) > PLACEHOLDER_PRICE_MAX) m[String(r.ward_group_name).toLowerCase()] = Number(r.charge);
+    if (Object.keys(m).length) {
+      return {
+        ...pkg,
+        room_amounts: { ...pkg.room_amounts, ...m },
+        room_amounts_source: 'service_all_matrix',
+        ...(pkg.price_placeholder ? { price_placeholder: false } : {}),
+      };
+    }
+  } catch { /* matrix unavailable — keep derived amounts */ }
+  return pkg.room_amounts ? { ...pkg, room_amounts_source: 'package_master_derived' } : pkg;
+}
+
+/** F1 (18-Jul feedback #1): bulk per-room matrix prices for a candidate list —
+ * one query, so gate chips and the stage-1 package hint can show the REAL
+ * Service-All price instead of the package-master ₹10 placeholder. */
+export async function matrixRoomAmountsBulk(tariff_code, codes) {
+  const out = new Map();
+  if (!tariff_code || !codes?.length) return out;
+  try {
+    const { rows } = await query(
+      `SELECT service_cd, ward_group_name, max(charge::float) AS charge
+       FROM fc.service_tariff_rate_matrix
+       WHERE tariff_cd = $1 AND service_cd = ANY($2)
+         AND upper(ward_group_name) IN ('GENERAL','TWIN','SINGLE')
+       GROUP BY service_cd, ward_group_name`, [tariff_code, codes]);
+    for (const r of rows) {
+      if (!(Number(r.charge) > PLACEHOLDER_PRICE_MAX)) continue; // ₹10 dup rows are not prices
+      const m = out.get(r.service_cd) ?? {};
+      m[String(r.ward_group_name).toLowerCase()] = Number(r.charge);
+      out.set(r.service_cd, m);
+    }
+  } catch { /* matrix unavailable — callers keep master amounts */ }
+  return out;
+}
+
 async function withCleanTexts(pkg) {
   if (!pkg) return pkg;
   // Widest column set first; fall back to the older set so lookups keep
@@ -181,7 +235,7 @@ export async function lookupPackage({ tariff_code, package_code, package_name, o
       `SELECT ${RUNTIME_COLS} FROM fc.v_package_runtime_lookup
        WHERE tariff_code = $1 AND package_code = $2 AND ${orgClause(organization_cd, 3)}
        LIMIT 1`, params);
-    if (rows[0]) return withCleanTexts(shape(rows[0]));
+    if (rows[0]) return withServiceAllRooms(await withCleanTexts(shape(rows[0])));
   }
   if (package_name) {
     const params = [tariff_code, package_name, ...(organization_cd ? [organization_cd] : [])];
@@ -189,7 +243,7 @@ export async function lookupPackage({ tariff_code, package_code, package_name, o
       `SELECT ${RUNTIME_COLS} FROM fc.v_package_runtime_lookup
        WHERE tariff_code = $1 AND upper(package_name) = upper($2) AND ${orgClause(organization_cd, 3)}
        LIMIT 1`, params);
-    if (rows[0]) return withCleanTexts(shape(rows[0]));
+    if (rows[0]) return withServiceAllRooms(await withCleanTexts(shape(rows[0])));
   }
   return null;
 }
@@ -475,7 +529,12 @@ export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucke
   // — gating —
   const blockedReasons = [];
   if (!(pkgAmt > 1000)) blockedReasons.push('placeholder_package_amount');
-  if (pkg.readiness && pkg.readiness.can_generate_estimate !== true) blockedReasons.push('not_ready');
+  // F1 (18-Jul feedback #1): 'not ready' mostly meant "master carries a ₹10
+  // placeholder". With a real per-room price (Service-All matrix, jsonb or
+  // tariff-info rescue) the quote is priced from the tariff source — readiness
+  // no longer blocks it (docs gaps still surface elsewhere).
+  const roomPriced = pkgSource === 'room_tier' && pkgAmt > PLACEHOLDER_PRICE_MAX;
+  if (pkg.readiness && pkg.readiness.can_generate_estimate !== true && !roomPriced) blockedReasons.push('not_ready');
   if (basis == null) blockedReasons.push('no_extras_history');
   if (extras != null && band && !inBand(total)) blockedReasons.push('outside_billed_band');
 

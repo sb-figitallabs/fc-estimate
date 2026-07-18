@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import { pool } from './db/pool.js';
 import estimateRoutes from './routes/estimate.routes.js';
 import lookupRoutes from './routes/lookup.routes.js';
+import askChatsRoutes from './routes/askChats.routes.js';
 import packagesRoutes from './routes/packages.routes.js';
 import flow2Routes from './routes/flow2.routes.js';
 
@@ -21,6 +22,8 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi, { customSiteTitle: 'F
 
 // Sample frontend (public/index.html) at /
 app.use(express.static(new URL('../public', import.meta.url).pathname));
+// Ask the Project (18-Jul): chronicle-backed Q&A page — clean /ask URL
+app.get('/ask', (_req, res) => res.sendFile(new URL('../public/ask.html', import.meta.url).pathname));
 
 app.get('/health', async (_req, res) => {
   try {
@@ -32,6 +35,7 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use('/api/lookup', lookupRoutes);
+app.use('/api/ask-chats', askChatsRoutes);
 app.use('/api/estimate', estimateRoutes);
 app.use('/api/packages', packagesRoutes);
 app.use('/api/flow2', flow2Routes);

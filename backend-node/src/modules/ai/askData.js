@@ -1,5 +1,26 @@
 import { GoogleGenAI } from '@google/genai';
 import { pool } from '../../db/pool.js';
+import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+/** "Ask the Project" corpus (18-Jul): the project chronicle (dated decision
+ * history — what the logic is, what it was before, which manager input
+ * changed it) + the recent git log. Loaded once at boot; the git log
+ * re-generates on every deploy, so answers stay in sync with the code.
+ * Fail-open: a missing chronicle or absent .git never breaks Ask-AI. */
+const __dir = path.dirname(fileURLToPath(import.meta.url));
+let CHRONICLE = '';
+try {
+  CHRONICLE = readFileSync(path.resolve(__dir, '../../../docs/chronicle.md'), 'utf8');
+} catch { CHRONICLE = ''; }
+let GIT_LOG = '';
+try {
+  GIT_LOG = execSync('git log --date=short --pretty=format:"%ad %h %s" -160', {
+    cwd: path.resolve(__dir, '../../..'), timeout: 5000,
+  }).toString();
+} catch { GIT_LOG = ''; }
 
 /**
  * Ask-AI over the ENGINE's data (read-only): a small tool loop where Gemini
@@ -17,7 +38,7 @@ const ai = process.env.VERTEX_AI_PROJECT
   : new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview';
 
-const MAX_TOOL_CALLS = 6;
+const MAX_TOOL_CALLS = 9; // discovery + retries need headroom (raised 18-Jul after a "could not answer")
 const MAX_ROWS = 50;
 
 const SCHEMA_DOC = `Database (PostgreSQL). You may read ONLY these:
@@ -44,7 +65,32 @@ fc.package_bill_admissions — ACTUAL billed package cases: ip_no, p_tariff_cd (
   date_of_admission, department_name, surgery_name.
 fc.package_bill_lines — line items of those bills: ip_no, service_name, service_group, billed_amount, is_fnb.
 fc.organization_tariff_mapping — organization_cd/name → tariff_cd/name (insurer → tariff).
-fc.service_tariff_rate_matrix / fc.consultation_tariff_rate_matrix — per-tariff service/consultation rates.
+fc.service_tariff_rate_matrix / fc.consultation_tariff_rate_matrix — per-tariff service/consultation rates
+  (⚠ some packages carry duplicate TR1 rows at ₹10 — placeholders, not prices).
+
+ROBOTIC classification tables (per-admission and per-family):
+fc.robotic_admission_classification — one row per admission with any robotic signal: ip_no (join to
+  mart.main_table.admission_no), robotic_billed (boolean — the flag flow-2 uses for its "Robotic" filter),
+  payor_bucket, package_code/name, robotic_amount.
+fc.robotic_family_classification — per (family, payor_group): robotic_presence_rate, robotic_admission_rate/cases,
+  robotic_capable, robotic_default_included.
+fc.robotic_package_classification — per (tariff_code, package_code): is_robotic_package, robotic_addon_* fields.
+
+mart.main_table also carries per-admission stay fields the LOS logic uses: los_days (raw, fractional),
+ward_days, icu_days, normalized_billable_stay_days (CEIL-style billable nights — what flow-2 case sets aggregate)
++ normalized_billable_stay_reason, is_daycare_broad, date_of_admission/discharge, department_name, doctor_name,
+patient_name, umr_no, package_code/package_name.
+To REPRODUCE a flow-2 case set (e.g. "the 7 robotic conventional-TKR cases"): match the family's template name in
+curated_template_names_jsonb, filter payor_bucket, join fc.robotic_admission_classification r ON r.ip_no =
+m.admission_no AND r.robotic_billed for the robotic subset, and read los_days vs normalized_billable_stay_days.
+
+DISCOVERY: these notes are not exhaustive — for anything else, or when a column errors, discover live:
+SELECT table_name FROM information_schema.tables WHERE table_schema IN ('fc','mart') and
+SELECT column_name FROM information_schema.columns WHERE table_schema='…' AND table_name='…'.
+NEVER answer "cannot produce from the data" until a discovery query has been tried.
+Do NOT chase an exact figure quoted in the conversation (e.g. "the 7 cases") with endless refinements — cohort counts
+drift as data refreshes and filters differ. Once your results are plainly relevant, ANSWER with what the data shows and
+note the difference in one line.
 
 Money is INR. Use percentile_cont for quartiles. Always LIMIT your queries.`;
 
@@ -111,7 +157,7 @@ async function runSql(sql) {
  * @param {{mimeType:string,data:string}} [p.screenshot]  optional page screenshot
  * @returns {{answer:string, queries:Array<{sql:string,row_count?:number,error?:string}>}}
  */
-export async function askData({ question, history = [], context, screenshot }) {
+export async function askData({ question, history = [], context, screenshot, images }) {
   const system = `You are the AI assistant inside a hospital cost-estimate builder, answering the financial counselor's questions, at a hospital in Hyderabad, India.
 
 You can query the engine's database with the run_sql tool (read-only). Use it whenever the answer needs data that is not
@@ -121,12 +167,30 @@ ${SCHEMA_DOC}
 
 ${LOGIC_DOC}
 
+${CHRONICLE ? `PROJECT CHRONICLE — the dated decision history of this estimate builder. Use it for "why is the logic like this",
+"what was it before", "when did it change", "what did the manager ask" questions. Cite the dates and manager inputs it
+records (e.g. "since 18-Jul per the manager's 17-Jul directive; before that it was …"). For the current VALUE of something,
+still prefer a live query; use the chronicle for the story behind it.
+
+${CHRONICLE}` : ''}
+
+${GIT_LOG ? `RECENT ENGINE COMMITS (newest first, auto-refreshed each deploy) — fine-grained change history; commit messages
+name the manager input that drove them:
+
+${GIT_LOG}` : ''}
+
 Answer rules:
 - FIRST re-read the user's question and enumerate its parts. Your final answer MUST address each part in the order asked — a common failure is answering only the part your queries covered and silently dropping the how/why part. How/why parts are answered from the engine-logic notes above; data parts from queries.
 - Names in the catalog are formal: expand abbreviations before searching (TKR → TOTAL KNEE REPLACEMENT, THR → TOTAL HIP REPLACEMENT, LSCS → CAESAREAN, URSL → URETEROSCOPIC LITHOTRIPSY, PCNL → PERCUTANEOUS NEPHROLITHOTOMY, CAG → coronary angiogram, D&C → dilatation curettage). If a search returns nothing, RETRY with broader single-word ILIKE patterns before concluding something does not exist — never conclude absence from one narrow query.
 - Ground every figure in the context or your query results — never invent. Round amounts to whole rupees in Indian format (₹1,24,500).
 - Keep answers short and concrete (2–6 sentences or a short list). If the data genuinely isn't there after broad retries, say so plainly.
-- Never mention SQL or table names in the answer — speak in product terms (packages, past cases, tariffs).`;
+- Never mention SQL or table names in the answer — speak in product terms (packages, past cases, tariffs).
+- SCREENSHOTS: when the question carries images, READ them carefully first — extract the exact figures, codes, names and
+  labels shown. For "is this right / why is this number X / data looks inconsistent" questions: (1) state what the
+  screenshot shows, (2) verify the shown figures against live queries where possible, (3) explain WHERE each number comes
+  from (which source, which logic — use the engine-logic notes and the chronicle), and (4) if something IS inconsistent,
+  say plainly which side is wrong and why (known data issues: ₹10 placeholder rows, GIPSA classification gaps). Never
+  wave a discrepancy away — either reconcile it with evidence or flag it as a genuine issue worth reporting.`;
 
   const contents = [];
   if (context) {
@@ -136,10 +200,16 @@ Answer rules:
   for (const m of history) {
     if (m?.text) contents.push({ role: m.role === 'model' ? 'model' : 'user', parts: [{ text: String(m.text).slice(0, 4000) }] });
   }
+  // images: screenshots the user attached to THIS question (multi-image, 18-Jul);
+  // `screenshot` stays as the single-image back-compat field from the docks.
+  const imgs = [
+    ...(Array.isArray(images) ? images : []),
+    ...(screenshot?.data ? [screenshot] : []),
+  ].filter((im) => im?.data).slice(0, 6);
   contents.push({
     role: 'user',
     parts: [
-      ...(screenshot?.data ? [{ inlineData: { mimeType: screenshot.mimeType || 'image/jpeg', data: screenshot.data } }] : []),
+      ...imgs.map((im) => ({ inlineData: { mimeType: im.mimeType || 'image/jpeg', data: im.data } })),
       { text: question },
     ],
   });
@@ -155,6 +225,24 @@ Answer rules:
     const calls = parts.filter((p) => p.functionCall);
     if (!calls.length || i === MAX_TOOL_CALLS) {
       let answer = parts.map((p) => p.text ?? '').join('').trim();
+      // Exhausted the tool budget while STILL trying to query (no text) —
+      // force one final no-tools synthesis from the results already gathered
+      // instead of giving up (18-Jul: "list the 7 cases" had all the rows in
+      // hand and still returned the could-not-answer fallback).
+      if (!answer && queries.length) {
+        try {
+          const fin = await ai.models.generateContent({
+            model: MODEL,
+            contents: [
+              ...contents,
+              { role: 'model', parts },
+              { role: 'user', parts: [{ text: 'STOP querying — the tool budget is used up. Answer the question NOW from the query results above. Present what the data actually shows; if it differs from a figure mentioned earlier in the conversation (counts drift as data refreshes or filters differ), present the data and note the difference briefly. Polished final text only, no meta commentary.' }] },
+            ],
+            config: { systemInstruction: system, temperature: 0.2, maxOutputTokens: 2048 },
+          });
+          answer = (res2text(fin) || '').trim();
+        } catch { /* fall through to the fallback string */ }
+      }
       // Completeness pass: with tool results in play the model reliably drops
       // the how/why half of multi-part questions — have it audit its own
       // answer against the question once, without tools.

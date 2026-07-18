@@ -156,14 +156,75 @@ export async function buildEstimate(input) {
   const svcByCode = new Map(svcStatsForBasis.map((s) => [s.item_code, s]));
   const pharmStatsForBasis = pharmacyStats.filter((s) => s.basis_label === pharmBasis);
 
+  // 7b. package offer — resolved BEFORE the drivers (A1, manager 17-Jul) so
+  // the package master's duration can drive the LOS default. Semantics are
+  // unchanged from the old step-15 position: gate-driven selection when the
+  // doctor's wording is available, cohort-dominant fallback, medical guard.
+  const treatmentTextEarly = input.clinical.treatment_text?.trim();
+  let packageOffer;
+  const noExplicitPackage = !input.package?.package_code && !input.package?.package_name && !input.package?.text;
+  // #5 (flow parity): medical-management families never auto-attach a package
+  // — same guard as the flow gate. An explicit user-chosen package still wins.
+  const medicalNoPackage = noExplicitPackage && cohortDef.familyKind === 'medical';
+  if (medicalNoPackage) {
+    packageOffer = { status: 'no_package_exists', source: 'medical_family_guard', package: null };
+  } else {
+  try {
+    let inputPackage = input.package;
+    let gatePicked = false;
+    if (noExplicitPackage) {
+      try {
+        const { rankPackageCandidates } = await import('../resolve/familyResolve.js');
+        // #2 (flow parity): with no doctor's wording, rank on the family's own
+        // label — so the build names the same package the flow view would,
+        // instead of the cohort-dominant heuristic. Cohort-dominant remains
+        // the fallback when ranking finds nothing.
+        const rankText = treatmentTextEarly || cohortDef.templateName || cohortDef.family;
+        const { candidates } = await rankPackageCandidates({
+          treatment: rankText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
+          // B3: an explicit robotic answer biases the pick to the robotic package
+          robotic: controls.robotic === 'yes' ? 'yes' : controls.robotic === 'no' ? 'no' : undefined,
+        });
+        if (candidates[0]) {
+          inputPackage = { package_code: candidates[0].package_code, package_name: candidates[0].package_name };
+          gatePicked = true;
+        }
+      } catch { /* gate match unavailable — cohort-dominant fallback below */ }
+    }
+    packageOffer = await packageOfferForEstimate({
+      cohortRows,
+      tariff_cd: tariff.tariff_cd,
+      organization_cd: input.payment.organization_cd,
+      inputPackage,
+    });
+    if (gatePicked && packageOffer) packageOffer.source = treatmentTextEarly ? 'gate_match' : 'gate_match_family_label';
+  } catch (err) {
+    packageOffer = { status: 'lookup_error', error: err.message, package: null };
+  }
+  }
+
+  // A1 (manager 17-Jul): package LOS comes from the package master —
+  // package_duration is the stay default when a package is attached and the
+  // FC gave no manual stay. 0 = daycare-style package (no LOS default forced;
+  // the family's daycare handling applies). Cohort quartiles remain the band.
+  const pkgDurRaw = Number(packageOffer?.package?.package_duration);
+  const pkgLosDefault = controls.los_manual == null && Number.isFinite(pkgDurRaw) && pkgDurRaw > 0
+    ? pkgDurRaw : null;
+  let losSource = controls.los_manual != null ? 'manual' : 'cohort_p50';
+  if (pkgLosDefault != null) losSource = 'package_master';
+
   // 8. drivers
   const drivers = resolveDrivers(svcBasisRow, {
-    los_basis: controls.los_basis ?? 'P50', los_manual: controls.los_manual,
+    los_basis: pkgLosDefault != null ? 'manual' : (controls.los_basis ?? 'P50'),
+    los_manual: controls.los_manual ?? pkgLosDefault ?? undefined,
     icu_basis: controls.icu_basis ?? 'P50', icu_manual: controls.icu_manual,
     ward_basis: controls.ward_basis ?? 'P50', ward_manual: controls.ward_manual,
     ot_hours_basis: controls.ot_hours_basis ?? 'P50', ot_hours_manual: controls.ot_hours_manual,
     cath_hours_basis: controls.cath_hours_basis ?? 'P50', cath_hours_manual: controls.cath_hours_manual,
   }, otLadder);
+  if (losSource === 'package_master') {
+    warnings.push(`Stay defaulted to the package master's duration — ${pkgDurRaw} day${pkgDurRaw === 1 ? '' : 's'} for [${packageOffer.package.package_code}] (pre ${packageOffer.package.pre_days ?? 0} / post ${packageOffer.package.post_days ?? 0}); cohort history stays as the reference band.`);
+  }
   // Manual cath-lab hours only apply to cath-lab families with parseable billed
   // hours history — surface why the override was ignored instead of silently dropping it.
   if (controls.cath_hours_manual != null) {
@@ -305,6 +366,16 @@ export async function buildEstimate(input) {
       : { p25: 0, p50: 0, p75: 0 },
   });
 
+  // D3 (manager 17-Jul): cross-consultations (diet etc.) are their own thing —
+  // tagged and sub-grouped apart from the operating surgeon's PF on every
+  // build; the PF scaling/override paths below skip them.
+  for (const r of lineItems.rows) {
+    if (r.bucket === 'Professional Fees' && /CONSULT/i.test(r.name || '')) {
+      r.cross_consult = true;
+      r.sub = 'Cross Consultations';
+    }
+  }
+
   // 13a. robotic add-on finalization: selected-room amount + convert prompt.
   if (roboticAddon && roboticAddon.status !== 'unpriced') {
     const rk = room.toLowerCase();
@@ -342,20 +413,37 @@ export async function buildEstimate(input) {
       (r) => r.basis_label === bases.pf_basis.selected_basis && r.field_key === 'professional_fees'
     );
     if (histPfRow?.p50 > 0) {
-      const pfRows = lineItems.rows.filter((r) => r.bucket === 'Professional Fees');
+      // D3 (manager 17-Jul): cross-consultations (diet etc.) are handled
+      // separately from the operating surgeon's PF — they keep their own
+      // amounts and are never scaled/overridden with surgeon PF. The historic
+      // target still covers the whole billed PF bucket, so the surgeon-side
+      // rows absorb the remainder after the fixed consult amounts.
+      const allPfRows = lineItems.rows.filter((r) => r.bucket === 'Professional Fees');
+      for (const r of allPfRows) {
+        if (/CONSULT/i.test(r.name || '')) { r.cross_consult = true; }
+      }
+      const consultRows = allPfRows.filter((r) => r.cross_consult);
+      const pfRows = allPfRows.filter((r) => !r.cross_consult);
       const roomKeys = ['general', 'twin', 'single'];
       for (const rk of roomKeys) {
+        const consultTotal = consultRows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
         const pfTotal = pfRows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
-        const delta = histPfRow.p50 - pfTotal;
+        const target = Math.max(0, histPfRow.p50 - consultTotal);
+        const delta = target - pfTotal;
         if (!Number.isFinite(delta) || Math.abs(delta) < 1) continue;
         let bandDelta = [delta, delta, delta];
         if (pfTotal > 0) {
-          const f = histPfRow.p50 / pfTotal;
+          const f = target / pfTotal;
           for (const r of pfRows) if (r.selected?.[rk] != null) r.selected[rk] = Math.round(r.selected[rk] * f * 100) / 100;
         } else if (pfRows[0]?.selected) {
-          // no PF lines priced — carry history on the first PF row, bands from quartiles
-          pfRows[0].selected[rk] = histPfRow.p50;
-          const band = [histPfRow.p25 || histPfRow.p50, histPfRow.p50, histPfRow.p75 || histPfRow.p50];
+          // no PF lines priced — carry history on the first PF row (net of the
+          // fixed cross-consult amounts), bands from quartiles
+          pfRows[0].selected[rk] = target;
+          const band = [
+            Math.max(0, (histPfRow.p25 || histPfRow.p50) - consultTotal),
+            target,
+            Math.max(0, (histPfRow.p75 || histPfRow.p50) - consultTotal),
+          ];
           if (Array.isArray(pfRows[0].cells?.[rk])) pfRows[0].cells[rk] = [...band];
           bandDelta = band;
         } else {
@@ -588,50 +676,10 @@ export async function buildEstimate(input) {
     status: serviceLineCountAlert({ current: currentCount, p25: svcBasisRow.service_line_p25, p75: svcBasisRow.service_line_p75 }),
   };
 
-  // 15. side-by-side package offer (never replaces the itemized estimate).
-  // Gate-driven selection (15-Jul flow doc): when the doctor's raw wording is
-  // available and no explicit package was chosen, the package comes from the
-  // gate brain (alias + AI clinical ranking on this tariff) — same choice the
-  // flow view makes. Cohort-dominant stays as the fallback.
-  let packageOffer;
-  const noExplicitPackage = !input.package?.package_code && !input.package?.package_name && !input.package?.text;
-  // #5 (flow parity): medical-management families never auto-attach a package
-  // — same guard as the flow gate. An explicit user-chosen package still wins.
-  const medicalNoPackage = noExplicitPackage && cohortDef.familyKind === 'medical';
-  if (medicalNoPackage) {
-    packageOffer = { status: 'no_package_exists', source: 'medical_family_guard', package: null };
-  } else {
-  try {
-    let inputPackage = input.package;
-    let gatePicked = false;
-    if (noExplicitPackage) {
-      try {
-        const { rankPackageCandidates } = await import('../resolve/familyResolve.js');
-        // #2 (flow parity): with no doctor's wording, rank on the family's own
-        // label — so the build names the same package the flow view would,
-        // instead of the cohort-dominant heuristic. Cohort-dominant remains
-        // the fallback when ranking finds nothing.
-        const rankText = treatmentText || cohortDef.templateName || cohortDef.family;
-        const { candidates } = await rankPackageCandidates({
-          treatment: rankText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
-        });
-        if (candidates[0]) {
-          inputPackage = { package_code: candidates[0].package_code, package_name: candidates[0].package_name };
-          gatePicked = true;
-        }
-      } catch { /* gate match unavailable — cohort-dominant fallback below */ }
-    }
-    packageOffer = await packageOfferForEstimate({
-      cohortRows,
-      tariff_cd: tariff.tariff_cd,
-      organization_cd: input.payment.organization_cd,
-      inputPackage,
-    });
-    if (gatePicked && packageOffer) packageOffer.source = treatmentText ? 'gate_match' : 'gate_match_family_label';
-  } catch (err) {
-    packageOffer = { status: 'lookup_error', error: err.message, package: null };
-  }
-  }
+  // 15. side-by-side package offer — RESOLVED EARLIER (A1, manager 17-Jul):
+  // the package must be known before the drivers so its master
+  // package_duration can set the LOS default. `packageOffer` was computed
+  // just before step 8; nothing else changed about its semantics.
 
   // curated inclusions can concatenate 2 source variants — expose the deduped
   // first variant for display (name|value stays on one line) plus the variants
@@ -792,6 +840,13 @@ export async function buildEstimate(input) {
       drivers: {
         basis: svcBasis,
         note: 'LOS / ICU / ward / OT-hour / cath-hour percentiles ride the service basis',
+        // A1 provenance: where the selected stay came from
+        los_source: losSource,
+        ...(losSource === 'package_master' ? {
+          package_los: pkgDurRaw,
+          package_pre_days: packageOffer?.package?.pre_days ?? null,
+          package_post_days: packageOffer?.package?.post_days ?? null,
+        } : {}),
       },
     },
     template: {

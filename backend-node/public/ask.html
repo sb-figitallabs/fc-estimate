@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask the Project — FC Estimate Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='3' width='20' height='18' rx='3' fill='%230033CC'/%3E%3Cpath d='M8 9h8M8 12h8M8 15h5' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --brand:#0033CC; --brand-600:#0029a3; --brand-50:#eef2ff;
+    --ink:#0f172a; --ink-2:#475569; --ink-3:#64748b;
+    --surface:#ffffff; --bg:#f4f6f8; --line:#e2e8f0;
+    --radius:10px; --shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column}
+  header{background:var(--brand);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px}
+  header h1{font-size:17px;font-weight:600}
+  header .sub{font-size:12.5px;opacity:.85}
+  header a{margin-left:auto;color:#fff;opacity:.9;font-size:13px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.4);padding-bottom:1px}
+  #menuBtn{display:none;background:none;border:0;color:#fff;font-size:20px;cursor:pointer}
+
+  .shell{flex:1;display:flex;min-height:0;max-width:1280px;width:100%;margin:0 auto}
+  aside{width:264px;flex:none;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+  aside .top{padding:12px}
+  #newChat{width:100%;border:1px solid var(--brand);color:var(--brand-600);background:#fff;border-radius:var(--radius);padding:9px 12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  #newChat:hover{background:var(--brand-50)}
+  #convs{flex:1;overflow-y:auto;padding:0 8px 12px}
+  .conv{display:flex;align-items:center;gap:6px;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:13.5px;color:var(--ink-2)}
+  .conv:hover{background:var(--bg)}
+  .conv.active{background:var(--brand-50);color:var(--brand-600);font-weight:600}
+  .conv .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .conv .d{font-size:11px;color:var(--ink-3);flex:none}
+  .conv .x{flex:none;border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:14px;padding:0 2px;opacity:0;border-radius:4px}
+  .conv:hover .x{opacity:.7}
+  .conv .x:hover{color:#b91c1c;opacity:1}
+  #convEmpty{padding:14px;font-size:12.5px;color:var(--ink-3)}
+
+  main{flex:1;display:flex;flex-direction:column;min-width:0;padding:18px 18px 0}
+  #log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:16px}
+  .msg{max-width:92%;border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow);white-space:pre-wrap;word-wrap:break-word}
+  .msg.user{align-self:flex-end;background:var(--brand);color:#fff}
+  .msg.bot{align-self:flex-start;background:var(--surface);border:1px solid var(--line)}
+  .msg.bot b{color:var(--brand-600)}
+  .msg.bot ul{margin:6px 0 6px 20px;white-space:normal}
+  .msg.bot li{margin:3px 0}
+  .msg.err{align-self:flex-start;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+  .meta{font-size:11px;color:var(--ink-3);margin-top:8px;border-top:1px dashed var(--line);padding-top:6px;white-space:normal}
+  .hello{background:var(--brand-50);border:1px solid #dbe4ff;border-radius:var(--radius);padding:16px 18px;font-size:14px;color:var(--ink-2)}
+  .hello b{color:var(--ink)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chips button{border:1px solid #c7d2fe;background:#fff;color:var(--brand-600);border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer;text-align:left}
+  .chips button:hover{background:var(--brand-50)}
+  .msg .imgs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .msg .imgs img{max-width:180px;max-height:130px;border-radius:8px;border:1px solid rgba(255,255,255,.4);cursor:zoom-in}
+  .msg.bot .imgs img{border-color:var(--line)}
+  #pending{display:none;gap:8px;flex-wrap:wrap;padding:8px 0 0}
+  #pending.has{display:flex}
+  .pend{position:relative}
+  .pend img{width:74px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+  .pend button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:0;background:#0f172a;color:#fff;font-size:10px;line-height:1;cursor:pointer}
+  #drop{position:fixed;inset:0;background:rgba(0,51,204,.12);border:3px dashed var(--brand);z-index:60;display:none;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:var(--brand-600)}
+  #drop.on{display:flex}
+  #zoom{position:fixed;inset:0;background:rgba(15,23,42,.85);z-index:70;display:none;align-items:center;justify-content:center;cursor:zoom-out}
+  #zoom.on{display:flex}
+  #zoom img{max-width:94vw;max-height:92vh;border-radius:8px}
+  form{display:flex;gap:10px;padding:14px 0 18px;position:sticky;bottom:0;background:var(--bg)}
+  #attach{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:var(--radius);padding:0 14px;font-size:18px;cursor:pointer}
+  #attach:hover{border-color:var(--brand);color:var(--brand-600)}
+  textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;font:inherit;height:52px;background:var(--surface)}
+  textarea:focus{outline:2px solid var(--brand);outline-offset:-1px}
+  form button{border:0;background:var(--brand);color:#fff;border-radius:var(--radius);padding:0 22px;font:inherit;font-weight:600;cursor:pointer}
+  form button:disabled{opacity:.5;cursor:default}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid #c7d2fe;border-top-color:var(--brand);border-radius:50%;animation:r .8s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes r{to{transform:rotate(360deg)}}
+
+  @media (max-width: 860px){
+    #menuBtn{display:block}
+    aside{position:fixed;left:0;top:0;bottom:0;z-index:40;transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 30px rgba(0,0,0,.2)}
+    aside.open{transform:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <button id="menuBtn" aria-label="Conversations">☰</button>
+  <svg width="24" height="24" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="3" fill="#fff" opacity=".18"/><path d="M8 9h8M8 12h8M8 15h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+  <div>
+    <h1>Ask the Project</h1>
+    <div class="sub">FC Estimate Builder — logic, history &amp; live data</div>
+  </div>
+  <a href="/">estimate tester →</a>
+</header>
+<div class="shell">
+  <aside id="side">
+    <div class="top"><button id="newChat">＋ New chat</button></div>
+    <div id="convs"></div>
+  </aside>
+  <main>
+    <div id="log"></div>
+    <div id="pending"></div>
+    <form id="f">
+      <button id="attach" type="button" title="Attach screenshots (or paste / drag them in)">📎</button>
+      <textarea id="q" placeholder="Ask about logic, history, packages, tariffs, past cases… paste a screenshot to ask about it" rows="1"></textarea>
+      <button id="send" type="submit">Ask</button>
+    </form>
+    <input id="file" type="file" accept="image/*" multiple hidden>
+  </main>
+</div>
+<div id="drop">Drop screenshots to attach</div>
+<div id="zoom"><img alt="screenshot"></div>
+<script>
+const log = document.getElementById('log');
+const form = document.getElementById('f');
+const q = document.getElementById('q');
+const send = document.getElementById('send');
+const convsEl = document.getElementById('convs');
+const side = document.getElementById('side');
+
+let convId = null;          // current conversation id (server-side)
+let messages = [];          // [{role:'user'|'model', text, queries?}]
+let convList = [];
+
+const escapeHtml = (s)=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function render(md){
+  const lines = escapeHtml(md).split('\n');
+  let out='', inList=false;
+  for (const ln of lines){
+    const bullet = ln.match(/^\s*[\*\-•]\s+(.*)$/);
+    if (bullet){ if(!inList){out+='<ul>';inList=true;} out+='<li>'+bullet[1]+'</li>'; }
+    else { if(inList){out+='</ul>';inList=false;} out+=ln+'\n'; }
+  }
+  if(inList) out+='</ul>';
+  return out.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\n{2,}/g,'\n\n').trim();
+}
+function el(cls, html){ const d=document.createElement('div'); d.className='msg '+cls; d.innerHTML=html; log.appendChild(d); d.scrollIntoView({behavior:'smooth',block:'end'}); return d; }
+
+const HELLO = `
+  <div class="hello">
+    <b>Ask anything about the estimate builder</b> — current logic, why a number is what it is, what the rule was before, when it changed and what drove the change. Data questions run live read-only queries; history questions answer from the project chronicle and commit record.
+    <div class="chips" id="chips">
+      <button>What is the logic behind the LOS on an estimate, and how has it changed over time?</button>
+      <button>How is a package priced per room, and what were the earlier price sources?</button>
+      <button>How are Professional Fees calculated for cash vs insurance vs medical cases?</button>
+      <button>Why was DJ stenting showing ₹10 and what fixed it?</button>
+      <button>What is still pending from the hospital side?</button>
+    </div>
+  </div>`;
+
+const imgsHtml = (imgs)=> (imgs && imgs.length)
+  ? '<div class="imgs">'+imgs.map((im)=>'<img src="data:'+(im.mimeType||'image/jpeg')+';base64,'+im.data+'" alt="screenshot">').join('')+'</div>'
+  : '';
+function paintMessages(){
+  log.innerHTML = messages.length ? '' : HELLO;
+  for (const m of messages){
+    if (m.role === 'user') el('user', imgsHtml(m.images) + escapeHtml(m.text));
+    else {
+      let html = render(m.text);
+      const n = m.query_count ?? (m.queries ? m.queries.length : 0);
+      if (n) html += '<div class="meta">checked live data · '+n+' read-only quer'+(n===1?'y':'ies')+'</div>';
+      el('bot', html);
+    }
+  }
+  wireChips();
+}
+// click any chat image to zoom
+const zoom = document.getElementById('zoom');
+log.addEventListener('click', (e)=>{ if(e.target.tagName==='IMG' && e.target.closest('.imgs')){ zoom.querySelector('img').src=e.target.src; zoom.classList.add('on'); } });
+zoom.addEventListener('click', ()=>zoom.classList.remove('on'));
+function wireChips(){
+  const c = document.getElementById('chips');
+  if (c) c.addEventListener('click', (e)=>{ if(e.target.tagName==='BUTTON') ask(e.target.textContent); });
+}
+
+// ——— conversation list ———
+const rel = (iso)=>{
+  const d = (Date.now() - new Date(iso).getTime())/1000;
+  if (d < 3600) return Math.max(1, Math.round(d/60)) + 'm';
+  if (d < 86400) return Math.round(d/3600) + 'h';
+  return Math.round(d/86400) + 'd';
+};
+function paintConvs(){
+  convsEl.innerHTML = '';
+  if (!convList.length){ convsEl.innerHTML = '<div id="convEmpty">No past conversations yet.</div>'; return; }
+  for (const c of convList){
+    const d = document.createElement('div');
+    d.className = 'conv' + (c.id === convId ? ' active' : '');
+    d.innerHTML = '<span class="t"></span><span class="d">'+rel(c.updated_at)+'</span><button class="x" title="Delete">✕</button>';
+    d.querySelector('.t').textContent = c.title;
+    d.addEventListener('click', ()=>openConv(c.id));
+    d.querySelector('.x').addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      if (!confirm('Delete this conversation?')) return;
+      await fetch('/api/ask-chats/'+c.id, {method:'DELETE'});
+      if (c.id === convId){ convId = null; messages = []; paintMessages(); }
+      await loadConvs();
+    });
+    convsEl.appendChild(d);
+  }
+}
+async function loadConvs(){
+  try{ convList = await (await fetch('/api/ask-chats')).json(); }catch{ convList = []; }
+  paintConvs();
+}
+async function openConv(id){
+  try{
+    const c = await (await fetch('/api/ask-chats/'+id)).json();
+    convId = c.id; messages = Array.isArray(c.messages) ? c.messages : [];
+    paintMessages(); paintConvs();
+    side.classList.remove('open');
+  }catch{ /* keep current */ }
+}
+async function saveConv(){
+  const title = (messages.find((m)=>m.role==='user')?.text || 'New chat').slice(0, 80);
+  const slim = messages.map((m)=>({role:m.role, text:m.text, ...(m.query_count ? {query_count:m.query_count} : {}), ...(m.images ? {images:m.images} : {})}));
+  try{
+    if (convId == null){
+      const c = await (await fetch('/api/ask-chats', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title})})).json();
+      convId = c.id;
+    }
+    await fetch('/api/ask-chats/'+convId, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, messages: slim})});
+    await loadConvs();
+  }catch{ /* storage is best-effort — the chat keeps working */ }
+}
+
+// ——— image attachments ———
+const pendingEl = document.getElementById('pending');
+const fileInput = document.getElementById('file');
+let pending = []; // [{mimeType, data}]
+const MAX_IMGS = 4;
+
+function paintPending(){
+  pendingEl.innerHTML = '';
+  pendingEl.classList.toggle('has', pending.length > 0);
+  pending.forEach((im, i)=>{
+    const d = document.createElement('div');
+    d.className = 'pend';
+    d.innerHTML = '<img src="data:'+im.mimeType+';base64,'+im.data+'"><button title="Remove">✕</button>';
+    d.querySelector('button').addEventListener('click', ()=>{ pending.splice(i,1); paintPending(); });
+    pendingEl.appendChild(d);
+  });
+}
+// downscale to ≤1500px JPEG so payloads stay light and Gemini reads fast
+function addImage(fileOrBlob){
+  if (pending.length >= MAX_IMGS) return;
+  const img = new Image();
+  img.onload = ()=>{
+    const scale = Math.min(1, 1500 / Math.max(img.width, img.height));
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * scale);
+    cv.height = Math.round(img.height * scale);
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    const dataUrl = cv.toDataURL('image/jpeg', 0.85);
+    pending.push({ mimeType: 'image/jpeg', data: dataUrl.split(',')[1] });
+    paintPending();
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(fileOrBlob);
+}
+document.getElementById('attach').addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', ()=>{ [...fileInput.files].forEach(addImage); fileInput.value=''; });
+document.addEventListener('paste', (e)=>{
+  const items = [...(e.clipboardData?.items || [])].filter((it)=>it.type.startsWith('image/'));
+  if (items.length){ e.preventDefault(); items.forEach((it)=>addImage(it.getAsFile())); }
+});
+const drop = document.getElementById('drop');
+let dragDepth = 0;
+document.addEventListener('dragenter', (e)=>{ if([...(e.dataTransfer?.types||[])].includes('Files')){ dragDepth++; drop.classList.add('on'); } });
+document.addEventListener('dragleave', ()=>{ if(--dragDepth <= 0){ dragDepth=0; drop.classList.remove('on'); } });
+document.addEventListener('dragover', (e)=>e.preventDefault());
+document.addEventListener('drop', (e)=>{
+  e.preventDefault(); dragDepth=0; drop.classList.remove('on');
+  [...(e.dataTransfer?.files || [])].filter((f)=>f.type.startsWith('image/')).forEach(addImage);
+});
+
+// ——— asking ———
+async function ask(text){
+  if((!text.trim() && !pending.length) || send.disabled) return;
+  if (!text.trim()) text = 'What do you see in this screenshot? Check the figures against our data and explain where each number comes from.';
+  if (!messages.length) log.innerHTML = '';
+  const imgs = pending.splice(0); paintPending();
+  messages.push({role:'user', text:text.trim(), ...(imgs.length ? {images: imgs} : {})});
+  el('user', imgsHtml(imgs) + escapeHtml(text.trim()));
+  q.value=''; send.disabled=true;
+  const thinking = el('bot','<span class="spin"></span>thinking — '+(imgs.length?'reading the screenshot, ':'')+'checking the chronicle and live data…');
+  try{
+    const history = messages.slice(0, -1).slice(-12).map((m)=>({role:m.role, text:m.text}));
+    const r = await fetch('/api/lookup/ask', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ question: text.trim(), history, ...(imgs.length ? {images: imgs} : {}) })
+    });
+    const body = await r.json();
+    thinking.remove();
+    if(!r.ok || !body.answer){
+      el('err','Could not answer: '+escapeHtml(body.error || ('HTTP '+r.status)));
+      messages.pop(); pending = imgs; paintPending(); // restore attachments for a retry
+    } else {
+      const qn = (body.queries||[]).filter(x=>x.sql).length;
+      let html = render(body.answer);
+      if(qn) html += '<div class="meta">checked live data · '+qn+' read-only quer'+(qn===1?'y':'ies')+'</div>';
+      el('bot', html);
+      messages.push({role:'model', text: body.answer, query_count: qn});
+      saveConv();
+    }
+  }catch(e){ thinking.remove(); el('err','Network error: '+escapeHtml(String(e.message||e))); messages.pop(); pending = imgs; paintPending(); }
+  send.disabled=false; q.focus();
+}
+
+form.addEventListener('submit', (e)=>{ e.preventDefault(); ask(q.value); });
+q.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); ask(q.value); } });
+document.getElementById('newChat').addEventListener('click', ()=>{ convId=null; messages=[]; paintMessages(); paintConvs(); side.classList.remove('open'); q.focus(); });
+document.getElementById('menuBtn').addEventListener('click', ()=>side.classList.toggle('open'));
+
+paintMessages();
+loadConvs();
+q.focus();
+</script>
+</body>
+</html>

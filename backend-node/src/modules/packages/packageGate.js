@@ -113,7 +113,7 @@ async function existsOnOtherTariffs(text, excludeTariff) {
   return rows.map((r) => ({ tariff_code: r.tariff_code, package_name: r.package_name }));
 }
 
-export async function packageGate({ treatment, payorBucket, organizationCd }) {
+export async function packageGate({ treatment, payorBucket, organizationCd, robotic }) {
   const steps = [];
   const inputs = { treatment, payor_bucket: payorBucket, organization_cd: organizationCd ?? null };
 
@@ -145,7 +145,7 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
     steps.push(step('package_match', 'Package in master catalog', 'skipped',
       'Skipped — medical-management admission (non-surgical): packages do not apply, use the cohort flow'));
   } else {
-    ({ candidates, ranking } = await rankPackageCandidates({ treatment, tariff_code: tariff.tariff_cd, organization_cd: organizationCd }));
+    ({ candidates, ranking } = await rankPackageCandidates({ treatment, tariff_code: tariff.tariff_cd, organization_cd: organizationCd, robotic }));
     if (!candidates.length) elsewhere = await existsOnOtherTariffs(treatment, tariff.tariff_cd);
     steps.push(step(
       'package_match', 'Package in master catalog', candidates.length ? 'ok' : (elsewhere.length ? 'warn' : 'missing'),
@@ -164,6 +164,8 @@ export async function packageGate({ treatment, payorBucket, organizationCd }) {
           can_generate_estimate: c.can_generate_estimate, primary_blocker: c.primary_blocker,
           fc_template_package_code: c.fc_template_package_code,
           fc_case_count_total: c.fc_case_count_total,
+          // B1: per-candidate match verdict + reason (laterality/robotic aware)
+          verdict: c.verdict, verdict_reason: c.verdict_reason,
         })),
         ...(ranking ? { ranking } : {}),
         exists_on_other_tariffs: elsewhere,
