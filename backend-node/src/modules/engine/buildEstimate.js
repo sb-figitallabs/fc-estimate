@@ -366,6 +366,16 @@ export async function buildEstimate(input) {
       : { p25: 0, p50: 0, p75: 0 },
   });
 
+  // D3 (manager 17-Jul): cross-consultations (diet etc.) are their own thing —
+  // tagged and sub-grouped apart from the operating surgeon's PF on every
+  // build; the PF scaling/override paths below skip them.
+  for (const r of lineItems.rows) {
+    if (r.bucket === 'Professional Fees' && /CONSULT/i.test(r.name || '')) {
+      r.cross_consult = true;
+      r.sub = 'Cross Consultations';
+    }
+  }
+
   // 13a. robotic add-on finalization: selected-room amount + convert prompt.
   if (roboticAddon && roboticAddon.status !== 'unpriced') {
     const rk = room.toLowerCase();
@@ -403,20 +413,37 @@ export async function buildEstimate(input) {
       (r) => r.basis_label === bases.pf_basis.selected_basis && r.field_key === 'professional_fees'
     );
     if (histPfRow?.p50 > 0) {
-      const pfRows = lineItems.rows.filter((r) => r.bucket === 'Professional Fees');
+      // D3 (manager 17-Jul): cross-consultations (diet etc.) are handled
+      // separately from the operating surgeon's PF — they keep their own
+      // amounts and are never scaled/overridden with surgeon PF. The historic
+      // target still covers the whole billed PF bucket, so the surgeon-side
+      // rows absorb the remainder after the fixed consult amounts.
+      const allPfRows = lineItems.rows.filter((r) => r.bucket === 'Professional Fees');
+      for (const r of allPfRows) {
+        if (/CONSULT/i.test(r.name || '')) { r.cross_consult = true; }
+      }
+      const consultRows = allPfRows.filter((r) => r.cross_consult);
+      const pfRows = allPfRows.filter((r) => !r.cross_consult);
       const roomKeys = ['general', 'twin', 'single'];
       for (const rk of roomKeys) {
+        const consultTotal = consultRows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
         const pfTotal = pfRows.reduce((t, r) => t + (r.selected?.[rk] ?? 0), 0);
-        const delta = histPfRow.p50 - pfTotal;
+        const target = Math.max(0, histPfRow.p50 - consultTotal);
+        const delta = target - pfTotal;
         if (!Number.isFinite(delta) || Math.abs(delta) < 1) continue;
         let bandDelta = [delta, delta, delta];
         if (pfTotal > 0) {
-          const f = histPfRow.p50 / pfTotal;
+          const f = target / pfTotal;
           for (const r of pfRows) if (r.selected?.[rk] != null) r.selected[rk] = Math.round(r.selected[rk] * f * 100) / 100;
         } else if (pfRows[0]?.selected) {
-          // no PF lines priced — carry history on the first PF row, bands from quartiles
-          pfRows[0].selected[rk] = histPfRow.p50;
-          const band = [histPfRow.p25 || histPfRow.p50, histPfRow.p50, histPfRow.p75 || histPfRow.p50];
+          // no PF lines priced — carry history on the first PF row (net of the
+          // fixed cross-consult amounts), bands from quartiles
+          pfRows[0].selected[rk] = target;
+          const band = [
+            Math.max(0, (histPfRow.p25 || histPfRow.p50) - consultTotal),
+            target,
+            Math.max(0, (histPfRow.p75 || histPfRow.p50) - consultTotal),
+          ];
           if (Array.isArray(pfRows[0].cells?.[rk])) pfRows[0].cells[rk] = [...band];
           bandDelta = band;
         } else {
