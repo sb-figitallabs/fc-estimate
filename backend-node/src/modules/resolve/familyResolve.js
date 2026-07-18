@@ -307,8 +307,36 @@ export function detectNewbornContext(matches, { patient = {}, wordingText = '' }
 // re-rank between calls flips package ↔ non_package on the billing decision.
 const RANK_CACHE = new Map();
 
-export async function rankPackageCandidates({ treatment, tariff_code, organization_cd, limit = 5 }) {
-  const rankKey = [String(treatment || '').trim().toLowerCase(), tariff_code || '', organization_cd || '', limit].join('|');
+/** B1 (manager 17-Jul feedback p1): deterministic match/not-a-match verdict
+ * per candidate, laterality- and robotic-aware. The AI ranking still orders
+ * candidates; this labels each one so the FC sees WHY an option is offered —
+ * "TKR right → bilateral is NOT a match", "robotic matches because you chose
+ * robotic", "revision = same surgery, commercially different". */
+export function candidateVerdict(treatment, candidateName, { robotic } = {}) {
+  const t = ` ${String(treatment || '').toUpperCase()} `;
+  const n = ` ${String(candidateName || '').toUpperCase()} `;
+  const LEFT = /\bLEFT\b/, RIGHT = /\bRIGHT\b/, BILAT = /\bBILATERAL\b|\bBOTH\b|\bB\/L\b/, UNI = /\bUNILATERAL\b/, ROBO = /\bROBOTIC\b|\bROBO\b/, REV = /\bREVISION\b/;
+  const askBilateral = BILAT.test(t);
+  const askOneSide = !askBilateral && (UNI.test(t) || LEFT.test(t) || RIGHT.test(t));
+  const candBilateral = BILAT.test(n);
+  const candOneSide = UNI.test(n) || LEFT.test(n) || RIGHT.test(n);
+  if (askOneSide && candBilateral) return { verdict: 'not_a_match', reason: 'you asked one side — this is a bilateral package' };
+  if (askBilateral && candOneSide && !candBilateral) return { verdict: 'not_a_match', reason: 'you asked bilateral — this is a unilateral package' };
+  if (RIGHT.test(t) && LEFT.test(n) && !RIGHT.test(n)) return { verdict: 'not_a_match', reason: 'you asked right — this package is for the left side' };
+  if (LEFT.test(t) && RIGHT.test(n) && !LEFT.test(n)) return { verdict: 'not_a_match', reason: 'you asked left — this package is for the right side' };
+  if (ROBO.test(n)) {
+    if (robotic === 'no') return { verdict: 'not_a_match', reason: 'robotic package — robotic was declined' };
+    if (robotic === 'yes' && !ROBO.test(t)) return { verdict: 'match', reason: 'robotic package — matches because you chose robotic' };
+    if (ROBO.test(t)) return { verdict: 'match', reason: 'matches the robotic wording' };
+    return { verdict: 'match', reason: 'robotic variant of the same surgery — pick if robotic is planned' };
+  }
+  if (ROBO.test(t) && !ROBO.test(n)) return { verdict: 'match', reason: 'conventional variant — robotic can ride as an add-on charge' };
+  if (REV.test(n) && !REV.test(t)) return { verdict: 'match', reason: 'revision variant of the same surgery — commercially different package' };
+  return { verdict: 'match', reason: 'same surgery family' };
+}
+
+export async function rankPackageCandidates({ treatment, tariff_code, organization_cd, limit = 5, robotic } = {}) {
+  const rankKey = [String(treatment || '').trim().toLowerCase(), tariff_code || '', organization_cd || '', limit, robotic || ''].join('|');
   const cached = RANK_CACHE.get(rankKey);
   if (cached && Date.now() - cached.at < MATCH_CACHE_TTL_MS) return cached.result;
 
@@ -340,6 +368,24 @@ Return JSON {"best_index": <int or null if none genuinely matches clinically>, "
         candidates = [best, ...candidates.filter((c) => c !== best)];
       }
     } catch { ranking = { method: 'alias_score_only' }; }
+  }
+  // B1: verdict + reason on every candidate (laterality/robotic aware)
+  for (const c of candidates) {
+    const v = candidateVerdict(treatment, c.package_name, { robotic });
+    c.verdict = v.verdict;
+    c.verdict_reason = v.reason;
+  }
+  // B3 (manager 17-Jul): a "robotic: yes" answer re-biases the gate — the
+  // first ROBOTIC candidate that is a match moves to the top so the robotic
+  // package is offered instead of the conventional pick. not-a-match
+  // candidates never lead regardless of AI order.
+  if (robotic === 'yes') {
+    const idx = candidates.findIndex((c) => c.verdict === 'match' && /\bROBOT?I?C?\b|\bROBO\b/i.test(c.package_name || ''));
+    if (idx > 0) candidates = [candidates[idx], ...candidates.slice(0, idx), ...candidates.slice(idx + 1)];
+  }
+  if (candidates[0]?.verdict === 'not_a_match') {
+    const firstMatch = candidates.findIndex((c) => c.verdict === 'match');
+    if (firstMatch > 0) candidates = [candidates[firstMatch], ...candidates.slice(0, firstMatch), ...candidates.slice(firstMatch + 1)];
   }
   const result = { candidates, ranking };
   // don't cache the degraded no-AI path — let the next call retry the ranking

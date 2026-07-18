@@ -182,6 +182,8 @@ export async function buildEstimate(input) {
         const rankText = treatmentTextEarly || cohortDef.templateName || cohortDef.family;
         const { candidates } = await rankPackageCandidates({
           treatment: rankText, tariff_code: tariff.tariff_cd, organization_cd: input.payment.organization_cd,
+          // B3: an explicit robotic answer biases the pick to the robotic package
+          robotic: controls.robotic === 'yes' ? 'yes' : controls.robotic === 'no' ? 'no' : undefined,
         });
         if (candidates[0]) {
           inputPackage = { package_code: candidates[0].package_code, package_name: candidates[0].package_name };

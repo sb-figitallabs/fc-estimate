@@ -105,7 +105,9 @@ router.post('/package-gate', async (req, res, next) => {
     if (!payorBucket) return res.status(400).json({ error: 'payor_bucket is required' });
     const organizationCd = typeof req.body?.organization_cd === 'string' && req.body.organization_cd.trim()
       ? req.body.organization_cd.trim() : undefined;
-    res.json(await packageGate({ treatment, payorBucket, organizationCd }));
+    // B3: the FC's robotic answer re-biases the candidate ranking
+    const robotic = req.body?.robotic === 'yes' || req.body?.robotic === 'no' ? req.body.robotic : undefined;
+    res.json(await packageGate({ treatment, payorBucket, organizationCd, robotic }));
   } catch (err) { next(err); }
 });
 
