@@ -1,5 +1,26 @@
 import { GoogleGenAI } from '@google/genai';
 import { pool } from '../../db/pool.js';
+import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+/** "Ask the Project" corpus (18-Jul): the project chronicle (dated decision
+ * history — what the logic is, what it was before, which manager input
+ * changed it) + the recent git log. Loaded once at boot; the git log
+ * re-generates on every deploy, so answers stay in sync with the code.
+ * Fail-open: a missing chronicle or absent .git never breaks Ask-AI. */
+const __dir = path.dirname(fileURLToPath(import.meta.url));
+let CHRONICLE = '';
+try {
+  CHRONICLE = readFileSync(path.resolve(__dir, '../../../docs/chronicle.md'), 'utf8');
+} catch { CHRONICLE = ''; }
+let GIT_LOG = '';
+try {
+  GIT_LOG = execSync('git log --date=short --pretty=format:"%ad %h %s" -160', {
+    cwd: path.resolve(__dir, '../../..'), timeout: 5000,
+  }).toString();
+} catch { GIT_LOG = ''; }
 
 /**
  * Ask-AI over the ENGINE's data (read-only): a small tool loop where Gemini
@@ -120,6 +141,18 @@ already in the provided context — counts, history, packages, tariffs, past bil
 ${SCHEMA_DOC}
 
 ${LOGIC_DOC}
+
+${CHRONICLE ? `PROJECT CHRONICLE — the dated decision history of this estimate builder. Use it for "why is the logic like this",
+"what was it before", "when did it change", "what did the manager ask" questions. Cite the dates and manager inputs it
+records (e.g. "since 18-Jul per the manager's 17-Jul directive; before that it was …"). For the current VALUE of something,
+still prefer a live query; use the chronicle for the story behind it.
+
+${CHRONICLE}` : ''}
+
+${GIT_LOG ? `RECENT ENGINE COMMITS (newest first, auto-refreshed each deploy) — fine-grained change history; commit messages
+name the manager input that drove them:
+
+${GIT_LOG}` : ''}
 
 Answer rules:
 - FIRST re-read the user's question and enumerate its parts. Your final answer MUST address each part in the order asked — a common failure is answering only the part your queries covered and silently dropping the how/why part. How/why parts are answered from the engine-logic notes above; data parts from queries.
