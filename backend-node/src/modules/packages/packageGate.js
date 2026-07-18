@@ -164,6 +164,8 @@ export async function packageGate({ treatment, payorBucket, organizationCd, robo
           can_generate_estimate: c.can_generate_estimate, primary_blocker: c.primary_blocker,
           fc_template_package_code: c.fc_template_package_code,
           fc_case_count_total: c.fc_case_count_total,
+          // B1: per-candidate match verdict + reason (laterality/robotic aware)
+          verdict: c.verdict, verdict_reason: c.verdict_reason,
         })),
         ...(ranking ? { ranking } : {}),
         exists_on_other_tariffs: elsewhere,
