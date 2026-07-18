@@ -88,6 +88,9 @@ DISCOVERY: these notes are not exhaustive — for anything else, or when a colum
 SELECT table_name FROM information_schema.tables WHERE table_schema IN ('fc','mart') and
 SELECT column_name FROM information_schema.columns WHERE table_schema='…' AND table_name='…'.
 NEVER answer "cannot produce from the data" until a discovery query has been tried.
+Do NOT chase an exact figure quoted in the conversation (e.g. "the 7 cases") with endless refinements — cohort counts
+drift as data refreshes and filters differ. Once your results are plainly relevant, ANSWER with what the data shows and
+note the difference in one line.
 
 Money is INR. Use percentile_cont for quartiles. Always LIMIT your queries.`;
 
@@ -222,6 +225,24 @@ Answer rules:
     const calls = parts.filter((p) => p.functionCall);
     if (!calls.length || i === MAX_TOOL_CALLS) {
       let answer = parts.map((p) => p.text ?? '').join('').trim();
+      // Exhausted the tool budget while STILL trying to query (no text) —
+      // force one final no-tools synthesis from the results already gathered
+      // instead of giving up (18-Jul: "list the 7 cases" had all the rows in
+      // hand and still returned the could-not-answer fallback).
+      if (!answer && queries.length) {
+        try {
+          const fin = await ai.models.generateContent({
+            model: MODEL,
+            contents: [
+              ...contents,
+              { role: 'model', parts },
+              { role: 'user', parts: [{ text: 'STOP querying — the tool budget is used up. Answer the question NOW from the query results above. Present what the data actually shows; if it differs from a figure mentioned earlier in the conversation (counts drift as data refreshes or filters differ), present the data and note the difference briefly. Polished final text only, no meta commentary.' }] },
+            ],
+            config: { systemInstruction: system, temperature: 0.2, maxOutputTokens: 2048 },
+          });
+          answer = (res2text(fin) || '').trim();
+        } catch { /* fall through to the fallback string */ }
+      }
       // Completeness pass: with tool results in play the model reliably drops
       // the how/why half of multi-part questions — have it audit its own
       // answer against the question once, without tools.
