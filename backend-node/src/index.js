@@ -21,6 +21,8 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi, { customSiteTitle: 'F
 
 // Sample frontend (public/index.html) at /
 app.use(express.static(new URL('../public', import.meta.url).pathname));
+// Ask the Project (18-Jul): chronicle-backed Q&A page — clean /ask URL
+app.get('/ask', (_req, res) => res.sendFile(new URL('../public/ask.html', import.meta.url).pathname));
 
 app.get('/health', async (_req, res) => {
   try {
