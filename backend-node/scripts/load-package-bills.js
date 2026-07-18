@@ -74,8 +74,10 @@ if (limitIdx >= 0 && (!Number.isInteger(limit) || limit <= 0)) {
 }
 
 const S3_PREFIX = 's3://hospital-os-prod/fc-data/records/';
-const BILL_FILES = ['bills_may_dec25.csv.gz', 'bills_jan26.csv.gz'];
-const DETL_FILE = 'pkg_detl.csv.gz';
+// 18-Jul: + the Dec-2024→Apr-2025 window (manager's "old data" delivery) —
+// converted from his two xlsx files into the same snapshot shapes.
+const BILL_FILES = ['bills_may_dec25.csv.gz', 'bills_jan26.csv.gz', 'bills_dec24_apr25.csv.gz'];
+const DETL_FILES = ['pkg_detl.csv.gz', 'pkg_detl_dec24_apr25.csv.gz'];
 
 const BILL_HEADER = [
   'S_NO', 'COMPANYCD', 'IP_NO', 'PATIENTNAME', 'DEPARTMENTNAME', 'DOCTORNAME',
@@ -346,13 +348,13 @@ async function downloadAll() {
   // Prefer the repo-shipped copies (data/records/, delivered by the dev deploy)
   // — no AWS credentials needed on the box. S3 remains the fallback source.
   const localDir = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data', 'records');
-  if ([...BILL_FILES, DETL_FILE].every((f) => fs.existsSync(path.join(localDir, f)))) {
+  if ([...BILL_FILES, ...DETL_FILES].every((f) => fs.existsSync(path.join(localDir, f)))) {
     console.log(`[local] using repo data at ${localDir}`);
     return { dir: localDir, isTemp: false };
   }
   const creds = await resolveAwsCredentials();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pkg-bills-'));
-  for (const f of [...BILL_FILES, DETL_FILE]) {
+  for (const f of [...BILL_FILES, ...DETL_FILES]) {
     console.log(`[s3] downloading ${S3_PREFIX}${f}`);
     const bytes = await s3Download(creds, f, path.join(dir, f));
     console.log(`[s3] ${f}: ${bytes.toLocaleString('en-US')} bytes`);
@@ -553,6 +555,9 @@ async function main() {
     const splitCounts = new Map();
     const pkgCounts = new Map();
 
+    // multiple detl snapshots (18-Jul): current window first so, on any IP
+    // overlap, the newer export wins via the keep-first dedupe below.
+    for (const DETL_FILE of DETL_FILES) {
     await streamCsvGz(path.join(dir, DETL_FILE), DETL_HEADER, (r) => {
       const ip = r.IP_NO;
       if (detlIpSet.has(ip)) { dupDetlIps++; return; } // keep first, count dupes
@@ -584,7 +589,8 @@ async function main() {
         fnbBilled, billed == null ? null : billed - (fnbBilled ?? 0),
       ]);
     });
-    console.log(`[parse] ${DETL_FILE}: ${admissionRows.length} admissions (${dupDetlIps} duplicate IP_NO rows skipped)`);
+    console.log(`[parse] ${DETL_FILE}: ${admissionRows.length} admissions so far (${dupDetlIps} duplicate IP_NO rows skipped)`);
+    }
 
     /* ----------------------- reconciliation stats ---------------------- */
     const recon = { n: 0, w01: 0, w1: 0, w5: 0, worse: 0, noGross: 0 };
