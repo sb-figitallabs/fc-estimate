@@ -76,6 +76,7 @@ Shipped this day (engine `1250c28`→`79216d2`, HO `67a0b69`→`d1d2759`):
 - Manager shared `Surgery Master _SSG.xlsx` — the hospital's canonical surgery/procedure list (14,885 rows, 7,938 codes, 38 tariffs); "it's what the FC currently uses to map what the doctor has written to which dropdown to select"; medical management deliberately has no list.
 - **G1 coverage analysis** (`fc.surgery_master` ingested, report `g1-surgery-master-coverage-18jul.md`): 97.7% of billed surgical admissions map (code 86% + name 12%); 95.2% of ALL surgical IP admissions map via OT-booking/package/bill-line codes; medical maps 1.6% (expected negative control). ~159 billed codes are missing from the master (reconciliation export for the hospital); legacy 2024 OT names are the other gap class.
 - **G2** (`ccb440e`): the surgery master became a first-class stage-1 matching corpus in the gate/build/flow-2 ranking, with `master_match` provenance on candidates. Verified: "DJ STENTING (DOUBLE J STENTING) - UNILATERAL" and "cystoscopy with DJ stenting" both surface URO5443 at the real ₹70,000; TKR candidates/verdicts unchanged.
+- **G3** (`5695a30`): treatment directory at `/treatments.html` — all 309 treatments with case counts (total + per payor), surgical/medical, daycare/robotic/emergency rates, LOS p25/50/75 and ICU/OT/cath typicals from one mart scan (10-min cache); rows drill into Flow 2 prefilled. This is the `17_july_inp.pdf` clinical-part directory ("we should have a list of all hospital treatments… know the top treatments").
 
 ---
 
