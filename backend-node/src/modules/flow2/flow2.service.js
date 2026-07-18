@@ -579,6 +579,8 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
     try {
       ({ candidates, ranking } = await rankPackageCandidates({
         treatment: primary, tariff_code: tariff.tariff_cd, organization_cd: organizationCd,
+        // B3: the robotic answer (question or user selection) re-biases the pick
+        robotic: sel.robotic === 'yes' || sel.robotic === 'no' ? sel.robotic : undefined,
       }));
     } catch { candidates = []; ranking = { method: 'unavailable' }; }
   }
@@ -604,6 +606,8 @@ async function evaluatePath({ fragment, wordingText, ctx, sel, mode }) {
     placeholder_price: !(Number(c.package_amount) >= PLACEHOLDER_PRICE_MAX),
     room_amounts: c.room_amounts ?? null, // per-room package prices where recoverable
     matched_alias: c.matched_alias ?? null,
+    // B1: match / not-a-match with the reason (laterality/robotic aware)
+    ...(c.verdict ? { verdict: c.verdict, verdict_reason: c.verdict_reason } : {}),
     // manager 16-Jul: inclusions/exclusions are DISPLAY-ONLY in this flow
     documentation: {
       review_only: true,
