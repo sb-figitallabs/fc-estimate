@@ -171,6 +171,29 @@ async function withServiceAllRooms(pkg) {
   return pkg.room_amounts ? { ...pkg, room_amounts_source: 'package_master_derived' } : pkg;
 }
 
+/** F1 (18-Jul feedback #1): bulk per-room matrix prices for a candidate list —
+ * one query, so gate chips and the stage-1 package hint can show the REAL
+ * Service-All price instead of the package-master ₹10 placeholder. */
+export async function matrixRoomAmountsBulk(tariff_code, codes) {
+  const out = new Map();
+  if (!tariff_code || !codes?.length) return out;
+  try {
+    const { rows } = await query(
+      `SELECT service_cd, ward_group_name, max(charge::float) AS charge
+       FROM fc.service_tariff_rate_matrix
+       WHERE tariff_cd = $1 AND service_cd = ANY($2)
+         AND upper(ward_group_name) IN ('GENERAL','TWIN','SINGLE')
+       GROUP BY service_cd, ward_group_name`, [tariff_code, codes]);
+    for (const r of rows) {
+      if (!(Number(r.charge) > 0)) continue;
+      const m = out.get(r.service_cd) ?? {};
+      m[String(r.ward_group_name).toLowerCase()] = Number(r.charge);
+      out.set(r.service_cd, m);
+    }
+  } catch { /* matrix unavailable — callers keep master amounts */ }
+  return out;
+}
+
 async function withCleanTexts(pkg) {
   if (!pkg) return pkg;
   // Widest column set first; fall back to the older set so lookups keep
@@ -502,7 +525,11 @@ export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucke
   // — gating —
   const blockedReasons = [];
   if (!(pkgAmt > 1000)) blockedReasons.push('placeholder_package_amount');
-  if (pkg.readiness && pkg.readiness.can_generate_estimate !== true) blockedReasons.push('not_ready');
+  // F1 (18-Jul feedback #1): 'not ready' mostly meant "master carries a ₹10
+  // placeholder". With an authoritative Service-All room price the quote is
+  // real — readiness no longer blocks it (docs gaps still surface elsewhere).
+  const matrixPriced = pkg.room_amounts_source === 'service_all_matrix' && pkgAmt > 1000;
+  if (pkg.readiness && pkg.readiness.can_generate_estimate !== true && !matrixPriced) blockedReasons.push('not_ready');
   if (basis == null) blockedReasons.push('no_extras_history');
   if (extras != null && band && !inBand(total)) blockedReasons.push('outside_billed_band');
 
