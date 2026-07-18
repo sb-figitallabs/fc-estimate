@@ -142,7 +142,7 @@ Shipped this day (engine `1250c28`→`79216d2`, HO `67a0b69`→`d1d2759`):
 ### Waiting on the manager (current as of 18-Jul night)
 1. **GIPSA incl/excl DELTA** — only the additions beyond the previously-extracted MOUs (he's chasing the hospital). The old "updated GIPSA+MOU sheet" ask was **dropped 18-Jul** ("the new pdf is waste") — rates come from Service-All (A2 done), LOS from the package master (A1 done).
 2. **Common-exclusions sheet** — always-excluded items (cross-consultation etc.) that apply to every package.
-3. **Pre-2024 historical dataset** with PF + package amounts.
+3. ~~Historical dataset~~ — ✅ **received + ingested 18-Jul night**: the Dec-2024→Apr-2025 window (his two xlsx exports) loaded via the standard snapshot pipeline — package-bill admissions 12,648 → 17,002 (+34%), 690k lines, coverage back to Aug-2024, reconciliation 98.6% within 1%, bucket metrics + robotic classification rebuilt. Anything older than Dec-2024 would be a future drop.
 4. **PF doc with samples** — for VALIDATION only; the flag-not-override semantics are already implemented and verified (D6).
 5. **Cleaned FC data Dec-2024→** (doctor remarks, billing tags, estimates, actual bills) — he does the cleaning.
 6. **GIPSA business-rules JSON.**
