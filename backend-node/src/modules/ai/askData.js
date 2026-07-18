@@ -132,7 +132,7 @@ async function runSql(sql) {
  * @param {{mimeType:string,data:string}} [p.screenshot]  optional page screenshot
  * @returns {{answer:string, queries:Array<{sql:string,row_count?:number,error?:string}>}}
  */
-export async function askData({ question, history = [], context, screenshot }) {
+export async function askData({ question, history = [], context, screenshot, images }) {
   const system = `You are the AI assistant inside a hospital cost-estimate builder, answering the financial counselor's questions, at a hospital in Hyderabad, India.
 
 You can query the engine's database with the run_sql tool (read-only). Use it whenever the answer needs data that is not
@@ -159,7 +159,13 @@ Answer rules:
 - Names in the catalog are formal: expand abbreviations before searching (TKR → TOTAL KNEE REPLACEMENT, THR → TOTAL HIP REPLACEMENT, LSCS → CAESAREAN, URSL → URETEROSCOPIC LITHOTRIPSY, PCNL → PERCUTANEOUS NEPHROLITHOTOMY, CAG → coronary angiogram, D&C → dilatation curettage). If a search returns nothing, RETRY with broader single-word ILIKE patterns before concluding something does not exist — never conclude absence from one narrow query.
 - Ground every figure in the context or your query results — never invent. Round amounts to whole rupees in Indian format (₹1,24,500).
 - Keep answers short and concrete (2–6 sentences or a short list). If the data genuinely isn't there after broad retries, say so plainly.
-- Never mention SQL or table names in the answer — speak in product terms (packages, past cases, tariffs).`;
+- Never mention SQL or table names in the answer — speak in product terms (packages, past cases, tariffs).
+- SCREENSHOTS: when the question carries images, READ them carefully first — extract the exact figures, codes, names and
+  labels shown. For "is this right / why is this number X / data looks inconsistent" questions: (1) state what the
+  screenshot shows, (2) verify the shown figures against live queries where possible, (3) explain WHERE each number comes
+  from (which source, which logic — use the engine-logic notes and the chronicle), and (4) if something IS inconsistent,
+  say plainly which side is wrong and why (known data issues: ₹10 placeholder rows, GIPSA classification gaps). Never
+  wave a discrepancy away — either reconcile it with evidence or flag it as a genuine issue worth reporting.`;
 
   const contents = [];
   if (context) {
@@ -169,10 +175,16 @@ Answer rules:
   for (const m of history) {
     if (m?.text) contents.push({ role: m.role === 'model' ? 'model' : 'user', parts: [{ text: String(m.text).slice(0, 4000) }] });
   }
+  // images: screenshots the user attached to THIS question (multi-image, 18-Jul);
+  // `screenshot` stays as the single-image back-compat field from the docks.
+  const imgs = [
+    ...(Array.isArray(images) ? images : []),
+    ...(screenshot?.data ? [screenshot] : []),
+  ].filter((im) => im?.data).slice(0, 6);
   contents.push({
     role: 'user',
     parts: [
-      ...(screenshot?.data ? [{ inlineData: { mimeType: screenshot.mimeType || 'image/jpeg', data: screenshot.data } }] : []),
+      ...imgs.map((im) => ({ inlineData: { mimeType: im.mimeType || 'image/jpeg', data: im.data } })),
       { text: question },
     ],
   });

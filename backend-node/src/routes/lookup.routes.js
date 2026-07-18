@@ -131,6 +131,7 @@ router.post('/ask', async (req, res, next) => {
       history: Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [],
       context: req.body?.context,
       screenshot: req.body?.screenshot,
+      images: Array.isArray(req.body?.images) ? req.body.images.slice(0, 6) : undefined,
     }));
   } catch (err) { next(err); }
 });
