@@ -166,6 +166,8 @@ export async function packageGate({ treatment, payorBucket, organizationCd, robo
           fc_case_count_total: c.fc_case_count_total,
           // B1: per-candidate match verdict + reason (laterality/robotic aware)
           verdict: c.verdict, verdict_reason: c.verdict_reason,
+          // G2: candidate surfaced via the hospital's canonical surgery master
+          ...(c.master_match ? { master_match: c.master_match } : {}),
         })),
         ...(ranking ? { ranking } : {}),
         exists_on_other_tariffs: elsewhere,

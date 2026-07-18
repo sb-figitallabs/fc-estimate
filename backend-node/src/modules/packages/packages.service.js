@@ -306,6 +306,42 @@ export async function masterNameCandidates({ text, tariff_code, organization_cd,
 }
 
 /**
+ * G2 (manager 18-Jul, surgery master): the hospital's canonical surgery list
+ * (fc.surgery_master — what the FC's dropdown maps doctor wording to) as a
+ * first-class candidate source. Word-score match on SURGERYNAME for the
+ * resolved tariff (falls back to any tariff — names are canonical), then the
+ * matched surgery_cd resolves to a package on THIS tariff when one exists.
+ * G1 measured this signal: ~95% of surgical IP admissions bill one of these codes.
+ */
+export async function surgeryMasterCandidates({ text, tariff_code, organization_cd, limit = 5 }) {
+  const words = (text || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').split(/\s+/).filter((w) => w.length >= 3);
+  if (!words.length || !tariff_code) return [];
+  const score = words.map((_, i) => `(upper(surgery_name) LIKE $${i + 2})::int`).join(' + ');
+  const params = [tariff_code, ...words.map((w) => `%${w}%`)];
+  let rows = [];
+  try {
+    ({ rows } = await query(
+      `SELECT surgery_cd, surgery_name, MAX(${score}) AS score,
+              MAX((tariff_cd = $1)::int) AS on_tariff
+       FROM fc.surgery_master
+       GROUP BY 1, 2
+       HAVING MAX(${score}) >= ${Math.min(2, words.length)}
+       ORDER BY on_tariff DESC, score DESC
+       LIMIT ${limit * 3}`, params));
+  } catch { return []; } // table absent on an engine without the load — fail open
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    if (seen.has(r.surgery_cd)) continue;
+    seen.add(r.surgery_cd);
+    const pkg = await lookupPackage({ tariff_code, package_code: r.surgery_cd, organization_cd });
+    if (pkg) out.push({ ...pkg, matched_alias: r.surgery_name, alias_confidence: 'SurgeryMaster', master_match: r.surgery_name });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
  * Free-text resolution: alias candidates; Gemini ranks when ambiguous.
  * AI never invents — result must be one of the DB candidates or null.
  */
