@@ -139,5 +139,16 @@ Shipped this day (engine `1250c28`→`79216d2`, HO `67a0b69`→`d1d2759`):
 - Star Allied absent from the non-GIPSA tariff-bearing insurer list (F3 of 17-Jul report).
 - Implant-heavy cases (bilateral TKR, PTCA-with-stent) under-estimate ~50% — implants ride as exclusions in real bills; pending token-OT (Q2) + implants work.
 
-### Waiting on the manager
-GIPSA incl/excl Excel (Billur/Satya) · common-exclusions sheet · updated GIPSA+MOU sheet · pre-2024 historical dataset · surgery master sheet (+ usage) · GIPSA business-rules JSON · PF handling doc with samples (promised 18-Jul) · THR 1/2/3 assignment rule confirmation · his 45-vs-26 query result · visit-based medical PF fee sheet.
+### Waiting on the manager (current as of 18-Jul night)
+1. **GIPSA incl/excl DELTA** — only the additions beyond the previously-extracted MOUs (he's chasing the hospital). The old "updated GIPSA+MOU sheet" ask was **dropped 18-Jul** ("the new pdf is waste") — rates come from Service-All (A2 done), LOS from the package master (A1 done).
+2. **Common-exclusions sheet** — always-excluded items (cross-consultation etc.) that apply to every package.
+3. **Pre-2024 historical dataset** with PF + package amounts.
+4. **PF doc with samples** — for VALIDATION only; the flag-not-override semantics are already implemented and verified (D6).
+5. **Cleaned FC data Dec-2024→** (doctor remarks, billing tags, estimates, actual bills) — he does the cleaning.
+6. **GIPSA business-rules JSON.**
+7. **THR 1/2/3 assignment-rule confirmation** — hospital rule vs purely the FC's pick (today: user's pick, B2).
+8. **His OK on the 45-vs-26 reconciliation** (D5 closed our side: no missing data, scope difference) + his PR292 note if it changes anything.
+9. **Hospital-side data cleanups** (guarded in code, source still dirty): duplicate ₹10 TR1 tariff rows; ~159 billed surgery codes missing from the surgery master (export ready).
+10. **Visit-based medical-PF fee sheet** (medical PF interim = billed history P50).
+
+RECEIVED so far: surgery master sheet ✅ (18-Jul — measured G1, wired G2, directory G3); read-only DB access delivered ✅.
