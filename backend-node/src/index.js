@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import { pool } from './db/pool.js';
 import estimateRoutes from './routes/estimate.routes.js';
 import lookupRoutes from './routes/lookup.routes.js';
+import askChatsRoutes from './routes/askChats.routes.js';
 import packagesRoutes from './routes/packages.routes.js';
 import flow2Routes from './routes/flow2.routes.js';
 
@@ -34,6 +35,7 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use('/api/lookup', lookupRoutes);
+app.use('/api/ask-chats', askChatsRoutes);
 app.use('/api/estimate', estimateRoutes);
 app.use('/api/packages', packagesRoutes);
 app.use('/api/flow2', flow2Routes);

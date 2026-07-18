@@ -15,11 +15,29 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column}
-  header{background:var(--brand);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px}
-  header h1{font-size:18px;font-weight:600}
-  header .sub{font-size:13px;opacity:.85}
+  header{background:var(--brand);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px}
+  header h1{font-size:17px;font-weight:600}
+  header .sub{font-size:12.5px;opacity:.85}
   header a{margin-left:auto;color:#fff;opacity:.9;font-size:13px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.4);padding-bottom:1px}
-  main{flex:1;display:flex;flex-direction:column;max-width:880px;width:100%;margin:0 auto;padding:20px 16px 0;min-height:0}
+  #menuBtn{display:none;background:none;border:0;color:#fff;font-size:20px;cursor:pointer}
+
+  .shell{flex:1;display:flex;min-height:0;max-width:1280px;width:100%;margin:0 auto}
+  aside{width:264px;flex:none;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+  aside .top{padding:12px}
+  #newChat{width:100%;border:1px solid var(--brand);color:var(--brand-600);background:#fff;border-radius:var(--radius);padding:9px 12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  #newChat:hover{background:var(--brand-50)}
+  #convs{flex:1;overflow-y:auto;padding:0 8px 12px}
+  .conv{display:flex;align-items:center;gap:6px;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:13.5px;color:var(--ink-2)}
+  .conv:hover{background:var(--bg)}
+  .conv.active{background:var(--brand-50);color:var(--brand-600);font-weight:600}
+  .conv .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .conv .d{font-size:11px;color:var(--ink-3);flex:none}
+  .conv .x{flex:none;border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:14px;padding:0 2px;opacity:0;border-radius:4px}
+  .conv:hover .x{opacity:.7}
+  .conv .x:hover{color:#b91c1c;opacity:1}
+  #convEmpty{padding:14px;font-size:12.5px;color:var(--ink-3)}
+
+  main{flex:1;display:flex;flex-direction:column;min-width:0;padding:18px 18px 0}
   #log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:16px}
   .msg{max-width:92%;border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow);white-space:pre-wrap;word-wrap:break-word}
   .msg.user{align-self:flex-end;background:var(--brand);color:#fff}
@@ -32,54 +50,59 @@
   .hello{background:var(--brand-50);border:1px solid #dbe4ff;border-radius:var(--radius);padding:16px 18px;font-size:14px;color:var(--ink-2)}
   .hello b{color:var(--ink)}
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-  .chips button{border:1px solid #c7d2fe;background:#fff;color:var(--brand-600);border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer}
+  .chips button{border:1px solid #c7d2fe;background:#fff;color:var(--brand-600);border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer;text-align:left}
   .chips button:hover{background:var(--brand-50)}
   form{display:flex;gap:10px;padding:14px 0 18px;position:sticky;bottom:0;background:var(--bg)}
   textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;font:inherit;height:52px;background:var(--surface)}
   textarea:focus{outline:2px solid var(--brand);outline-offset:-1px}
   form button{border:0;background:var(--brand);color:#fff;border-radius:var(--radius);padding:0 22px;font:inherit;font-weight:600;cursor:pointer}
   form button:disabled{opacity:.5;cursor:default}
-  .spin{display:inline-block;width:14px;height:14px;border:2px solid #c7d2fe;border-top-color:var(--brand);border-radius:50%;animation:r 0.8s linear infinite;vertical-align:-2px;margin-right:8px}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid #c7d2fe;border-top-color:var(--brand);border-radius:50%;animation:r .8s linear infinite;vertical-align:-2px;margin-right:8px}
   @keyframes r{to{transform:rotate(360deg)}}
+
+  @media (max-width: 860px){
+    #menuBtn{display:block}
+    aside{position:fixed;left:0;top:0;bottom:0;z-index:40;transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 30px rgba(0,0,0,.2)}
+    aside.open{transform:none}
+  }
 </style>
 </head>
 <body>
 <header>
-  <svg width="26" height="26" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="3" fill="#fff" opacity=".18"/><path d="M8 9h8M8 12h8M8 15h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+  <button id="menuBtn" aria-label="Conversations">☰</button>
+  <svg width="24" height="24" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="3" fill="#fff" opacity=".18"/><path d="M8 9h8M8 12h8M8 15h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
   <div>
     <h1>Ask the Project</h1>
-    <div class="sub">FC Estimate Builder — logic, history &amp; live data. Answers cite when a rule changed and which input changed it.</div>
+    <div class="sub">FC Estimate Builder — logic, history &amp; live data</div>
   </div>
   <a href="/">estimate tester →</a>
 </header>
-<main>
-  <div id="log">
-    <div class="hello">
-      <b>Ask anything about the estimate builder</b> — current logic, why a number is what it is, what the rule was before, when it changed and what drove the change. Data questions run live read-only queries; history questions answer from the project chronicle and commit record.
-      <div class="chips" id="chips">
-        <button>What is the logic behind the LOS on an estimate, and how has it changed over time?</button>
-        <button>How is a package priced per room, and what were the earlier price sources?</button>
-        <button>How are Professional Fees calculated for cash vs insurance vs medical cases?</button>
-        <button>Why was DJ stenting showing ₹10 and what fixed it?</button>
-        <button>What is still pending from the hospital side?</button>
-      </div>
-    </div>
-  </div>
-  <form id="f">
-    <textarea id="q" placeholder="Ask about logic, history, packages, tariffs, past cases…" rows="1"></textarea>
-    <button id="send" type="submit">Ask</button>
-  </form>
-</main>
+<div class="shell">
+  <aside id="side">
+    <div class="top"><button id="newChat">＋ New chat</button></div>
+    <div id="convs"></div>
+  </aside>
+  <main>
+    <div id="log"></div>
+    <form id="f">
+      <textarea id="q" placeholder="Ask about logic, history, packages, tariffs, past cases…" rows="1"></textarea>
+      <button id="send" type="submit">Ask</button>
+    </form>
+  </main>
+</div>
 <script>
 const log = document.getElementById('log');
 const form = document.getElementById('f');
 const q = document.getElementById('q');
 const send = document.getElementById('send');
-const history = [];
+const convsEl = document.getElementById('convs');
+const side = document.getElementById('side');
 
-function el(cls, html){ const d=document.createElement('div'); d.className='msg '+cls; d.innerHTML=html; log.appendChild(d); d.scrollIntoView({behavior:'smooth',block:'end'}); return d; }
-const escapeHtml = (s)=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-// tiny markdown-lite: **bold**, bullet lists, paragraphs
+let convId = null;          // current conversation id (server-side)
+let messages = [];          // [{role:'user'|'model', text, queries?}]
+let convList = [];
+
+const escapeHtml = (s)=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function render(md){
   const lines = escapeHtml(md).split('\n');
   let out='', inList=false;
@@ -91,35 +114,127 @@ function render(md){
   if(inList) out+='</ul>';
   return out.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\n{2,}/g,'\n\n').trim();
 }
+function el(cls, html){ const d=document.createElement('div'); d.className='msg '+cls; d.innerHTML=html; log.appendChild(d); d.scrollIntoView({behavior:'smooth',block:'end'}); return d; }
 
+const HELLO = `
+  <div class="hello">
+    <b>Ask anything about the estimate builder</b> — current logic, why a number is what it is, what the rule was before, when it changed and what drove the change. Data questions run live read-only queries; history questions answer from the project chronicle and commit record.
+    <div class="chips" id="chips">
+      <button>What is the logic behind the LOS on an estimate, and how has it changed over time?</button>
+      <button>How is a package priced per room, and what were the earlier price sources?</button>
+      <button>How are Professional Fees calculated for cash vs insurance vs medical cases?</button>
+      <button>Why was DJ stenting showing ₹10 and what fixed it?</button>
+      <button>What is still pending from the hospital side?</button>
+    </div>
+  </div>`;
+
+function paintMessages(){
+  log.innerHTML = messages.length ? '' : HELLO;
+  for (const m of messages){
+    if (m.role === 'user') el('user', escapeHtml(m.text));
+    else {
+      let html = render(m.text);
+      const n = m.query_count ?? (m.queries ? m.queries.length : 0);
+      if (n) html += '<div class="meta">checked live data · '+n+' read-only quer'+(n===1?'y':'ies')+'</div>';
+      el('bot', html);
+    }
+  }
+  wireChips();
+}
+function wireChips(){
+  const c = document.getElementById('chips');
+  if (c) c.addEventListener('click', (e)=>{ if(e.target.tagName==='BUTTON') ask(e.target.textContent); });
+}
+
+// ——— conversation list ———
+const rel = (iso)=>{
+  const d = (Date.now() - new Date(iso).getTime())/1000;
+  if (d < 3600) return Math.max(1, Math.round(d/60)) + 'm';
+  if (d < 86400) return Math.round(d/3600) + 'h';
+  return Math.round(d/86400) + 'd';
+};
+function paintConvs(){
+  convsEl.innerHTML = '';
+  if (!convList.length){ convsEl.innerHTML = '<div id="convEmpty">No past conversations yet.</div>'; return; }
+  for (const c of convList){
+    const d = document.createElement('div');
+    d.className = 'conv' + (c.id === convId ? ' active' : '');
+    d.innerHTML = '<span class="t"></span><span class="d">'+rel(c.updated_at)+'</span><button class="x" title="Delete">✕</button>';
+    d.querySelector('.t').textContent = c.title;
+    d.addEventListener('click', ()=>openConv(c.id));
+    d.querySelector('.x').addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      if (!confirm('Delete this conversation?')) return;
+      await fetch('/api/ask-chats/'+c.id, {method:'DELETE'});
+      if (c.id === convId){ convId = null; messages = []; paintMessages(); }
+      await loadConvs();
+    });
+    convsEl.appendChild(d);
+  }
+}
+async function loadConvs(){
+  try{ convList = await (await fetch('/api/ask-chats')).json(); }catch{ convList = []; }
+  paintConvs();
+}
+async function openConv(id){
+  try{
+    const c = await (await fetch('/api/ask-chats/'+id)).json();
+    convId = c.id; messages = Array.isArray(c.messages) ? c.messages : [];
+    paintMessages(); paintConvs();
+    side.classList.remove('open');
+  }catch{ /* keep current */ }
+}
+async function saveConv(){
+  const title = (messages.find((m)=>m.role==='user')?.text || 'New chat').slice(0, 80);
+  const slim = messages.map((m)=>({role:m.role, text:m.text, ...(m.query_count ? {query_count:m.query_count} : {})}));
+  try{
+    if (convId == null){
+      const c = await (await fetch('/api/ask-chats', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title})})).json();
+      convId = c.id;
+    }
+    await fetch('/api/ask-chats/'+convId, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, messages: slim})});
+    await loadConvs();
+  }catch{ /* storage is best-effort — the chat keeps working */ }
+}
+
+// ——— asking ———
 async function ask(text){
-  if(!text.trim()) return;
+  if(!text.trim() || send.disabled) return;
+  if (!messages.length) log.innerHTML = '';
+  messages.push({role:'user', text:text.trim()});
   el('user', escapeHtml(text.trim()));
   q.value=''; send.disabled=true;
   const thinking = el('bot','<span class="spin"></span>thinking — checking the chronicle and live data…');
   try{
+    const history = messages.slice(0, -1).slice(-12).map((m)=>({role:m.role, text:m.text}));
     const r = await fetch('/api/lookup/ask', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ question: text.trim(), history })
     });
     const body = await r.json();
     thinking.remove();
-    if(!r.ok || !body.answer){ el('err','Could not answer: '+escapeHtml(body.error || ('HTTP '+r.status))); }
-    else{
+    if(!r.ok || !body.answer){
+      el('err','Could not answer: '+escapeHtml(body.error || ('HTTP '+r.status)));
+      messages.pop(); // question failed — don't persist it dangling
+    } else {
+      const qn = (body.queries||[]).filter(x=>x.sql).length;
       let html = render(body.answer);
-      const qs = (body.queries||[]).filter(x=>x.sql);
-      if(qs.length) html += '<div class="meta">checked live data · '+qs.length+' read-only quer'+(qs.length===1?'y':'ies')+'</div>';
+      if(qn) html += '<div class="meta">checked live data · '+qn+' read-only quer'+(qn===1?'y':'ies')+'</div>';
       el('bot', html);
-      history.push({role:'user', text:text.trim()}, {role:'model', text: body.answer});
-      if(history.length>12) history.splice(0, history.length-12);
+      messages.push({role:'model', text: body.answer, query_count: qn});
+      saveConv();
     }
-  }catch(e){ thinking.remove(); el('err','Network error: '+escapeHtml(String(e.message||e))); }
+  }catch(e){ thinking.remove(); el('err','Network error: '+escapeHtml(String(e.message||e))); messages.pop(); }
   send.disabled=false; q.focus();
 }
 
 form.addEventListener('submit', (e)=>{ e.preventDefault(); ask(q.value); });
 q.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); ask(q.value); } });
-document.getElementById('chips').addEventListener('click', (e)=>{ if(e.target.tagName==='BUTTON') ask(e.target.textContent); });
+document.getElementById('newChat').addEventListener('click', ()=>{ convId=null; messages=[]; paintMessages(); paintConvs(); side.classList.remove('open'); q.focus(); });
+document.getElementById('menuBtn').addEventListener('click', ()=>side.classList.toggle('open'));
+
+paintMessages();
+loadConvs();
 q.focus();
 </script>
 </body>
