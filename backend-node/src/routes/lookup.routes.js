@@ -62,6 +62,9 @@ router.post('/resolve-treatment', async (req, res, next) => {
         package_code: top.package_code,
         package_name: top.package_name,
         package_amount: top.package_amount,
+        // F1: per-room prices + provenance so the hint never reads as a ₹10 scalar
+        ...(top.room_amounts ? { room_amounts: top.room_amounts } : {}),
+        ...(top.package_amount_source ? { package_amount_source: top.package_amount_source } : {}),
         ...(ranking?.method === 'ai' ? { confidence: ranking.confidence } : {}),
       };
     })().catch(() => null);

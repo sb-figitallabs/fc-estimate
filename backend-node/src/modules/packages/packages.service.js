@@ -158,7 +158,11 @@ async function withServiceAllRooms(pkg) {
          AND upper(ward_group_name) IN ('GENERAL','TWIN','SINGLE')
        GROUP BY ward_group_name`, [pkg.tariff_code, pkg.package_code]);
     const m = {};
-    for (const r of rows) if (Number(r.charge) > 0) m[String(r.ward_group_name).toLowerCase()] = Number(r.charge);
+    // the matrix itself carries ₹10 placeholder rows for some packages (his
+    // 18-Jul note: duplicate TR1 rows from a newer workbook) — a charge at or
+    // below the placeholder ceiling is NOT a price and must never override
+    // the jsonb/tariff-info-derived amounts.
+    for (const r of rows) if (Number(r.charge) > PLACEHOLDER_PRICE_MAX) m[String(r.ward_group_name).toLowerCase()] = Number(r.charge);
     if (Object.keys(m).length) {
       return {
         ...pkg,
@@ -185,7 +189,7 @@ export async function matrixRoomAmountsBulk(tariff_code, codes) {
          AND upper(ward_group_name) IN ('GENERAL','TWIN','SINGLE')
        GROUP BY service_cd, ward_group_name`, [tariff_code, codes]);
     for (const r of rows) {
-      if (!(Number(r.charge) > 0)) continue;
+      if (!(Number(r.charge) > PLACEHOLDER_PRICE_MAX)) continue; // ₹10 dup rows are not prices
       const m = out.get(r.service_cd) ?? {};
       m[String(r.ward_group_name).toLowerCase()] = Number(r.charge);
       out.set(r.service_cd, m);
@@ -526,10 +530,11 @@ export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucke
   const blockedReasons = [];
   if (!(pkgAmt > 1000)) blockedReasons.push('placeholder_package_amount');
   // F1 (18-Jul feedback #1): 'not ready' mostly meant "master carries a ₹10
-  // placeholder". With an authoritative Service-All room price the quote is
-  // real — readiness no longer blocks it (docs gaps still surface elsewhere).
-  const matrixPriced = pkg.room_amounts_source === 'service_all_matrix' && pkgAmt > 1000;
-  if (pkg.readiness && pkg.readiness.can_generate_estimate !== true && !matrixPriced) blockedReasons.push('not_ready');
+  // placeholder". With a real per-room price (Service-All matrix, jsonb or
+  // tariff-info rescue) the quote is priced from the tariff source — readiness
+  // no longer blocks it (docs gaps still surface elsewhere).
+  const roomPriced = pkgSource === 'room_tier' && pkgAmt > PLACEHOLDER_PRICE_MAX;
+  if (pkg.readiness && pkg.readiness.can_generate_estimate !== true && !roomPriced) blockedReasons.push('not_ready');
   if (basis == null) blockedReasons.push('no_extras_history');
   if (extras != null && band && !inBand(total)) blockedReasons.push('outside_billed_band');
 

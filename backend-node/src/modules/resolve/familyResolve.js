@@ -375,24 +375,18 @@ Return JSON {"best_index": <int or null if none genuinely matches clinically>, "
     c.verdict = v.verdict;
     c.verdict_reason = v.reason;
   }
-  // F1 (18-Jul feedback #1): price candidates from the Service-All matrix so
-  // the gate chips and the stage-1 package hint never show the master's ₹10
-  // placeholder. General-room charge stands in for a placeholder scalar.
-  if (candidates.length) {
-    try {
-      const { matrixRoomAmountsBulk } = await import('../packages/packages.service.js');
-      const matrix = await matrixRoomAmountsBulk(tariff_code, candidates.map((c) => c.package_code));
-      for (const c of candidates) {
-        const m = matrix.get(c.package_code);
-        if (!m) continue;
-        c.room_amounts = { ...c.room_amounts, ...m };
-        c.room_amounts_source = 'service_all_matrix';
-        if (!(Number(c.package_amount) > 1000)) {
-          c.package_amount = m.general ?? m.twin ?? m.single;
-          c.package_amount_source = 'service_all_matrix';
-        }
+  // F1 (18-Jul feedback #1): never surface the master's ₹10 placeholder as a
+  // candidate price. Candidates resolve through lookupPackage, so they carry
+  // real per-room amounts (Service-All matrix, jsonb, or tariff-info rescue) —
+  // promote the General-room amount into a placeholder scalar.
+  for (const c of candidates) {
+    if (!(Number(c.package_amount) > 1000) && c.room_amounts) {
+      const amt = c.room_amounts.general ?? c.room_amounts.twin ?? c.room_amounts.single;
+      if (Number(amt) > 1000) {
+        c.package_amount = Number(amt);
+        c.package_amount_source = c.room_amounts_source ?? 'room_amounts';
       }
-    } catch { /* matrix unavailable — master amounts stand */ }
+    }
   }
   // B3 (manager 17-Jul): a "robotic: yes" answer re-biases the gate — the
   // first ROBOTIC candidate that is a match moves to the top so the robotic
