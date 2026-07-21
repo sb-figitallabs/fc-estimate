@@ -574,12 +574,26 @@ export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucke
   if (basis == null) blockedReasons.push('no_extras_history');
   if (extras != null && band && !inBand(total)) blockedReasons.push('outside_billed_band');
 
+  // Surgeon PF as a share of the package amount (manager 21-Jul T1: GIPSA 20% /
+  // Non-GIPSA 25% of the package amount; cash = package/doctor-specific). This is
+  // a breakdown of the all-inclusive package price — it is NOT added on top, so
+  // with_package_total is unchanged.
+  const pfPct = (() => {
+    const t = pkg.tariff_code;
+    const b = String(pkg.payor_bucket || '').toLowerCase();
+    if (t === 'TR1' || b === 'cash') return null;              // cash: package/doctor-specific
+    if (t === 'TR290' || b.includes('gipsa')) return 0.20;     // GIPSA
+    return 0.25;                                               // Non-GIPSA / other insurance
+  })();
+  const surgeonPf = pfPct != null && pkgAmt > 0 ? round2(pfPct * pkgAmt) : null;
+
   return {
     with_package_total: total,
     package_component: pkgAmt,
     package_amount_source: pkgSource,
     extras_component: extras,
     extras_basis: basis,
+    ...(surgeonPf != null ? { surgeon_pf: { pct: pfPct, amount: surgeonPf, base: pkgAmt, of: 'package_amount' } } : {}),
     ...(cases != null ? { extras_cases: cases } : {}),
     ...(band ? { billed_band: { p25: band.p25, p75: band.p75, cases: band.cases } } : {}),
     confidence,

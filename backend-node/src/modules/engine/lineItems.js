@@ -634,17 +634,25 @@ export function computeLineItems(ctx) {
   let pfRows = [];
   let pfSelRows = [];
   if (!medicalPf) {
+    // PF cascade %. Cash = LAN cascade (unchanged). Insurance = FINAL-bill cascade
+    // (manager 21-Jul review of T1: the FC insurance estimate uses final-bill PF,
+    // not LAN — surgeon 35%, asst-surgeon 25%, anaesthetist 35%, asst-anaesth 25%).
+    // Constants here for now; they move to the RDS rule table once the rule-trace
+    // design is approved.
+    const PCT = insuranceMode
+      ? { surgeon: 0.35, asstSurgeon: 0.25, anesthetist: 0.35, asstAnesthetist: 0.25 }
+      : { surgeon: 0.25, asstSurgeon: 0.15, anesthetist: 0.25, asstAnesthetist: 0.25 };
     const pf = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
     const pfSel = { surgeon: {}, asstSurgeon: {}, anesthetist: {}, asstAnesthetist: {} };
     for (const c of cols) {
-      pf.surgeon[c] = subtotal[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
-      pf.asstSurgeon[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.15 * v));
-      pf.anesthetist[c] = pf.surgeon[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
-      pf.asstAnesthetist[c] = pf.anesthetist[c].map((v) => (insuranceMode ? 0 : 0.25 * v));
-      pfSel.surgeon[c] = insuranceMode ? 0 : 0.25 * subtotalSelected[c];
-      pfSel.asstSurgeon[c] = insuranceMode ? 0 : 0.15 * pfSel.surgeon[c];
-      pfSel.anesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.surgeon[c];
-      pfSel.asstAnesthetist[c] = insuranceMode ? 0 : 0.25 * pfSel.anesthetist[c];
+      pf.surgeon[c] = subtotal[c].map((v) => PCT.surgeon * v);
+      pf.asstSurgeon[c] = pf.surgeon[c].map((v) => PCT.asstSurgeon * v);
+      pf.anesthetist[c] = pf.surgeon[c].map((v) => PCT.anesthetist * v);
+      pf.asstAnesthetist[c] = pf.anesthetist[c].map((v) => PCT.asstAnesthetist * v);
+      pfSel.surgeon[c] = PCT.surgeon * subtotalSelected[c];
+      pfSel.asstSurgeon[c] = PCT.asstSurgeon * pfSel.surgeon[c];
+      pfSel.anesthetist[c] = PCT.anesthetist * pfSel.surgeon[c];
+      pfSel.asstAnesthetist[c] = PCT.asstAnesthetist * pfSel.anesthetist[c];
     }
     pfRows = [pf.surgeon, pf.asstSurgeon, pf.anesthetist, pf.asstAnesthetist];
     pfSelRows = [pfSel.surgeon, pfSel.asstSurgeon, pfSel.anesthetist, pfSel.asstAnesthetist];

@@ -408,7 +408,11 @@ export async function buildEstimate(input) {
   // from billed PF history for EVERY pricing mode, Cash included (17-Jul
   // manager feedback #4: the surgical 25% cascade fabricated surgeon fees).
   const medicalPfFamily = cohortDef.rows?.surgical === false;
-  if (pricingMode !== 'Cash / TR1' || medicalPfFamily) {
+  // Only medical-management families price PF from billed history (visit-based,
+  // all modes). Surgical families — cash AND insurance — now use the rule
+  // cascade (manager 21-Jul T1: insurance PF is rule-based FINAL-bill, historic
+  // kept as reference only, not the override).
+  if (medicalPfFamily) {
     const histPfRow = actualMetricsEarly.find(
       (r) => r.basis_label === bases.pf_basis.selected_basis && r.field_key === 'professional_fees'
     );
@@ -730,10 +734,10 @@ export async function buildEstimate(input) {
   const logicPf = bucketTotals['Professional Fees'] ?? 0;
   const histPf = metricOf(bases.pf_basis.selected_basis, 'professional_fees');
   const pfDeviation = histPf?.p50 > 0 ? (logicPf - histPf.p50) / histPf.p50 : null;
-  const pfAnalysis = pricingMode !== 'Cash / TR1' || !histPf
+  const pfAnalysis = medicalPfFamily || !histPf
     ? {
         applicable: false,
-        reason: pricingMode !== 'Cash / TR1'
+        reason: medicalPfFamily
           ? (pfSource === 'historic_p50'
             ? 'PF priced from the historic P50 — the insurer tariff carries token PF rates (15-Jul Q1)'
             : 'PF folded into tariff in insurance mode')

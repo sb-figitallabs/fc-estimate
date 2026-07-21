@@ -32,12 +32,25 @@ Order: T1 → T2 → T3 → T4 (T1 is the biggest and most intertwined with curr
 
 New product in Hospital_OS: daily HIMS/insurance/FC report uploads → consolidated admitted-patient ledger → financial exposure → actionable worklists (collect ₹X / raise enhancement ₹X / resolve query / escalate). Cash goal: ~80% of expected cost collected across LOS, deposit never behind running bill. Insurance: running bill vs pre-auth, enhancement tasks.
 
-- [ ] **B0 — worktree setup**: separate git worktree off Hospital_OS (feature branch `feat/due-mobilisation`), untouched main line.
-- [ ] **B1 — our own PRD** (his instruction: write ours; his two PRD versions + product context + data mapping are vetted reference): ingest model for the 13 refcdata CSV report types, ledger schema, exposure calc, task engine, roles.
-- [ ] **B2 — ingestion**: Excel/CSV upload → Hospital_OS DB (idempotent daily snapshots), mapping per `03_Data_Mapping.md`.
-- [ ] **B3 — views**: 2–3 Hospital_OS screens (upload + worklist + patient ledger drill).
-- [ ] **B4 — dashboard**: status tiles on Praful's dashboard.
-- [ ] **B5 — handover doc** for Gautam (user-level refinements move to him after one-shot).
+- [x] **B0 — worktree setup** ✅ `feat/due-mobilisation` off origin/main, isolated from the estimate line.
+- [x] **B1 — our own PRD** ✅ `Hospital_OS-due-mob/docs/due-mobilisation-prd.md` (grounded in the real refcdata report shapes).
+- [x] **B2 — ingestion** ✅ (`e8495b7`) migration 098 + header-signature schema detection + merge-by-UMR/IP snapshot commit; verified on real bundle (75 patients).
+- [x] **B3 — exposure/task engine** ✅ (`939880e`) cash 80%/phased + insurance util/enhancement/deposit + query, dedupe/escalate/auto-close; verified (19 cash tasks).
+- [x] **B4 — UI screens** ✅ (`488511a`) worklist + daily upload + patient ledger + 5 summary tiles; route + sidebar; typecheck clean.
+- [ ] **B5 — dashboard tiles** on Praful's dashboard (the summary tiles component is ready to embed).
+- [ ] **B6 — handover doc** for Gautam (user-level refinements move to him after the one-shot).
+- [ ] **B7 (open questions to manager, from the PRD):** which PRD version is canonical · staff-mapping source · is the report's FC-estimate our builder's figure · business-date authority · ChatGPT chat link.
+
+## Workstream C — standalone data ingests (no review gate; unblocked)
+
+- [x] **C1 — Neonatal cash packages (i22, 20-Jul)** ✅ **done 20-Jul** (engine `9c8d4b1`): 4 packages ingested into `fc.package_master` + `package_room_rates` + `package_organization_applicability` (TR1/cash), enriching the clinical `surgery_master` codes. Verified live: "well baby 2 days"→PAE5049 ₹18k, "phototherapy double surface"→PAE5061 ₹23k, "photo therapy newborn jaundice"→PAE5055 ₹22k as top gate candidates. **Open: confirm the neonatologist/paediatrician PF role label with manager before assigning a doctor.** Original scope — add 4 packages to the engine's FINANCIAL package layer (rate + inclusion + exclusion + documentation + runtime), enriching the existing clinical-master codes, NOT duplicating them:
+  - `PAE5048` Postnatal Well Baby – 1 Day ₹11,000 (MOTHER_BED; PF ₹5,000; pharmacy ≤₹2,500; TCB, lactation, med-records; eff 17-Jun-2026)
+  - `PAE5049` Postnatal Well Baby – 2 Days ₹18,000 (MOTHER_BED; PF ₹7,500; +blood group/Rh, OAE; eff 17-Jun-2026)
+  - `PAE5055` Phototherapy – Per Day ₹22,000 (WARD; PF ₹5,000; CBP/TCB/retic; single-surface; ward consumables; eff 17-Jun-2026)
+  - `PAE5061` Phototherapy Double Surface – Per Day ₹23,000 (WARD; same as 5055 + double-surface; explicitly excludes HIV/HBsAg/HCV kit; eff 18-May-2026)
+  - Normalization: "Surgeon Charges" → `professional_fee` (label = neonatologist/paediatrician, **confirm role with manager before assigning doctor**); blank room-cat → MOTHER_BED (5048/49) / WARD (5055/61); Cash, tariff TR1; beyond package days → actuals; register + fingerprint the source doc.
+  - Builder impact (per i22): healthy baby 1d→PAE5048, 2d→PAE5049; phototherapy single→PAE5055×days, double→PAE5061×days; NICU stays a separate flow (these don't cover NICU); phototherapy during a well-baby package = separate package (excluded from well-baby). Feeds the pending **newborn handling** item in Workstream A.
+  - Source: `~/Downloads/Neonates Phsio Package Detailed pdf June 26 (1).parse.md`; spec: `knowledge_inputs/i22.md`.
 
 ## Standing process
 - Every topic's noisy raw inputs archived under `knowledge_inputs/` (searchable by the agent; never auto-implemented).
