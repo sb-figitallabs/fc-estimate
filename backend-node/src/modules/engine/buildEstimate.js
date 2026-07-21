@@ -1053,6 +1053,7 @@ export async function buildEstimate(input) {
       packageOffer.quote = computePackageQuote({
         pkg: packageOffer.package,
         roomKey: room.toLowerCase(),
+        payorBucket: input.payment?.payor_bucket ?? null,
         coverageExtras: packageOffer.coverage && !packageOffer.coverage.error
           ? packageOffer.coverage.totals?.payable_extras
           : null,

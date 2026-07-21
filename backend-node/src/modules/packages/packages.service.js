@@ -513,7 +513,7 @@ export async function bucketExtrasForPackage(package_code, tariff_code) {
  * extras source exists, or the quoted total sits outside the billed band
  * (same ±25% band rule as the conversion check, ≥ 5 cases).
  */
-export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucketExtras = null, billedActuals = null }) {
+export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucketExtras = null, billedActuals = null, payorBucket = null }) {
   if (!pkg) return null;
   const round2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100;
 
@@ -579,11 +579,17 @@ export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucke
   // a breakdown of the all-inclusive package price — it is NOT added on top, so
   // with_package_total is unchanged.
   const pfPct = (() => {
-    const t = pkg.tariff_code;
-    const b = String(pkg.payor_bucket || '').toLowerCase();
-    if (t === 'TR1' || b === 'cash') return null;              // cash: package/doctor-specific
-    if (t === 'TR290' || b.includes('gipsa')) return 0.20;     // GIPSA
-    return 0.25;                                               // Non-GIPSA / other insurance
+    // The manager's rule is PAYER-based (GIPSA 20% / Non-GIPSA 25%), so key off
+    // the estimate's payer bucket; fall back to the package tariff when unknown.
+    const b = String(payorBucket || pkg.payor_bucket || '').toLowerCase();
+    if (b) {
+      if (b.includes('cash')) return null;                          // cash: package/doctor-specific
+      if (b.includes('gipsa') && !b.includes('non')) return 0.20;   // GIPSA
+      return 0.25;                                                  // Non-GIPSA / Corporate / other
+    }
+    const t = pkg.tariff_code;                                      // no bucket → infer from tariff
+    if (t === 'TR1') return null;
+    return t === 'TR290' ? 0.20 : 0.25;
   })();
   const surgeonPf = pfPct != null && pkgAmt > 0 ? round2(pfPct * pkgAmt) : null;
 
