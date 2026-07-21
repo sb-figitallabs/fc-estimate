@@ -172,12 +172,34 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode,
         : 'package_plus_non_package';
   }
 
-  // combined — only when every path priced; a plain sum of historic P50s
+  // combined — only when every path priced. Multi-treatment reduction (manager
+  // 21-Jul T1): highest treatment 100%, second 50%, third+ 25%. Cash never
+  // reduces (100% each); GIPSA always applies the factors (firm — "ignore
+  // exceptions"); Non-GIPSA applies them only for a SAME-sitting combo
+  // (different sittings = 100% each). The factor-adjusted total is the headline;
+  // the old 100% sum is kept as `unadjusted_reference`.
   const combined = paths.every((p) => p.numbers?.gross?.approximate_bill?.p50 != null)
-    ? {
-      gross_p50_sum: paths.reduce((t, p) => t + p.numbers.gross.approximate_bill.p50, 0),
-      note: 'sum of per-path historic P50s — combo interactions (shared LOS/OT, package overlaps) are NOT modeled; treat as an upper-bound reference',
-    }
+    ? (() => {
+      const p50s = paths.map((p) => p.numbers.gross.approximate_bill.p50);
+      const unadjusted = p50s.reduce((t, v) => t + v, 0);
+      const sitting = selections?.sitting === 'different' ? 'different' : 'same';
+      const reduce = payorGroup === 'GIPSA Insurance'
+        || (payorGroup === 'Non-GIPSA Insurance' && sitting === 'same');
+      const FACTORS = [1, 0.5, 0.25]; // 3rd and beyond fall through to 0.25
+      const adjusted = reduce
+        ? [...p50s].sort((a, b) => b - a).reduce((t, v, i) => t + v * (FACTORS[i] ?? 0.25), 0)
+        : unadjusted;
+      return {
+        gross_p50_sum: Math.round(adjusted),
+        unadjusted_reference: Math.round(unadjusted),
+        reduction_applied: reduce,
+        reduction_factors: reduce ? '100/50/25' : 'none',
+        sitting: payorGroup === 'Non-GIPSA Insurance' ? sitting : undefined,
+        note: reduce
+          ? 'multi-treatment factors applied (highest 100%, second 50%, third+ 25%); unadjusted_reference is the old 100% sum. Shared LOS/OT overlap still not modeled.'
+          : 'sum of per-path historic P50s (no reduction for this payer/sitting) — combo interactions (shared LOS/OT, package overlaps) are NOT modeled; upper-bound reference',
+      };
+    })()
     : null;
 
   return {
