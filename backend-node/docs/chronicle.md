@@ -413,3 +413,15 @@ Doc T18: governed manual add-on catalogue (OT/ward/ICU equipment, respiratory, b
 Verified: ambulance → patient-payable; instrument → claimable; two same-mutex → conflict; cash → all patient; baseline byte-identical. No regression — 24/0, 12/0.
 
 Open: expand the governed catalogue masters (basis/locations/admissibility/rates) from tariff + past IPs; supply the missing-master codes (cradle, arthroscopy major/minor, microscope>3h, NIV variants, retropositive, external PF, hospitality); frontend to render the staff-confirmed add-on picker + incompatibility warnings.
+
+---
+
+## 2026-07-22 — Tab-19 Tariff dataset completeness & fallbacks (validation + deliverable, NO code change)
+
+Doc T19: is our tariff a safe universal price master, and does "missing rate → TR1 fallback" hold? Item identity ~complete (>99.9%, ~23 gaps); insurance exact pricing NOT ready; blanket TR1 fallback REJECTED by held-out (9,710/9,721 failed certification). Manager: ₹1/₹10 placeholder fail-closed **Agreed**; asked **what to use instead of TR1** ("price diff small, your thoughts?"); median-of-room "need info"; **"give me the list of missing codes/rates per TR code"**; service-vs-investigation → lean service-primary, wants our thoughts; 7-step hierarchy "packages or items?".
+
+**§4 engine check confirmed — N6 largely already handled in our engine:** line amounts come from **cohort history** (`amount_cash_typical`, quartiles in artifacts.js), NOT raw ₹1 tariff rows → the "resolver treats ₹1 as valid" failure mode doesn't apply; `PLACEHOLDER_PRICE_MAX = 1000` (packageGate/packages.service/flow2) flags sub-₹1000 placeholder packages (no total + warning); TR1 is a **flagged last-resort** (`tariff_contracted → cohort_history → tariff_tr1_fallback`), cash-only, never a blanket insurance fallback; rateOf is room-specific (no median-of-room).
+
+**Deliverable:** `todo_and_helpers/missing-tariff-codes-per-TR.md` — missing/placeholder frequently-billed codes per insurance TR (TR290 ~640 missing, TR292 & TR274 all 736, TR215 728, TR289 631, TR286 560, TR287 519) for the hospital.
+
+**Decision: no engine change** — our pricing already follows the accurate per-code / cohort-history policy the doc endorses; blanket-TR1 is not used. Recommendations recorded in the manager-review doc (TR1→keep cohort-history; service-tariff primary with per-code conflict review; hierarchy = items vs packages both handled; no median-of-room).
