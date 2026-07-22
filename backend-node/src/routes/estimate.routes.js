@@ -123,6 +123,14 @@ export const EstimateInput = z.object({
     isolation_icu_days: z.number().nonnegative().optional(),
     surgery_context: z.enum(['non_heart', 'ct', 'cath_lab', 'medical']).optional(), // resolves the HBsAg/HCV context code
     payer_agreement_id: z.string().optional(),
+    // Newborn pathways (doc T6) — "newborn" never auto-adds a bed/PF; the FC
+    // selects a pathway explicitly. See modules/engine/newborn.js.
+    newborn_pathway: z.enum(['none', 'healthy_with_mother', 'well_baby_package', 'phototherapy', 'nicu']).default('none'),
+    newborn_stay_days: z.number().nonnegative().optional(),
+    nicu_days: z.number().nonnegative().optional(),                 // NICU room days — NOT the generic icu field
+    newborn_twins: z.enum(['No', 'Yes']).default('No'),
+    newborn_in_mother_package: z.enum(['No', 'Yes']).default('No'),
+    phototherapy_double_surface: z.enum(['No', 'Yes']).default('No'),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),

@@ -31,6 +31,7 @@ import { lookupExpectedNme } from '../insurance/nmeProfile.js';
 import { buildEmergencyOverlay } from './emergency.js';
 import { buildPositiveCaseOverlay } from './positiveCase.js';
 import { annotateDnbDisposition } from '../insurance/dnbDisposition.js';
+import { buildNewbornScenario } from './newborn.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1046,6 +1047,33 @@ export async function buildEstimate(input) {
       if (positiveCase) estimate.positive_case = positiveCase;
     }
   } catch { /* overlay is additive — never break the estimate */ }
+
+  // 17e. Newborn pathways (doc T6) — a distinct newborn scenario, additive and
+  // explicit-selection-only ("newborn" never auto-adds a bed/PF). Separate from
+  // the mother's estimate; never mutates base totals.
+  try {
+    if (controls.newborn_pathway && controls.newborn_pathway !== 'none') {
+      // the 4 cash newborn packages (well-baby + phototherapy pathways)
+      const { rows: nbPkgs } = await query(
+        `SELECT package_code, package_name, package_amount FROM fc.package_master
+         WHERE package_code = ANY($1)`, [['PAE5048', 'PAE5049', 'PAE5055', 'PAE5061']]);
+      const newbornPackages = Object.fromEntries(nbPkgs.map((p) => [p.package_code, { name: p.package_name, amount: Number(p.package_amount) || null }]));
+      const newborn = buildNewbornScenario({
+        inputs: {
+          pathway: controls.newborn_pathway,
+          stayDays: controls.newborn_stay_days,
+          nicuDays: controls.nicu_days,
+          twins: controls.newborn_twins,
+          inMotherPackage: controls.newborn_in_mother_package,
+          phototherapyDoubleSurface: controls.phototherapy_double_surface,
+        },
+        rateOf: (code) => rates.get(code) || {},
+        room: room.toLowerCase(),
+        newbornPackages,
+      });
+      if (newborn) estimate.newborn = newborn;
+    }
+  } catch { /* scenario is additive — never break the estimate */ }
 
   // Package tariff differs per room type: use the room's tier from
   // room_amounts (derived from fc.package_master.room_rates_jsonb), falling
