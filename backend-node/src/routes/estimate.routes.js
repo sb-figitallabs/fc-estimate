@@ -113,6 +113,16 @@ export const EstimateInput = z.object({
     emergency_bed_expected: z.enum(['No', 'Yes']).default('No'),          // ER-bed use expected — gates emergency-bed row
     emergency_bed_hours: z.number().nonnegative().optional(),             // hours in the emergency bed (1–4h blocks)
     emergency_pricing_method: z.enum(['none', 'ot_e', 'package_pct']).default('none'), // Q3: mutually exclusive method
+    // Positive-case (infective/seropositive) overlay (doc T4) — VERIFIED status
+    // only, explicit toggle, never inferred from a test order. See
+    // modules/engine/positiveCase.js.
+    positive_status: z.enum(['NONE', 'HBSAG', 'HCV', 'HIV_SEROPOSITIVE', 'H1N1', 'OTHER_INFECTIVE']).default('NONE'),
+    confirmation_source: z.enum(['green_sticker', 'lab', 'clinical', 'manual']).optional(), // status must be verified
+    requires_isolation: z.enum(['No', 'Yes']).default('No'),
+    isolation_room_days: z.number().nonnegative().optional(),
+    isolation_icu_days: z.number().nonnegative().optional(),
+    surgery_context: z.enum(['non_heart', 'ct', 'cath_lab', 'medical']).optional(), // resolves the HBsAg/HCV context code
+    payer_agreement_id: z.string().optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),

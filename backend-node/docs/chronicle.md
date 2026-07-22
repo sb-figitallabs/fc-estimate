@@ -187,3 +187,19 @@ Doc T3: emergency is a **billing overlay on Treatment A** — never a separate t
 Verified: insurance ER arrival → physician+assessment ₹4,000; +bed ₹5,310; cash → assessment OFF, ₹1,000; **baseline byte-identical**. No regression — sanity_insurance 24/0, sanity_family 12/0.
 
 Open (for manager): Q2 emergency-OT still needs data to validate (0 historical); ER-physician priced from history (no tariff row) — confirm ₹1,000 reference; holiday calendar not built (Q4 — no auto-apply); package emergency-% needs per-org agreement table; variable-services range dataset not yet wired.
+
+---
+
+## 2026-07-22 — Tab-4 Positive-case (infective/seropositive) billing layer
+
+Doc T4: a separate positive-case billing-rule layer — VERIFIED status only, explicit FC toggle (or explicit doctor's-note selection), NEVER inferred from a test order (MIC0066 is in 2,840 admissions incl. 905 medical — just an investigation). Manager approved §2 rules; key answers: #5 OT surcharge 50%/100% is **standard for GIPSA+Non-GIPSA (no MOU list needed)**; #6 package-case OT base = package-embedded OT with review flag; Q1 single toggle; Q2 positive-OT + emergency-OT share the OT base, separate lines, **no compounding**; Q3 **policy-first** (124 samples → ACTIVE_POLICY/PROVISIONAL); §5 validation first ("Sure"). Blocked #1-4 → handle with flags (rare).
+
+**§5 validation** (package-bill lines only — package_bill_lines has ZERO open-bill line data, 4,906 pkg IPs): RNS0123 51 / RNS0122 12 / RNS0121 1 / RNS0116 5 vs doc full-cohort 83/13/1/31; cohort 67 vs ~124. The delta is open-bill positive cases we have no line data for — **the same open-bill gap as NME Phase-2**. RNS0123 priced ₹16,280 = tariff median. HSP5020-5024 in TR1 (priceable); RNS0123/0121/0122 in TR177 only; MSC2816 ₹10 placeholder (Blocked #3).
+
+**Built on `feat/positive-case-overlay` (not pushed):**
+- `positiveCase.js buildPositiveCaseOverlay()` — additive overlay `estimate.positive_case`, never mutates base totals; charges outside package by default. HBsAg/HCV context code by surgery_context (medical = no charge); HIV LOS-banded HSP5020-5024; isolation RNS0101 (ICU isolation CONTEXT_REQUIRED); OT surcharge +50%/+100% standard GIPSA+Non-GIPSA, OT base only, separate line, no compounding w/ emergency-OT. Rate = payer tariff + TR1 fallback, never hardcoded; absent → CONTEXT_REQUIRED. Policy-first flags. Blocked #3/#4/#6 as flags.
+- schema: positive_status, confirmation_source, requires_isolation, isolation_room/icu_days, surgery_context, payer_agreement_id.
+
+Verified: HBsAg non-heart ₹16,280 +50% OT; HIV HSP5022 ₹11,000 +100%; +isolation ₹25,760; cash → no OT surcharge; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
+
+Open (for manager): ICU isolation code (#1), rates effective date (#2), MSC2816 conflict (#3), RNS0116 validity (#4) — all pending hospital; open-bill line data needed to see the full 124 cohort; frontend to render the positive-case toggle + section.
