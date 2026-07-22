@@ -30,6 +30,7 @@ import { settle, settleWithPackage } from '../insurance/settlement.js';
 import { lookupExpectedNme } from '../insurance/nmeProfile.js';
 import { buildEmergencyOverlay } from './emergency.js';
 import { buildPositiveCaseOverlay } from './positiveCase.js';
+import { annotateDnbDisposition } from '../insurance/dnbDisposition.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -966,13 +967,13 @@ export async function buildEstimate(input) {
   // 17. insurance settlement: insurer share vs patient share (itemized claim)
   if (input.insurance && input.payment.payor_bucket !== 'Cash') {
     try {
-      estimate.insurance_settlement = settle({
+      estimate.insurance_settlement = annotateDnbDisposition(settle({
         lineItems: lineItems.rows,
         roomKey: room.toLowerCase(),
         drivers,
         insurance: input.insurance,
         grossTotal: lineItems.finalEstimate,
-      });
+      }), input.payment.payor_bucket);
     } catch (err) {
       estimate.insurance_settlement = { error: err.message };
     }
@@ -1070,14 +1071,14 @@ export async function buildEstimate(input) {
       // insurance settlement over the PACKAGE route (package + settled extras)
       if (input.insurance && input.payment.payor_bucket !== 'Cash') {
         try {
-          packageOffer.insurance_settlement = settleWithPackage({
+          packageOffer.insurance_settlement = annotateDnbDisposition(settleWithPackage({
             packageAmount: pkgAmt,
             coverageRows: coverage.rows,
             lineItems: lineItems.rows,
             roomKey: room.toLowerCase(),
             drivers,
             insurance: input.insurance,
-          });
+          }), input.payment.payor_bucket);
         } catch (err) {
           packageOffer.insurance_settlement = { error: err.message };
         }
