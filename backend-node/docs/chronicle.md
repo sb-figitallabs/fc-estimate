@@ -476,3 +476,15 @@ Doc T23: variants as structured attributes on a canonical treatment (approach/sc
 **Validation:** robotic packages present (ORT5536 Robotic TKR Bilateral ₹690k / ORT5784 Uni-Left / ORT5535 Uni-Right ₹355k). **Laparoscopic hypothesis CONFIRMED** — 14 lap-specific packages (SGA5169 Lap Cholecystectomy ₹107,120; SGA5698/5699 Inguinal Hernia Lap Bi/Uni), themselves uni/bi-split → laparoscopic IS an approach-specific package (handle like robotic), resolved by package matching, not a multiplier. TKR packages: 14 unilateral / 6 bilateral (separate).
 
 **Decision: no engine change** — uni/bi separate, robotic payer-specific, left/right within-uni, lap-specific packages all already supported. The canonical variant table + backfill (from billed/package codes) and per-family laterality/approach certification are future data work (Agreed, not built). Unknown-variant scenarios (conventional-vs-robotic side by side) is a presentation choice; engine already carries robotic scenarios.
+
+---
+
+## 2026-07-22 — Tab-24 Flow, package codes & doctor-input / AI boundary (validation + confirmation, NO code change)
+
+Doc T24: package CODE (not name) is the anchor; AI interprets while governed rules decide. Manager: check effective-period exists; cross-payer history = context only **Agreed**; robotics don't auto-decide from prevalence (>90% → preselect+confirm) **Agreed**; AI never invents code/rate/PF/GST/other-payer-pkg **Agreed** (need more info on "infer laterality/robotic/implant as fact"); doctor code = assertion not truth **Agreed**; mismatch tiers block/confirm/inform "sounds right"; N9 governed AI optional-item suggestion layer **Agreed/aligned**; doctor-input contract "agreed on a call"; template consolidation "validate upside first".
+
+**§4 confirmed — architecture already ours:** engine is code-first (production key tariff+package_code+org+room), robotic is a USER selection (cohort.js "payor/tariff/room are user inputs"), AI refuses rather than fabricating (familyResolve: "Never invent packages… return null"). The >90%-prevalence caution maps to our add-on inclusion heuristic (`services.js case_presence_rate > 90 → include`) — the suggest/confirm refinement would apply there.
+
+**Effective-period validation (manager's ask):** `package_master` HAS `effective_from`/`effective_to` → package price can key on effective period; `service_tariff_rate_matrix` has NO effective-date columns → service-line rates cannot key on effective period (gap to flag if the hospital wants effective-dated service rates); `organization_tariff_mapping` none.
+
+**Decision: no engine change now** — the flow + AI boundary are already implemented and endorsed. The approved refinements touch verified logic / need the product call: (a) >90% add-on → preselect-but-confirm (changes the default add-on set — verified-number-adjacent), (b) N9 governed AI optional-item suggestion layer (scoped expansion of AI scope), (c) doctor-input contract with source-span provenance + field-level override governance ("agreed on a call"). Scheduled for that call, not silently built. Effective-dated service rates flagged as a data gap.
