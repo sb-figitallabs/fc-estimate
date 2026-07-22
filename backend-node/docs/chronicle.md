@@ -339,3 +339,13 @@ Doc T13: dedicated systemic-therapy engine — drug/dose/brand/vial explains the
 Verified: routine → pending/low-confidence; immunotherapy priced ₹113k + chemoport/supportive separate; baseline byte-identical. No regression — 24/0, 12/0.
 
 HELD per manager (not built): systemic-therapy drug/regimen master; pharmacy-price-coverage audit (6,132/11,254 unpriced → last-observed provisional + confirm); prior-cycle auto-retrieval by UMR. Ties to Tab-12 daycare infusion pricing.
+
+---
+
+## 2026-07-22 — Tab-14 Billing Training Guide (confirmation/enrichment, NO code change)
+
+Doc T14: the 8-sheet hospital billing checklist workbook — useful as a RULE-ENRICHMENT source (billing units, OT slots), NOT a rate master or complete policy. Manager: 133/135 codes already in our tariff, join canonical, ROM0013 (Triple Sharing) + MSC1891 (Cadaver) inactive (Agreed); workbook confirms our LAN PF rules (25/15/25, GIPSA pkg 20 / Non-GIPSA pkg 25, corp 16, cardio 20) (Agreed); **IGNORE the workbook's final-insurance PF block** (35-40/35/45) — "use what we already confirmed, not this"; monitor code error EME0019 (workbook Half-Day vs our Per-Day) — don't import as alias (Agreed); "ignore what contradicts, use only what we already confirmed"; urology-instrument threshold: **"the instrument itself is NOT in the base — validate with the dataset"**.
+
+**Validation:** OT slot ladder (normal OTC0005-0020 / emergency OTC0054-0069) + PF rules already implemented in the engine (lineItems otSlots + Tab-1 PF cascade). Urology instruments OTI0058/0059 = 150 tariff rows each but **0 history admissions** (confirms doc's "absent from history"); present as SEPARATE billable codes → consistent with "instrument not in base" (full threshold-mechanics validation limited by the package-only line gap). ROM0013/MSC1891 = 0 tariff, 0 history → keep inactive.
+
+**Decision: no engine change.** The workbook confirms + enriches existing logic; its only danger (the final-insurance PF block) is IGNORED per manager (same D1/D2 as the PF tab, already decided). Any incremental billing-unit / instrument-tier rules are training evidence in fc_curated, promoted rule-by-rule — not bulk-imported.
