@@ -174,6 +174,18 @@ export const EstimateInput = z.object({
     blood_transfusion: z.boolean().optional(),
     blood_component: z.enum(['prbc', 'ffp']).optional(),
     blood_units: z.number().positive().optional(),
+    // Equipment & manual add-ons (doc T18) — governed catalogue, staff-confirmed,
+    // four-column financial separation. See modules/engine/manualAddons.js.
+    manual_addons: z.array(z.object({
+      code: z.string(),
+      name: z.string().optional(),
+      basis: z.enum(['flat', 'per_event', 'per_hour', 'per_day', '12h', '24h', 'per_shock', 'per_km', 'editable']).optional(),
+      qty: z.number().positive().optional(),
+      location: z.enum(['ot', 'ward', 'icu', 'er', 'labour', 'nicu', 'cathlab']).optional(),
+      mutex: z.string().optional(),
+      admissible: z.string().optional(),
+      package_included: z.boolean().optional(),
+    })).optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
