@@ -365,3 +365,19 @@ Doc T15: labour-room = a maternal LOCATION add-on billed by occupancy duration, 
 Verified: default/<4h → ₹0 occupied-bed only; 6h → ROM0121 ₹9,900; 10h → ROM5166 ₹15,000; baseline byte-identical. No regression — 24/0, 12/0.
 
 Open: confirm the exact slot→code mapping with the billing head (tariff lacks explicit 4-8/8-12 codes); frontend to render the projected-hours input under the delivery pathway.
+
+---
+
+## 2026-07-22 — Tab-16 Room-rent GST (highest-confidence, statutory)
+
+Doc T16: statutory 5% GST on non-ICU room rent > ₹5,000/day, on the FULL amount; ICU/CCU/ICCU/NICU/HDU exempt; by service code not ward name; same math all payers; room rent only. Attendant room 18% (no code yet). Manager: guard rails Agreed; **attendant room OFF by default, flag if user selects** (will ask hospital); **HDU assume untaxed for now**; three categories "okay".
+
+**Validation:** no existing GST in the engine. Room bed rates (TR1): ROM0001 general ₹3,320 / ROM0024 twin ₹4,660 (< ₹5,000 → no GST), ROM0036 single ₹7,680 (> ₹5,000 → 5%), ROM5009 ICU ₹10,500 (exempt).
+
+**Built on `feat/tax` (not pushed):**
+- `src/modules/engine/tax.js buildRoomTax()` — SEPARATE `estimate.tax` line, additive, never folded into the parity-pinned base total. 5% GST on non-ICU room rent > ₹5,000/day (full amount, strictly above; exactly ₹5,000 → ₹0). ICU → CRITICAL_CARE_ROOM_EXEMPT. Attendant room = no_code_flag_only (18%, off by default). package_rule=tax_identifiable_room_component_only. Categories PATIENT_ROOM_5_ABOVE_5000 / CRITICAL_CARE_ROOM_EXEMPT / ATTENDANT_ACCOMMODATION_18.
+- schema: attendant_room. Computed automatically on every estimate.
+
+Verified: General → GST ₹0; Single 3d ₹7,680/day → GST ₹1,152; ICU exempt; attendant flag; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: attendant-room code/SAC/rate/date from Finance; HDU tax status from Finance (assumed untaxed); frontend to render the "GST on room rent @ 5%" line + attendant-room flag. GST is currently a separate line (not in the headline total) to preserve parity — confirm whether it should roll into the patient-payable headline.
