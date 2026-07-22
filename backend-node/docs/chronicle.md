@@ -452,3 +452,15 @@ Doc T21: financial data strong; exact treatment / multi-treatment mappings over-
 **Engine relevance:** our estimate cohorts are FAMILY-based + ≥15-case gated + governed-fallback, NOT raw surgery_cd → partly insulated; but the raw surgery-master feeding family selection can still pull contaminated cases. Recommend gating treatment-level cohorts on CLEANED mappings (exclude sentinel codes like RT0006) before treatment-level production; keep the strong financial data (services_json / cleaned_pharmacy_net / fc_actual_bucket_totals, NOT legacy service_net_amount=0); use reconstruction for composition, reported final for calibration — no blanket 10% uplift; never copy old FC estimates (already so).
 
 **Decision: no engine change now** — N8 rebuild (clean surgery-master evidence, revalidate 756 multi-treatment, component-verify combos, governed medical master, hierarchical cohort fallback) HELD pending the manager's evaluation. Contamination evidence delivered for that evaluation.
+
+---
+
+## 2026-07-22 — Tab-22 Package handling (validation + confirmation, NO code change)
+
+Doc T22: clinical names reliable; combos understated; clean package-rate source (v_package_rates_current) under-prices ~half. Manager: use the **service tariff dataset (actual current rates)**, not the halved GIPSA-JSON extract; **verify real combos first** then apply; FC-flag≠final **Agreed**; open_bill_amount≠package-plus-open **Agreed** (combos only when multiple treatments); package≠patient-estimate → **follow our finalized inclusion/exclusion rules, ratios as reference only**; immediate fixes "review and rectify"; decision-states "useful enrichment"; §4 validation "Sure do both".
+
+**§4 confirmed — N7 does NOT affect our engine:** FC Builder reads package price from `fc.package_master`/`fc.v_package_runtime_lookup`, NOT the flagged `v_package_rates_current`. Live spot-check: ORT5510 TKR = ₹255,000 / ₹125,000 / ₹199,580 — **full commercial amounts**, not the halved ~₹79k. Under-pricing is an upstream project-3 artifact.
+
+**Validation:** final/package ratios (our 17k) — Non-GIPSA 2.08× / GIPSA 2.41× / Cash 1.77× (doc 1.67/1.80/1.09; direction confirmed — package << final, higher for insurance; reference only). Immediate fixes are **project-3 artifacts NOT in our master**: GYN5013 absent; our delivery packages correctly classified (GYN5322 LSCS / GYN5324 Normal Delivery / GYN5109 Forceps — all GYN, not Medical); no SBI packages. Combo detection already exists in the engine (comboDetect.js / flow2.service.js).
+
+**Decision: no engine change** — our package base is correct (full amounts), we follow the finalized inclusion/exclusion rules (ratios reference only), FC-flag-not-final and open-bill≠package-plus-open already respected, combo detection already present. The N7 clean-up / immediate fixes / 21.9% combo verification are project-3 data work, not our engine. Decision-states could be an optional past-IP enrichment.
