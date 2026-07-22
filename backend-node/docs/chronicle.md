@@ -274,3 +274,19 @@ Doc T9: hybrid detect-and-confirm; separate subtotal under Professional Charges;
 Verified: GIPSA Cardiology 2v ₹6,000 + Nephrology ₹2,750; cash specific-doctor ₹1,000; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
 
 Open: supply a governed consultation tariff-code mapping for exact per-doctor auto-pricing (placeholder-department works meanwhile); ~92% outside-package reproduction is package-bill-limited (open-bill gap); frontend to render the suggest-and-confirm cross-consult picker.
+
+---
+
+## 2026-07-22 — Tab-10 Outside-package LOS excess-day model
+
+Doc T10: beyond the package LOS, package stays the base charge; only incremental excess-day care added at actuals; package + PF never recomputed. Manager: outside-package ≠ collect from patient (apply insurer eligibility after) Agreed; per-setting ledger **only when ward/ICU breakdown exists, else total LOS regardless of setting**; new procedure during excess = separate treatment (Yes); no double-charge (PACKAGE_EXCLUSION xor POST_PACKAGE_LOS) Agreed; **drug-admin on excess pharmacy = CASH only** (for outside-package pharmacy it applies on cash); "recheck package master for LOS".
+
+**Validation:** package_master LOS coverage = **1,149/1,149 have package_duration (0 missing)** — the manager's 743-missing concern is resolved for us. No prior explicit excess-day charge model existed (only package_duration as the LOS default).
+
+**Built on `feat/outside-package-los` (not pushed):**
+- `src/modules/engine/outsidePackageLos.js buildOutsidePackageLos()` — additive `packageOffer.outside_package_los`, package base+PF untouched. Per excess day: room (ward ROM0001/0024/0036 / ICU ROM5009), DMO (ROM0093, ward), intensivist (ICC0002, ICU), physician visits (1 ward/2 ICU/day at the treating-dept consultation median). Net pharmacy + investigations as RANGES. All lines POST_PACKAGE_LOS. Per-setting ledger when ward/ICU breakdown present, else total excess LOS. Drug-admin on excess pharmacy CASH-only. collectability=apply_insurer_eligibility_after. New procedure during excess = separate treatment (flag).
+- Wired into the package route (fires only when drivers.los.selected > package_duration).
+
+Verified: GIPSA overstay 12d (pkg LOS 4) → 8 excess days, ₹44,008 deterministic (ward room 8×₹3,000 + DMO 8×₹1 [GIPSA ₹1-non-show] + physician 8×₹2,500), pf_recomputed=false, no drug-admin on insurance; no overstay → none; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: ward/ICU package-level breakdown not in package_master (pkg_defined_*_stay) → total-LOS fallback used; net-pharmacy/investigations exact numbers need per-day cohort data (open-bill gap); frontend to render the excess-day breakdown.
