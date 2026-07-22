@@ -258,3 +258,19 @@ Doc T8: how the builder handles what a package absorbs vs bills extra; whether a
 - `coverage.js` already implements §1 (parseCoverage/applyCoverage → fully_included / partially_included / capped / excluded / payable_extras from the package rate + source-supported extras).
 
 **Decision: no engine change.** Our engine + data already meet the endorsed design; N2 heavy per-line schema NOT built (manager's instinct confirmed — the four-status coverage model + cash-reconciliation-to-₹0 already covers it). Clarifications written for the manager's 4 "need more info" points (conditional-extra label, no cross-component offset, Non-GIPSA org→agreement→package→rule resolution, data-readiness now much better).
+
+---
+
+## 2026-07-22 — Tab-9 Cross-consultation pricing
+
+Doc T9: hybrid detect-and-confirm; separate subtotal under Professional Charges; excluded from surgeon-PF denominator; diet consult (DIE0001) is NOT a cross-consult. Core (exclusion + grouping) already shipped D3 (17-Jul) — confirmed. Manager: never auto-include (suggest-and-confirm) Agreed; **one visit/consultant/day** (cross-consults only, not primary) Confirmed; role placeholders when doctor unknown, specific doctor needs name+verified code; **Non-GIPSA/TR201 kept as EXCLUSION** until a TR201 include-guideline is added; **insurance → placeholder department (not doctor name), contracted rates by TR code — "validate this once before implementing"**.
+
+**Validation (his ask):** `fc.consultation_tariff_rate_matrix` = 35,372 rows, 57 depts × 30 tariffs, tariff_cd populated (34,119) — resolves the old `v_consultation_rates_current` null-tariff blocker. Rates are FLAT per dept+tariff+ward (TR290/GENERAL: Ortho ₹2,500, Cardiology ₹3,000, across all doctors) → placeholder-department pricing by TR code is valid.
+
+**Built on `feat/cross-consult` (not pushed):**
+- `src/modules/engine/crossConsult.js buildCrossConsults()` — FC-selected, suggest-and-confirm, additive `estimate.cross_consultations`; base unchanged. Prices from consultation_tariff_rate_matrix by (payer tariff + dept + ward); INSURANCE → placeholder dept CROSS:<DEPT> (real doctor code before billing); doctor_cd → specific rate (cash/open). One visit/day cap (visits ≤ LOS). Charged separately at visit tariff, not PF %. TR1 fallback; absent → CONTEXT_REQUIRED. package_treatment=excluded_charge_separately (GIPSA 96.5% / Non-GIPSA 91.7%; TR201 kept excluded).
+- schema: cross_consults [{department, visits?, doctor_cd?}].
+
+Verified: GIPSA Cardiology 2v ₹6,000 + Nephrology ₹2,750; cash specific-doctor ₹1,000; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
+
+Open: supply a governed consultation tariff-code mapping for exact per-doctor auto-pricing (placeholder-department works meanwhile); ~92% outside-package reproduction is package-bill-limited (open-bill gap); frontend to render the suggest-and-confirm cross-consult picker.
