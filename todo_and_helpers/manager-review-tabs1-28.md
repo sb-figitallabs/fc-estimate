@@ -1,8 +1,8 @@
-# FC Estimate Builder — Manager Review: Open Confirmations & Decisions (Tabs 1–16)
+# FC Estimate Builder — Manager Review: Open Confirmations & Decisions (Tabs 1–28)
 
-**Purpose:** everything from Tabs 1–16 that needs your input to proceed — decisions that change numbers, interpretations to confirm, and data/codes pending from the hospital/Finance. Grouped so you can go through it in one pass and reply inline.
+**Purpose:** everything across Tabs 1–28 that needs your input — decisions that change numbers, interpretations to confirm, data/codes pending from the hospital/Finance, and approved-but-scoped work. Grouped so you can reply inline in one pass.
 
-**Status of the build:** all 16 tabs are implemented and deployed to **dev** (fc-estimate). Every module is **additive** — it does not change any previously verified estimate number (sanity 24/0 + 12/0 on every tab). The items below are what would let us move from "policy-first / interim" to "confirmed", or unblock the held pieces.
+**Status:** all 28 tabs reviewed + processed; every built module is additive on fc-estimate dev (sanity 24/0 + 12/0 each; nothing on main). Below are the open items to move from policy-first/interim to confirmed.
 
 ---
 
