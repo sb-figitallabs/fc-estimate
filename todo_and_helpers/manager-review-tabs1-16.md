@@ -31,6 +31,7 @@
 | B8 | 19 — Tariff fallback | You asked (service vs investigation, 386 conflicts) **"use service tariff as primary — your thoughts?"** | Agreed as the **default**, with one guard: flag the **386 conflicting codes for per-code review** rather than silently taking service everywhere (a few may legitimately be the investigation rate). Governed precedence per code/tariff/period; `rate_domain` stays *evidence*, not identity. | Confirm service-primary + per-code review of the 386. |
 | B9 | 19 — Tariff fallback | You asked the **7-step hierarchy: "packages or items?"** and flagged **median-of-room** ("need info"). | Two separate things: the **7-step hierarchy is for ITEMS** (service-line pricing), the **stricter package fallback is for PACKAGES** — both are already handled (items → cohort history; packages → never Non-GIPSA→Cash, never borrow another org, PLACEHOLDER guard). **Median-of-room:** when a code has different rates per room type, never average across rooms — require the room category. Our `rateOf` is already **room-specific** (no median-of-room). | Confirm (mostly FYI — already handled). |
 | B10 | 27 — Stage-2 logic | You asked (pharmacy) **"we use context to pick a value between P25–P75, no item-level drill-down — do you agree?"** | **Yes, agreed** — that's exactly our engine: pharmacy is estimated from cohort P25/P50/P75 (context/controls pick within the band), not item-by-item. Item-level only for the specific high-value selections (T20). | Confirm (already how we work). |
+| B11 | 28 — Treatment review | You wanted clarity on **"never let a broad cohort supply a package price (code+payer+room+date only)."** | It means a **package** price must come from the **exact package identity** — `package_code + payer/tariff + room + effective date` in the package master — **never** by averaging a broad treatment cohort's historical bills. Our engine already does exactly this (lookup priority tariff+package_code → package_name → alias, room-specific). A broad cohort (e.g., "arthroscopic surgery" in general) only informs the **open-bill** range/confidence, never a package price. | Confirm (already how we work). |
 
 ---
 
@@ -71,6 +72,6 @@ The engine now returns structured fields for each of these; the estimate-builder
 ---
 
 ## How to reply
-The fastest path: answer **A1–A4** (number-affecting), tick **B1–B10** (confirm my interpretation), and let us know which of **C1–C13** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
+The fastest path: answer **A1–A4** (number-affecting), tick **B1–B11** (confirm my interpretation), and let us know which of **C1–C13** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
 
-*(Covers Tabs 1–27; updated as tabs are reviewed.)*
+*(Covers Tabs 1–28 (complete); updated as tabs are reviewed.)*
