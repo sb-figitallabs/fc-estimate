@@ -33,6 +33,7 @@ import { buildPositiveCaseOverlay } from './positiveCase.js';
 import { annotateDnbDisposition } from '../insurance/dnbDisposition.js';
 import { buildNewbornScenario } from './newborn.js';
 import { buildCrossConsults } from './crossConsult.js';
+import { buildOutsidePackageLos } from './outsidePackageLos.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1146,6 +1147,41 @@ export async function buildEstimate(input) {
       packageOffer.coverage = { error: err.message };
     }
   }
+
+  // 18a. Outside-package LOS (doc T10) — when the estimated stay exceeds the
+  // governed package LOS, add incremental excess-day care at actuals. The
+  // package base and its PF are NEVER recomputed. Additive; per-setting ledger
+  // when a ward/ICU breakdown exists, else total excess LOS (manager).
+  try {
+    const pkgDur = Number(packageOffer?.package?.package_duration);
+    if (packageOffer?.package && Number.isFinite(pkgDur) && (drivers.los?.selected ?? 0) > pkgDur) {
+      let physicianVisitRate = 0;
+      try {
+        const dept = input.clinical.department_name;
+        if (dept) {
+          const { rows } = await query(
+            `SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY charge::numeric) AS med
+               FROM fc.consultation_tariff_rate_matrix
+              WHERE tariff_cd = ANY($1) AND department_name ILIKE $2 AND charge::numeric > 0`,
+            [[tariff.tariff_cd, 'TR1'], dept]);
+          physicianVisitRate = Number(rows[0]?.med) || 0;
+        }
+      } catch { /* visit rate optional */ }
+      const opl = buildOutsidePackageLos({
+        packageDurationDays: pkgDur,
+        estimatedLos: drivers.los?.selected,
+        wardDays: drivers.ward?.selected,
+        icuDays: drivers.icu?.selected,
+        packageWardDays: Number(packageOffer.package.pkg_defined_ward_stay) || null,
+        packageIcuDays: Number(packageOffer.package.pkg_defined_icu_stay) || null,
+        rateOf: (code) => rates.get(code) || {},
+        room: room.toLowerCase(),
+        physicianVisitRate,
+        payorBucket: input.payment.payor_bucket,
+      });
+      if (opl) packageOffer.outside_package_los = opl;
+    }
+  } catch { /* additive — never break the estimate */ }
 
   // 18b. conversion alert (15-Jul flow doc): the open→package conversion is
   // driven by inclusion/exclusion text parsing — when the converted total
