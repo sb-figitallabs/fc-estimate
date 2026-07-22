@@ -38,6 +38,7 @@ import { buildMedicalManagement } from './medicalManagement.js';
 import { buildDaycareModifier } from './daycare.js';
 import { buildChemo } from './chemo.js';
 import { buildLabourRoom } from './labourRoom.js';
+import { buildRoomTax } from './tax.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1174,6 +1175,19 @@ export async function buildEstimate(input) {
       });
       if (labour) estimate.labour_room = labour;
     }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17k. Tax (doc T16) — statutory 5% GST on non-ICU room rent > ₹5,000/day,
+  // computed automatically as a SEPARATE line (never folded into the base
+  // total). Attendant room (18%) is an off-by-default flag (no code yet).
+  try {
+    estimate.tax = buildRoomTax({
+      room: room.toLowerCase(),
+      wardDays: drivers.ward?.selected,
+      icuDays: drivers.icu?.selected,
+      rateOf: (code) => rates.get(code) || {},
+      attendantRoom: controls.attendant_room,
+    });
   } catch { /* additive — never break the estimate */ }
 
   // Package tariff differs per room type: use the room's tier from
