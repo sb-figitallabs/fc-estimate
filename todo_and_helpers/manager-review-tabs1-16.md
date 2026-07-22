@@ -26,6 +26,7 @@
 | B3 | 12 — Daycare | You asked "do you also need the non-strict daycare cases?" | Recommendation: for the **estimate** (forward-looking, strict-daycare default), **no** — non-strict (extended/cross-midnight) cases are only **extension/conversion evidence**, not part of the base strict-daycare estimate. We model on strict and use the rest only for the conversion contingency. | Confirm we can leave non-strict out of the core estimate. |
 | B4 | 13 — Chemo | You asked to first validate "are chemo FC estimates even created?" | **Validated from the FC data: yes** — 1,624 chemo/oncology admissions have an FC counselled amount (P50 ₹44.5k, range ₹27k–₹627k), and the Procedure Name is mostly blank (no structured regimen field today). So the conservative chemo shell (base daycare+PF + structured user drug input + separate form) is warranted. | Confirm we proceed with the conservative shell; the deep work stays held (see C). |
 | B5 | 15 — Labour room | You asked "thoughts on 0-4 as default?" | Agreed — defaulting to the 0-4h slot means labour-room charge is **off unless the FC projects ≥4h**, matching the hospital's "auto-bill at ≥4h" without over-charging at estimate time. | Confirm the 0-4h default. |
+| B6 | 17 — Blood bank | You said FC should "only decide if transfusion is needed or not, not units — unless significant impact." | Built minimal: a **transfusion yes/no** doctor-inputted flag → transfusion service (EME0088) + 1 component (PRBC default). **No unit-states / reversal.** Units default to 1; the doctor can override for a significant count. | Confirm this minimal shape (transfusion flag + optional units). |
 
 ---
 
@@ -41,17 +42,20 @@
 | C6 | 16 — Tax | **Attendant-room** code / SAC / daily rate / effective date (18% GST); **HDU** tax status. | Attendant room off-by-default (flag only); HDU assumed **untaxed** for now. |
 | C7 | 13 — Chemo | **Systemic-therapy drug/regimen master**; **pharmacy-price coverage** (6,132/11,254 items unpriced); **prior-cycle UMR** retrieval. | All **held** per your call; drug cost is a structured user input meanwhile; unpriced items would show last-observed provisional + confirm. |
 | C8 | 5 — DNB | The ₹1 "non-show" share (DMO/monitor/etc.) — you noted "need more info". | It's an open-bill/LAN behaviour; our package-only lines can't reproduce the doc's 43–50% (we see ~0–4%). Ties to C1. |
+| C9 | 17 — Blood bank | The history's **99.6% component+cross-match double-charge** — you said "I'll validate with the hospital, don't act on it." | Not reproduced and **not acted on** in the estimate. Just tracking your hospital validation. |
 
 ---
 
 ## D. Frontend follow-ups (engine returns the data; UI needs to render it — not blocking)
 
 The engine now returns structured fields for each of these; the estimate-builder UI needs to display them:
-- **Advisory expected-NME** line (T2), **Emergency overlay** + decision workflow (T3), **Positive-case** toggle + section (T4), **DNB** covered/non-covered + insurer/audit view (T5), **Newborn** 4-pathway picker (T6), **Cross-consult** suggest-and-confirm picker (T9), **Outside-LOS** excess-day breakdown (T10), **Medical-management** family/setting picker + semi-manual builder (T11), **Daycare** status + conversion (T12), **Chemo** structured regimen form (T13), **Labour-room** projected-hours input (T15), **GST-on-room-rent** line + attendant-room flag (T16).
+- **Advisory expected-NME** line (T2), **Emergency overlay** + decision workflow (T3), **Positive-case** toggle + section (T4), **DNB** covered/non-covered + insurer/audit view (T5), **Newborn** 4-pathway picker (T6), **Cross-consult** suggest-and-confirm picker (T9), **Outside-LOS** excess-day breakdown (T10), **Medical-management** family/setting picker + semi-manual builder (T11), **Daycare** status + conversion (T12), **Chemo** structured regimen form (T13), **Labour-room** projected-hours input (T15), **GST-on-room-rent** line + attendant-room flag (T16), **Blood-bank** transfusion-needed add-on (T17).
 
 *(Logged separately as the NME-frontend TODO; the rest follow the same pattern.)*
 
 ---
 
 ## How to reply
-The fastest path: answer **A1–A4** (number-affecting), tick **B1–B5** (confirm my interpretation), and let us know which of **C1–C8** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
+The fastest path: answer **A1–A4** (number-affecting), tick **B1–B6** (confirm my interpretation), and let us know which of **C1–C9** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
+
+*(Covers Tabs 1–17; updated as tabs are reviewed.)*
