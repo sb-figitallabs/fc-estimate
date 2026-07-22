@@ -166,6 +166,9 @@ export const EstimateInput = z.object({
     // charge. Default 0-4h slot. See modules/engine/labourRoom.js.
     labour_room: z.boolean().optional(),              // delivery pathway selected → enable
     labour_room_hours: z.number().nonnegative().optional(),  // projected occupancy hours
+    // Tax (doc T16) — room-rent GST is computed automatically; attendant room is
+    // an off-by-default flag (no tariff code yet). See modules/engine/tax.js.
+    attendant_room: z.boolean().optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
