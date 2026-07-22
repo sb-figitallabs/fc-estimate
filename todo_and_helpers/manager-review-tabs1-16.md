@@ -49,6 +49,14 @@
 | C10 | 18 — Equipment/add-ons | **Missing catalogue masters** — codes/rates for cradle, arthroscopy major/minor, microscope >3h, NIV duration variants, retropositive amount, external PF, hospitality, and other editable services. | Engine mechanics (basis pricing, four-column split, mutex/location checks) are **ready**; add-ons priced from tariff, unknown codes flagged `CONTEXT_REQUIRED`. We'll try to fetch codes from past IPs + the tariff (per your note); anything still missing, please supply. MRD/MRT is handled as a **positive** charge as you said. |
 | C11 | 19 — Tariff fallback | **Missing insurance tariff extracts per TR code** (you asked for the list to give the hospital). | **Delivered:** `todo_and_helpers/missing-tariff-codes-per-TR.md` — the missing/placeholder frequently-billed codes per TR (TR290 ~640 missing; **TR292 & TR274 have no usable pricing**; TR215 728; TR289 631; TR286 560; TR287 519). Hand this to the hospital for the real rates. |
 | C12 | 21 — Non-package | The "sounds serious, need details" items — surgery-master contamination, single-vs-multi, insurance reconstruction ~10% low, N8 rebuild. | **Details delivered:** we reproduced the contamination — **RT0006 "100 MCI THERAPY DOSE" maps across 34 departments / 1,629 admissions**; **2,514 procedure admissions** run through codes spanning ≥5 departments (sentinel mis-maps). Our engine is partly insulated (family-based, ≥15-gated, not raw surgery_cd), but the raw surgery-master can still pull contaminated cases. **Held for your evaluation:** the N8 rebuild (clean surgery-master, revalidate the 756 multi-treatment, component-verify combos, governed medical master, hierarchical fallback). We already: never copy old FC estimates; keep the strong financial data; no blanket 10% insurance uplift. **Please review the contamination evidence and tell us whether to proceed with the N8 clean-up.** |
+| C13 | 24 — Flow / effective period | You asked whether **effective period** exists in our tariff. | **Answer:** `package_master` HAS `effective_from`/`effective_to` (package price can key on effective period ✓); but `service_tariff_rate_matrix` has **no effective-date columns** — service-line rates can't key on effective period. If you want effective-dated service rates, that's a hospital data addition. |
+
+### D2. Approved-but-scoped work (Tab 24 — for the "call")
+You Agreed/aligned on these, and noted "we agreed on a call how to handle" the doctor-input contract. They touch verified add-on logic / expand AI scope, so we've **scheduled, not silently built** them:
+- **>90%-prevalence add-on → preselect-but-confirm** (instead of silent auto-include). Changes the default add-on set → verified-number-adjacent; confirm you want it and we'll do it carefully.
+- **N9 governed AI optional-item suggestion layer** (constrained to approved candidates) — a scoped expansion of AI scope.
+- **Doctor-input contract** with source-span provenance + confidence + field-level override governance (privileged role for code/tariff/rate/inclusion/PF) — per your call.
+- **Mismatch tiers** (block / confirm / inform) and **template consolidation** (validate upside first).
 
 ---
 
@@ -62,6 +70,6 @@ The engine now returns structured fields for each of these; the estimate-builder
 ---
 
 ## How to reply
-The fastest path: answer **A1–A4** (number-affecting), tick **B1–B9** (confirm my interpretation), and let us know which of **C1–C12** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
+The fastest path: answer **A1–A4** (number-affecting), tick **B1–B9** (confirm my interpretation), and let us know which of **C1–C13** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
 
-*(Covers Tabs 1–21; updated as tabs are reviewed.)*
+*(Covers Tabs 1–24; updated as tabs are reviewed.)*
