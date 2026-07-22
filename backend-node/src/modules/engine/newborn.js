@@ -115,6 +115,19 @@ export function buildNewbornScenario({ inputs = {}, rateOf, room = 'general', ne
     inference: 'none',                     // never auto-added; explicit pathway selection
     twins,
     mother_baby_linkage: 'ask_fc',         // FC-perspective input, not a governed billing link
+    // Doc T7 (mother-linked "dollar bed") — a BILLING concern, NOT an FC-estimate
+    // concern (manager: "linkage bed is not an FC-related thing… we can ignore
+    // that", handle with the right question). Kept here only as an FC knowledge-
+    // base reference for the three bed states; no segment automation is applied.
+    mother_linked_kb: {
+      scope: 'knowledge_base_only',
+      note: 'Newborn is a separate IP linked to the mother via a "dollar bed" (e.g. 522§1) — a location, not a billable bed while rooming-in. FC handles it via the pathway question; no dollar-bed/segment automation.',
+      bed_states: [
+        { state: 'rooming_in_with_mother', bed_charge: 0, note: 'No room rent / no ward consumables — baby stays in the mother-linked bed (₹0). Twins = separate admissions (522§1 / 522§2), never combined.' },
+        { state: 'moved_to_nicu_or_nursery', bed_charge: 'ICU/NICU billing', note: 'Chargeable from the transfer point — use the NICU pathway (ROM5015).' },
+        { state: 'mother_discharged_baby_continues', bed_charge: 'ordinary bed from that point', note: 'Baby’s bed becomes chargeable once the mother is discharged; FC selects this via the right question.' },
+      ],
+    },
     components,
     package_ref: packageRef,
     total,                                 // additive scenario — NOT folded into the base (mother's) estimate
