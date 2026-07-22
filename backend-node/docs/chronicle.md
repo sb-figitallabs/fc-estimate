@@ -203,3 +203,21 @@ Doc T4: a separate positive-case billing-rule layer — VERIFIED status only, ex
 Verified: HBsAg non-heart ₹16,280 +50% OT; HIV HSP5022 ₹11,000 +100%; +isolation ₹25,760; cash → no OT surcharge; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
 
 Open (for manager): ICU isolation code (#1), rates effective date (#2), MSC2816 conflict (#3), RNS0116 validity (#4) — all pending hospital; open-bill line data needed to see the full 124 cohort; frontend to render the positive-case toggle + section.
+
+---
+
+## 2026-07-22 — Tab-5 Insurance DNB four-value billing-disposition model (N1)
+
+Doc T5: 12 "Do Not Bill" items that must never make the patient liable — FC estimate shows only patient_payable; SI exhaustion never transfers these to the patient. Manager answers: D1 → **follow final-bill logic (GIPSA vs Non-GIPSA differ)**; cash rules don't apply to insurance; **N1 four-value model APPROVED as metadata-only** (UI = covered/non-covered; hide items where patient pays ₹0); patient-facing = only patient_payable (confirmed); drug-admin-as-NME = **moot** (drug-admin not present in insurance; NME is insurance-only); ₹1-share reproduction + N1 wiring = "need more info".
+
+**Engine audit:** classifyRow already routes most DNB items off the patient (monitor/intensivist/ICU-nursing → icu; asst-anaesthetist/asst-physician/DMO → associated) — the "patient ₹0" goal is largely already met; no separate patient-side PF lines, so the "suppression lowers insurance PF" concern is mild for us.
+
+**§5 ₹1-share validation BLOCKED:** package_bill_lines is package-bill-only, so our shares are ~0-4% vs the doc's 43-50% (DMO 1.6% vs 46.5%, monitor 0.6% vs 43.4%). The ₹1 non-show is an open-bill/LAN phenomenon — needs open-bill service lines (3rd time this gap bites: NME Phase-2, positive-case cohort, DNB ₹1-share).
+
+**Built on `feat/dnb-disposition` (not pushed):**
+- `src/modules/insurance/dnbDisposition.js annotateDnbDisposition()` — PURE metadata annotation on the settlement rows; changes NO amount. Each row gets billing_disposition (CLAIM_AND_WAIVE_IF_DENIED / INCLUDED_IN_PARENT_TARIFF / LAN_NON_SHOW_RUPEE_ONE / SUPPRESS_DO_NOT_BILL / PATIENT_PAYABLE_NME_GIPSA / PATIENT_PAYABLE / COVERED) + four_value block + fc_hidden (patient ₹0 → hidden from FC). GIPSA general-instruments → PATIENT_PAYABLE_NME_GIPSA (label only). `dnb` summary on the settlement.
+- Wired into buildEstimate for both estimate.insurance_settlement and packageOffer.insurance_settlement.
+
+Verified: insurer_total/patient.total unchanged; sanity_insurance 24/0, sanity_family 12/0.
+
+Open (for manager): ₹1-share needs open-bill line data + manager clarity ("need more info"); GIPSA general-instruments NME **amount-move** (currently label-only) is a verified-number change held for confirmation; N1 metadata is ready but UI wiring (covered/non-covered + insurer/audit view) is a frontend follow-up.
