@@ -27,6 +27,9 @@
 | B4 | 13 — Chemo | You asked to first validate "are chemo FC estimates even created?" | **Validated from the FC data: yes** — 1,624 chemo/oncology admissions have an FC counselled amount (P50 ₹44.5k, range ₹27k–₹627k), and the Procedure Name is mostly blank (no structured regimen field today). So the conservative chemo shell (base daycare+PF + structured user drug input + separate form) is warranted. | Confirm we proceed with the conservative shell; the deep work stays held (see C). |
 | B5 | 15 — Labour room | You asked "thoughts on 0-4 as default?" | Agreed — defaulting to the 0-4h slot means labour-room charge is **off unless the FC projects ≥4h**, matching the hospital's "auto-bill at ≥4h" without over-charging at estimate time. | Confirm the 0-4h default. |
 | B6 | 17 — Blood bank | You said FC should "only decide if transfusion is needed or not, not units — unless significant impact." | Built minimal: a **transfusion yes/no** doctor-inputted flag → transfusion service (EME0088) + 1 component (PRBC default). **No unit-states / reversal.** Units default to 1; the doctor can override for a significant count. | Confirm this minimal shape (transfusion flag + optional units). |
+| B7 | 19 — Tariff fallback | You asked **"what to use instead of a TR1 fallback?"** (leaning to "use TR1 for now, diff is small"). | **We already do better than a blanket TR1 fallback**, and don't leave anything blank: our engine prices line items from **cohort HISTORY** (what these cases actually billed — `amount_cash_typical`, quartiles), not raw TR1 rates. TR1 is only a **flagged last-resort for cash**. So for insurance with a missing exact rate, we use the historical billed amount (more accurate than TR1) + a "rate not in tariff, based on billed history" flag. **Recommend: keep this; don't switch to blanket TR1.** | Confirm we keep cohort-history (not blanket TR1). |
+| B8 | 19 — Tariff fallback | You asked (service vs investigation, 386 conflicts) **"use service tariff as primary — your thoughts?"** | Agreed as the **default**, with one guard: flag the **386 conflicting codes for per-code review** rather than silently taking service everywhere (a few may legitimately be the investigation rate). Governed precedence per code/tariff/period; `rate_domain` stays *evidence*, not identity. | Confirm service-primary + per-code review of the 386. |
+| B9 | 19 — Tariff fallback | You asked the **7-step hierarchy: "packages or items?"** and flagged **median-of-room** ("need info"). | Two separate things: the **7-step hierarchy is for ITEMS** (service-line pricing), the **stricter package fallback is for PACKAGES** — both are already handled (items → cohort history; packages → never Non-GIPSA→Cash, never borrow another org, PLACEHOLDER guard). **Median-of-room:** when a code has different rates per room type, never average across rooms — require the room category. Our `rateOf` is already **room-specific** (no median-of-room). | Confirm (mostly FYI — already handled). |
 
 ---
 
@@ -44,6 +47,7 @@
 | C8 | 5 — DNB | The ₹1 "non-show" share (DMO/monitor/etc.) — you noted "need more info". | It's an open-bill/LAN behaviour; our package-only lines can't reproduce the doc's 43–50% (we see ~0–4%). Ties to C1. |
 | C9 | 17 — Blood bank | The history's **99.6% component+cross-match double-charge** — you said "I'll validate with the hospital, don't act on it." | Not reproduced and **not acted on** in the estimate. Just tracking your hospital validation. |
 | C10 | 18 — Equipment/add-ons | **Missing catalogue masters** — codes/rates for cradle, arthroscopy major/minor, microscope >3h, NIV duration variants, retropositive amount, external PF, hospitality, and other editable services. | Engine mechanics (basis pricing, four-column split, mutex/location checks) are **ready**; add-ons priced from tariff, unknown codes flagged `CONTEXT_REQUIRED`. We'll try to fetch codes from past IPs + the tariff (per your note); anything still missing, please supply. MRD/MRT is handled as a **positive** charge as you said. |
+| C11 | 19 — Tariff fallback | **Missing insurance tariff extracts per TR code** (you asked for the list to give the hospital). | **Delivered:** `todo_and_helpers/missing-tariff-codes-per-TR.md` — the missing/placeholder frequently-billed codes per TR (TR290 ~640 missing; **TR292 & TR274 have no usable pricing**; TR215 728; TR289 631; TR286 560; TR287 519). Hand this to the hospital for the real rates. |
 
 ---
 
@@ -57,6 +61,6 @@ The engine now returns structured fields for each of these; the estimate-builder
 ---
 
 ## How to reply
-The fastest path: answer **A1–A4** (number-affecting), tick **B1–B6** (confirm my interpretation), and let us know which of **C1–C9** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
+The fastest path: answer **A1–A4** (number-affecting), tick **B1–B9** (confirm my interpretation), and let us know which of **C1–C11** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
 
-*(Covers Tabs 1–18; updated as tabs are reviewed.)*
+*(Covers Tabs 1–19; updated as tabs are reviewed.)*
