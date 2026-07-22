@@ -169,6 +169,11 @@ export const EstimateInput = z.object({
     // Tax (doc T16) — room-rent GST is computed automatically; attendant room is
     // an off-by-default flag (no tariff code yet). See modules/engine/tax.js.
     attendant_room: z.boolean().optional(),
+    // Blood bank (doc T17) — doctor-inputted transfusion add-on; FC decides need,
+    // not unit-level states. See modules/engine/bloodBank.js.
+    blood_transfusion: z.boolean().optional(),
+    blood_component: z.enum(['prbc', 'ffp']).optional(),
+    blood_units: z.number().positive().optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
