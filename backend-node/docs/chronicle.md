@@ -425,3 +425,18 @@ Doc T19: is our tariff a safe universal price master, and does "missing rate →
 **Deliverable:** `todo_and_helpers/missing-tariff-codes-per-TR.md` — missing/placeholder frequently-billed codes per insurance TR (TR290 ~640 missing, TR292 & TR274 all 736, TR215 728, TR289 631, TR286 560, TR287 519) for the hospital.
 
 **Decision: no engine change** — our pricing already follows the accurate per-code / cohort-history policy the doc endorses; blanket-TR1 is not used. Recommendations recorded in the manager-review doc (TR1→keep cohort-history; service-tariff primary with per-code conflict review; hierarchy = items vs packages both handled; no median-of-room).
+---
+
+## 2026-07-22 — Tab-20 Pharmacy exact high-value item selection (source-mapped)
+
+Doc T20: two capabilities — routine pharmacy from historical distributions (keep), + exact selection of high-value items with current price / custom item. Manager: exclude-then-add is complicated — **current show-high-contributing-items method is fine**; for selected items **flag + provide the rate WITH its source**, user can enter own amount, **historic P50 fallback with a flag**; **UOM dropdown** for manual high-value; curated selectable = high-value items; custom-item workflow Agreed; static map weak → use historical classification (Agreed); extend replace-don't-add to implants + reconcile totals (Agreed).
+
+**§4 engine check:** replace-don't-add double-count guard already exists (P3 named-drug path: MRP×qty replaces cohort pharmacy via max()). Manager generalises to implants/devices — an extension.
+
+**Built on `feat/pharmacy-selection` (not pushed):**
+- `src/modules/engine/pharmacySelection.js buildPharmacySelections()` — additive `estimate.pharmacy_selections`, base unchanged. Source-mapped rate: user_entered → catalog sale_rate → catalog MRP → historic P50 (flagged) → pending_user_entry (prompt; never silent zero/excluded). UOM + bucket from fc.pharmacy_catalog_rate_reference / pharmacy_item_mapping. double_count=replace_family_baseline.
+- schema: pharmacy_selections [{item_code?, name?, quantity?, user_amount?, uom?, source_date?}].
+
+Verified: mesh → ₹15,061 (sale_rate); vaccine → ₹2,800 (mrp); custom → ₹140k (user); unknown → PENDING; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: curated v_pharmacy_fc_selectable_items (active, materially-priced high-value only); current catalog prices for implants/devices/chemo (6,132/11,254 unpriced → P50 fallback meanwhile); reconcile cleaned bucket vs legacy net_pharmacy_amount; frontend UOM dropdown + selectable-item picker.

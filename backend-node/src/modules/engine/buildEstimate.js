@@ -41,6 +41,7 @@ import { buildLabourRoom } from './labourRoom.js';
 import { buildRoomTax } from './tax.js';
 import { buildBloodBank } from './bloodBank.js';
 import { buildManualAddons } from './manualAddons.js';
+import { buildPharmacySelections } from './pharmacySelection.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1219,6 +1220,15 @@ export async function buildEstimate(input) {
         room: room.toLowerCase(),
       });
       if (addons) estimate.manual_addons = addons;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17n. Pharmacy exact item selection (doc T20) — high-value items, source-
+  // mapped pricing; routine pharmacy stays the historical distribution. Additive.
+  try {
+    if (Array.isArray(controls.pharmacy_selections) && controls.pharmacy_selections.length) {
+      const pharm = await buildPharmacySelections(controls.pharmacy_selections);
+      if (pharm) estimate.pharmacy_selections = pharm;
     }
   } catch { /* additive — never break the estimate */ }
 
