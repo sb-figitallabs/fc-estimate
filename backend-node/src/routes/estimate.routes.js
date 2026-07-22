@@ -139,6 +139,15 @@ export const EstimateInput = z.object({
       visits: z.number().positive().optional(),
       doctor_cd: z.string().optional(),
     })).optional(),
+    // Medical management (doc T11) — family × setting menu, policy-first, with a
+    // semi-manual fallback. See modules/engine/medicalManagement.js.
+    medical_management: z.object({
+      family: z.string(),
+      setting: z.enum(['ward', 'icu', 'daycare']).optional(),
+      high_value_items: z.array(z.object({ name: z.string(), amount: z.number().optional() })).optional(),
+      indication_text: z.string().optional(),
+      semi_manual: z.boolean().optional(),
+    }).optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),

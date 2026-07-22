@@ -290,3 +290,20 @@ Doc T10: beyond the package LOS, package stays the base charge; only incremental
 Verified: GIPSA overstay 12d (pkg LOS 4) → 8 excess days, ₹44,008 deterministic (ward room 8×₹3,000 + DMO 8×₹1 [GIPSA ₹1-non-show] + physician 8×₹2,500), pf_recomputed=false, no drug-admin on insurance; no overstay → none; baseline byte-identical. No regression — 24/0, 12/0.
 
 Open: ward/ICU package-level breakdown not in package_master (pkg_defined_*_stay) → total-LOS fallback used; net-pharmacy/investigations exact numbers need per-day cohort data (open-bill gap); frontend to render the excess-day breakdown.
+
+---
+
+## 2026-07-22 — Tab-11 Medical management (family × setting menu)
+
+Doc T11: NOT one generic medical estimate — ~15 clinical families × setting (ward/ICU/daycare), exact room+PF, ranged pharmacy/investigations, doctor high-value items auto-added, 5-step hybrid mapping. Manager: Agreed on the model; procedure-like items get a separate UI name (Agreed, asked Subha to confirm — yes); 28-admission general template = "need more info"; policy-first with **semi-manual FC builder fallback** (auto-add calculable room/drug-admin/PF, FC manually adds pharmacy/investigations) when no strong template; doctor indication must be structured (remarks are counselling language); §4 validation Yes.
+
+**Validation:** setting bands (open-bill non-surgical) — Ward P50 ₹75,053 (doc ₹73.5k ✓), ICU-involved P50 ₹210,046 (doc ₹1.73L), Daycare/Obs P50 ₹36,256 (doc ₹28.2k). Top medical depts: Med Onc, Nephrology, Paediatrics, Internal Med, Neonatology, Pulmonology, GI, Cardiology.
+
+**Built on `feat/medical-management` (not pushed):**
+- `src/modules/engine/medicalManagement.js buildMedicalManagement()` — additive `estimate.medical_management`, base unchanged. calculable auto: room (setting×LOS), governed PF (1 ward/2 ICU per day), drug-admin (cash only). pharmacy/investigations/bedside → historical RANGES (estimable families) or MANUAL (semi-manual). PROCEDURE_LIKE (chemo/dialysis/transfusion/endoscopy/IR/planned) → route_out. semi-manual fallback (auto room/PF/drug-admin, FC adds pharmacy+investigations). high-value items = confirm-before-add; indication_text preserved; refresh triggers (24h/ICU-transfer/LOS/high-cost-investigation/pharmacy-escalation).
+- buildEstimate queries the validated setting band (by setting + department) for the range.
+- schema: medical_management {family, setting?, high_value_items?, indication_text?, semi_manual?}.
+
+Verified: respiratory ward ranged (₹115.5k P50 Pulmonology, n=318); neuro ICU → semi-manual; chemo → route out; general daycare ranged; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open (manager): clarify the "28-admission general-medical template not universal" point; family list + estimable set to be refined with domain input; frontend to render the family/setting picker + semi-manual builder + confidence flags.
