@@ -37,6 +37,7 @@ import { buildOutsidePackageLos } from './outsidePackageLos.js';
 import { buildMedicalManagement } from './medicalManagement.js';
 import { buildDaycareModifier } from './daycare.js';
 import { buildChemo } from './chemo.js';
+import { buildLabourRoom } from './labourRoom.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1158,6 +1159,20 @@ export async function buildEstimate(input) {
         priorCycleRef: controls.chemo.prior_cycle_ref,
       });
       if (chemo) estimate.chemo = chemo;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17j. Labour room (doc T15) — maternal location add-on, additive to the ward
+  // charge (never the room category). Default 0-4h → occupied-bed only.
+  try {
+    if (controls.labour_room || controls.labour_room_hours != null) {
+      const labour = buildLabourRoom({
+        hours: controls.labour_room_hours,
+        deliveryPathway: controls.labour_room,
+        rateOf: (code) => rates.get(code) || {},
+        room: room.toLowerCase(),
+      });
+      if (labour) estimate.labour_room = labour;
     }
   } catch { /* additive — never break the estimate */ }
 
