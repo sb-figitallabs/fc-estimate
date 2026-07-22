@@ -153,6 +153,15 @@ export const EstimateInput = z.object({
     daycare_expected_hours: z.number().nonnegative().optional(),  // drives strict(<=12h)/extended/cross-midnight status
     daycare_auto_suggested: z.boolean().optional(),               // suggested (not FC-picked) → needs confirm
     daycare_inpatient_conversion: z.boolean().optional(),         // model the conversion contingency
+    // Chemotherapy / systemic therapy (doc T13) — conservative: sure things auto,
+    // therapy drug cost is a structured doctor/user input. See modules/engine/chemo.js.
+    chemo: z.object({
+      route: z.enum(['routine_cytotoxic', 'immunotherapy_targeted', 'supportive_infusion_only', 'planned_inpatient', 'high_dose_bmt']).optional(),
+      regimen_items: z.array(z.object({ drug: z.string(), brand: z.string().optional(), strength: z.string().optional(), vials: z.number().optional(), unit_price: z.number().optional() })).optional(),
+      supportive_infusions: z.array(z.object({ name: z.string(), amount: z.number().optional() })).optional(),
+      chemoport: z.boolean().optional(),
+      prior_cycle_ref: z.object({ bill: z.number().optional(), note: z.string().optional() }).optional(),
+    }).optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
