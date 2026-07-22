@@ -159,3 +159,15 @@ Two meetings set the next phase. Estimate Builder declared ~90% done; remaining 
 10. **Visit-based medical-PF fee sheet** (medical PF interim = billed history P50).
 
 RECEIVED so far: surgery master sheet ✅ (18-Jul — measured G1, wired G2, directory G3); read-only DB access delivered ✅.
+
+---
+
+## 2026-07-22 — Tab-2 NME unblocked: HIMS NME ingest + cohort profiles + advisory wiring
+
+Manager's i23.md revealed the real NME target is **`HIMS NME Amount (Rs.)`** in `Estimate-Variance-Report (1).csv` — NOT `fc.package_bill_admissions.nme_amount` (that set is ~all zero: 192/17,002 positive). Constraint: import ONLY IPs present in our DB, relevant fields only, no PII; HIMS vs FC NME separate; quarantine negatives. Built on branch `feat/nme-phase1` (not pushed):
+
+- **migration 003** `fc.fc_nme_source` (16,389 present-IP admissions; 10 EVR orphans dropped; 29 negatives quarantined; lineage-preserving, no PII) + `fc.nme_profile` (cohort positive-prob + positive-only P25/P50/P75/P80; ladder L1 payer+package+dept+LOS+ICU → L2 dept → L3 payer+package; min-sample gating ≥30/15-29 blended/<15 fallback). `scripts/backfill-nme.js` idempotent ETL over `matched_in_mart` clean cohort (14,031). Reconciles to manager targets within ~1% (P50 5,466 vs 5,524; P75 9,235 vs 9,272; pos 4,321 vs 4,212).
+- **`nmeProfile.js` `lookupExpectedNme()`** + `buildEstimate.js`: `estimate.expected_nme` (Open Bill) + `packageOffer.expected_nme` (Package Bill), **non-Cash only**, as a SEPARATE advisory patient-payable line (P50 typical-when-present + positive_prob) — never folded into the settled insurer/patient split. Cash → null; table-absent → null (never breaks the estimate).
+- Verified: Non-GIPSA ortho open-bill ₹12,156 @86% (L1); package ₹280 @30%; GIPSA → L2; Cash null. **No regression** — sanity_insurance 24/0, sanity_family 12/0; settle()/totals byte-identical.
+
+Open: push pending approval; frontend must render the advisory line; International Open-Bill L3 is a 2-sample ₹150k outlier (winsorize later); Phase-2 still needs companion exports (clean spine, open-bill service lines, pharmacy lines) — FC folder alone only unblocks admission-level NME.
