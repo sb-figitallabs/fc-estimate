@@ -171,3 +171,19 @@ Manager's i23.md revealed the real NME target is **`HIMS NME Amount (Rs.)`** in 
 - Verified: Non-GIPSA ortho open-bill ₹12,156 @86% (L1); package ₹280 @30%; GIPSA → L2; Cash null. **No regression** — sanity_insurance 24/0, sanity_family 12/0; settle()/totals byte-identical.
 
 Open: push pending approval; frontend must render the advisory line; International Open-Bill L3 is a 2-sample ₹150k outlier (winsorize later); Phase-2 still needs companion exports (clean spine, open-bill service lines, pharmacy lines) — FC folder alone only unblocks admission-level NME.
+
+---
+
+## 2026-07-22 — Tab-3 Emergency billing overlay
+
+Doc T3: emergency is a **billing overlay on Treatment A** — never a separate treatment, never one surcharge; a decision workflow, not auto-charges. Manager approved the components ("Make sense"), confirmed Q1 (ER-physician auto-on only when arrived-via-ER=yes, rest opt-in), Q3 (one mutually-exclusive method), and the governing principle Q4 **"we don't infer"**. Q2 (emergency-OT) left "need more info". §5 validation ("Sure") run first.
+
+**§5 validation** (fc.package_bill_lines, 17,002 admissions): D000806 ER-physician median ₹1,000 (n≈91); EME5060 ER-assessment ₹3,000 (n=56, ~96% of occurrences insurance, ~0% cash — the doc's "93-94%" is the payer *share* of occurrences, not a penetration rate; base rate is low); EME0065 emergency-bed ₹1,310 (n=49); **OTC0054-0069 emergency-OT = 0 admissions** → confirms Q2 gap, marks OT-E ACTIVE_POLICY (not history-validated).
+
+**Built on `feat/emergency-overlay` (not pushed):**
+- `emergency.js buildEmergencyOverlay()` — additive, explicit-input-only, never mutates the parity-pinned base totals. ER physician (history-priced, no tariff row), ER assessment (tariff, insurance default-on / cash default-off), emergency bed (tariff, ask). Package-% flagged `requires_agreement` (mutually exclusive w/ OT-E, Q3); emergency-OT `ACTIVE_POLICY`; variable services as range display. Attached as `estimate.emergency`.
+- Estimate schema: `arrived_via_emergency_department, is_clinically_emergency, emergency_bed_expected(+hours), emergency_pricing_method` (all default off).
+
+Verified: insurance ER arrival → physician+assessment ₹4,000; +bed ₹5,310; cash → assessment OFF, ₹1,000; **baseline byte-identical**. No regression — sanity_insurance 24/0, sanity_family 12/0.
+
+Open (for manager): Q2 emergency-OT still needs data to validate (0 historical); ER-physician priced from history (no tariff row) — confirm ₹1,000 reference; holiday calendar not built (Q4 — no auto-apply); package emergency-% needs per-org agreement table; variable-services range dataset not yet wired.
