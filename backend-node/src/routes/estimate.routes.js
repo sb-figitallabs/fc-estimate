@@ -105,6 +105,14 @@ export const EstimateInput = z.object({
     robotic: z.enum(['yes', 'no', 'auto']).default('auto'),
     emergency_ot: z.enum(['No', 'Yes']).default('No'), // switches OT pricing to the OT-E slot ladder
     mlc: z.enum(['No', 'Yes']).default('No'),          // applies the MLC charge row (HSP0047)
+    // Emergency overlay (doc T3) — explicit answers only; NOTHING is inferred.
+    // Drive the emergency billing overlay (ER physician / ER assessment /
+    // emergency bed / package-% method). See modules/engine/emergency.js.
+    arrived_via_emergency_department: z.enum(['No', 'Yes']).default('No'), // ER-origin — gates ER physician + assessment
+    is_clinically_emergency: z.enum(['No', 'Yes']).default('No'),         // clinical urgency (context; no auto-charge)
+    emergency_bed_expected: z.enum(['No', 'Yes']).default('No'),          // ER-bed use expected — gates emergency-bed row
+    emergency_bed_hours: z.number().nonnegative().optional(),             // hours in the emergency bed (1–4h blocks)
+    emergency_pricing_method: z.enum(['none', 'ot_e', 'package_pct']).default('none'), // Q3: mutually exclusive method
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
