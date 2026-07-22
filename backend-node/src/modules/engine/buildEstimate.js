@@ -32,6 +32,7 @@ import { buildEmergencyOverlay } from './emergency.js';
 import { buildPositiveCaseOverlay } from './positiveCase.js';
 import { annotateDnbDisposition } from '../insurance/dnbDisposition.js';
 import { buildNewbornScenario } from './newborn.js';
+import { buildCrossConsults } from './crossConsult.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1074,6 +1075,22 @@ export async function buildEstimate(input) {
       if (newborn) estimate.newborn = newborn;
     }
   } catch { /* scenario is additive — never break the estimate */ }
+
+  // 17f. Cross-consultations (doc T9) — FC-selected (suggest-and-confirm), priced
+  // at the contracted visit tariff by TR code (placeholder department for
+  // insurance). Additive; already excluded from the surgeon-PF base (D3).
+  try {
+    if (Array.isArray(controls.cross_consults) && controls.cross_consults.length) {
+      const crossConsults = await buildCrossConsults({
+        selections: controls.cross_consults,
+        tariffCd: tariff.tariff_cd,
+        room: room.toLowerCase(),
+        losDays: drivers.los?.selected,
+        payorBucket: input.payment.payor_bucket,
+      });
+      if (crossConsults) estimate.cross_consultations = crossConsults;
+    }
+  } catch { /* additive — never break the estimate */ }
 
   // Package tariff differs per room type: use the room's tier from
   // room_amounts (derived from fc.package_master.room_rates_jsonb), falling

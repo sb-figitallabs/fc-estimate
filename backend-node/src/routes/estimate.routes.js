@@ -131,6 +131,14 @@ export const EstimateInput = z.object({
     newborn_twins: z.enum(['No', 'Yes']).default('No'),
     newborn_in_mother_package: z.enum(['No', 'Yes']).default('No'),
     phototherapy_double_surface: z.enum(['No', 'Yes']).default('No'),
+    // Cross-consultations (doc T9) — FC-selected (suggest-and-confirm), never
+    // auto-included. Priced at the contracted visit tariff by TR code. See
+    // modules/engine/crossConsult.js.
+    cross_consults: z.array(z.object({
+      department: z.string(),
+      visits: z.number().positive().optional(),
+      doctor_cd: z.string().optional(),
+    })).optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
