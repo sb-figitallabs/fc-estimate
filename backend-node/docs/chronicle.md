@@ -221,3 +221,19 @@ Doc T5: 12 "Do Not Bill" items that must never make the patient liable — FC es
 Verified: insurer_total/patient.total unchanged; sanity_insurance 24/0, sanity_family 12/0.
 
 Open (for manager): ₹1-share needs open-bill line data + manager clarity ("need more info"); GIPSA general-instruments NME **amount-move** (currently label-only) is a verified-number change held for confirmation; N1 metadata is ready but UI wiring (covered/non-covered + insurer/audit view) is a frontend follow-up.
+
+---
+
+## 2026-07-22 — Tab-6 Newborn pathways
+
+Doc T6: four DISTINCT newborn pathways (healthy-with-mother / well-baby-in-package / phototherapy / NICU), never one "newborn" estimate. Manager: "newborn" never auto-adds bed/PF — explicit select then confirm (Agreed); NICU days from NICU room-service codes not generic icu_days (Agreed); provided **4 cash newborn packages** (verified in package_master: PAE5048 ₹11k / PAE5049 ₹18k / PAE5055 ₹22k / PAE5061 ₹23k); cradle code missing → flag; mother-baby linkage = ask the FC (FC perspective); §4 validation "Sure".
+
+**Built on `feat/newborn-pathways` (not pushed):**
+- `src/modules/engine/newborn.js buildNewbornScenario()` — additive scenario `estimate.newborn`, explicit-selection-only, never mutates base totals. healthy_with_mother (₹0 bed + neonatologist/paediatrician PF history modes ₹8k/₹4k + BIO5229 screening + BIO0240 bilirubin); well_baby_package (PAE5048/5049, or attach-to-mother); phototherapy (PAE5055/5061 per-day × days + PF); nicu (ROM5015 NICU bed × nicu_days + PF + investigations, NOT icu_days). Priced from payer tariff (TR1 fallback) / 4 cash packages / history PF. N3 blocks as flags (cradle code, package master beyond 4 pkgs, mother-baby linkage).
+- schema: newborn_pathway, newborn_stay_days, nicu_days, newborn_twins, newborn_in_mother_package, phototherapy_double_surface.
+
+§4 validation note: 144 healthy-newborn cohort (median PF ₹8k, cash P25/P50/P75 ≈ 9.2k/15.1k/18.9k) is open-bill/minimal → not fully reproducible on our package-bill-only lines; pathways are tariff/package-priced, not history-certified (consistent open-bill gap).
+
+Verified: healthy ₹19,290; well-baby-2d ₹18,000; in-mother attach ₹0; phototherapy-3d ₹69,000+PF; NICU-5d ₹55,840; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
+
+Open: cradle code (asked hospital); Tab-7 mother-linked-bed is the companion; frontend to render the 4 pathways + provisional-then-confirm flow.
