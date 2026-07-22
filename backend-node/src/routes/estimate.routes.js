@@ -186,6 +186,16 @@ export const EstimateInput = z.object({
       admissible: z.string().optional(),
       package_included: z.boolean().optional(),
     })).optional(),
+    // Pharmacy exact item selection (doc T20) — high-value items with source-
+    // mapped pricing; routine pharmacy stays the historical distribution.
+    pharmacy_selections: z.array(z.object({
+      item_code: z.string().optional(),
+      name: z.string().optional(),
+      quantity: z.number().positive().optional(),
+      user_amount: z.number().nonnegative().optional(),
+      uom: z.string().optional(),
+      source_date: z.string().optional(),
+    })).optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
