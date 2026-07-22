@@ -28,6 +28,7 @@ import { packageOfferForEstimate, computePackageQuote } from '../packages/packag
 import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
 import { settle, settleWithPackage } from '../insurance/settlement.js';
 import { lookupExpectedNme } from '../insurance/nmeProfile.js';
+import { buildEmergencyOverlay } from './emergency.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -991,6 +992,28 @@ export async function buildEstimate(input) {
       if (nme) estimate.expected_nme = nme;
     } catch { /* advisory only — never break the estimate */ }
   }
+
+  // 17c. Emergency billing overlay (doc T3) — a billing overlay on Treatment A.
+  // ADDITIVE and explicit-input-only (manager Q4: nothing inferred); it never
+  // mutates the parity-pinned base line items or totals. Present only when an
+  // emergency input is set.
+  try {
+    const emergency = buildEmergencyOverlay({
+      inputs: {
+        arrivedViaEr: controls.arrived_via_emergency_department,
+        clinicallyEmergency: controls.is_clinically_emergency,
+        emergencyBedExpected: controls.emergency_bed_expected,
+        emergencyBedHours: controls.emergency_bed_hours,
+        emergencyPricingMethod: controls.emergency_pricing_method,
+        mlc: controls.mlc,
+        emergencyOt: controls.emergency_ot,
+      },
+      rateOf: (code) => rates.get(code) || {},
+      payorBucket: input.payment.payor_bucket,
+      room: room.toLowerCase(),
+    });
+    if (emergency) estimate.emergency = emergency;
+  } catch { /* overlay is additive — never break the estimate */ }
 
   // Package tariff differs per room type: use the room's tier from
   // room_amounts (derived from fc.package_master.room_rates_jsonb), falling
