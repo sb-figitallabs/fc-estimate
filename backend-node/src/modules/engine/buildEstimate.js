@@ -39,6 +39,7 @@ import { buildDaycareModifier } from './daycare.js';
 import { buildChemo } from './chemo.js';
 import { buildLabourRoom } from './labourRoom.js';
 import { buildRoomTax } from './tax.js';
+import { buildBloodBank } from './bloodBank.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1188,6 +1189,21 @@ export async function buildEstimate(input) {
       rateOf: (code) => rates.get(code) || {},
       attendantRoom: controls.attendant_room,
     });
+  } catch { /* additive — never break the estimate */ }
+
+  // 17l. Blood bank (doc T17) — minimal doctor-inputted transfusion add-on; FC
+  // decides need only (no unit-states / reversal). Additive.
+  try {
+    if (controls.blood_transfusion) {
+      const blood = buildBloodBank({
+        transfusionNeeded: controls.blood_transfusion,
+        component: controls.blood_component,
+        units: controls.blood_units,
+        rateOf: (code) => rates.get(code) || {},
+        room: room.toLowerCase(),
+      });
+      if (blood) estimate.blood_bank = blood;
+    }
   } catch { /* additive — never break the estimate */ }
 
   // Package tariff differs per room type: use the room's tier from

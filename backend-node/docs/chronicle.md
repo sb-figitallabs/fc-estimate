@@ -381,3 +381,19 @@ Doc T16: statutory 5% GST on non-ICU room rent > ₹5,000/day, on the FULL amoun
 Verified: General → GST ₹0; Single 3d ₹7,680/day → GST ₹1,152; ICU exempt; attendant flag; baseline byte-identical. No regression — 24/0, 12/0.
 
 Open: attendant-room code/SAC/rate/date from Finance; HDU tax status from Finance (assumed untaxed); frontend to render the "GST on room rent @ 5%" line + attendant-room flag. GST is currently a separate line (not in the headline total) to preserve parity — confirm whether it should roll into the patient-payable headline.
+
+---
+
+## 2026-07-22 — Tab-17 Blood bank (minimal transfusion add-on)
+
+Doc T17: three events (reserve→cross-match / issue→component / transfuse→per-unit); history doesn't follow cross-match reversal (99.6% keep both = probable double-charge). Manager strongly simplified for FC: blood bank only if doctor-inputted; **no unit-level states** ("we don't need this for FC"); **no reversal** (real-time); **FC should only decide if transfusion is needed or not, not units** unless significant impact; **ignore the double-charge for now** (validating with hospital, "don't act on it").
+
+**Validation:** EME0088 Transfusion TR1 ₹1,270; BLD0024 PRBC ₹2,650; BLD0027 FFP ₹500. Blood cohort 1,034 package-only (doc 2,379 full — open-bill gap).
+
+**Built on `feat/blood-bank` (not pushed):**
+- `src/modules/engine/bloodBank.js buildBloodBank()` — additive `estimate.blood_bank`, base unchanged. transfusion flag → transfusion service (EME0088) + component (default 1u PRBC BLD0024, or FFP BLD0027). unit_level_model=false; reversal_logic=not_applicable_fc; default 1 unit, optional units. Scope = transfusion service + components only. double_charge_note (not reproduced, not acted on).
+- schema: blood_transfusion, blood_component, blood_units.
+
+Verified: default PRBC 1u → ₹3,510; 3u FFP → ₹4,080; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: manager validating the 99.6% double-charge with the hospital; units modelled only if the doctor specifies a significant count; frontend to render the transfusion-needed add-on question.
