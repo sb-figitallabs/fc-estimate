@@ -27,6 +27,7 @@ import { P3_NAMED_DRUG_FAMILIES, p3NamedDrugEnabled, P3_MIN_DRUG_AMOUNT, matchNa
 import { packageOfferForEstimate, computePackageQuote } from '../packages/packages.service.js';
 import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
 import { settle, settleWithPackage } from '../insurance/settlement.js';
+import { lookupExpectedNme } from '../insurance/nmeProfile.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -975,6 +976,22 @@ export async function buildEstimate(input) {
     }
   }
 
+  // 17b. expected NME (patient-borne non-medical) — ADVISORY only, a separate
+  // patient-payable line from the historical HIMS-NME cohort profiles; never
+  // folded into the settled insurer/patient split. Non-Cash only.
+  if (input.payment.payor_bucket !== 'Cash') {
+    try {
+      const nme = await lookupExpectedNme({
+        payer_bucket: input.payment.payor_bucket,
+        package_status: 'Open Bill',
+        department: input.clinical.department_name,
+        los_days: drivers.los?.selected,
+        icu_days: drivers.icu?.selected,
+      });
+      if (nme) estimate.expected_nme = nme;
+    } catch { /* advisory only — never break the estimate */ }
+  }
+
   // Package tariff differs per room type: use the room's tier from
   // room_amounts (derived from fc.package_master.room_rates_jsonb), falling
   // back to the scalar package_amount (= General Ward tier) when the jsonb
@@ -1010,6 +1027,20 @@ export async function buildEstimate(input) {
         } catch (err) {
           packageOffer.insurance_settlement = { error: err.message };
         }
+      }
+      // advisory expected NME over the PACKAGE route (package bills carry far
+      // less NME than open bills — the profile reflects that)
+      if (input.payment.payor_bucket !== 'Cash') {
+        try {
+          const nme = await lookupExpectedNme({
+            payer_bucket: input.payment.payor_bucket,
+            package_status: 'Package Bill',
+            department: input.clinical.department_name,
+            los_days: drivers.los?.selected,
+            icu_days: drivers.icu?.selected,
+          });
+          if (nme) packageOffer.expected_nme = nme;
+        } catch { /* advisory only */ }
       }
     } catch (err) {
       packageOffer.coverage = { error: err.message };
