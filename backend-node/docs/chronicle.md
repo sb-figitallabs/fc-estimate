@@ -245,3 +245,16 @@ Open: cradle code (asked hospital); Tab-7 mother-linked-bed is the companion; fr
 Doc T7: newborn linked to mother via a "dollar bed" (522§1) — ₹0 while rooming-in, chargeable on NICU-transfer or mother-discharge. **Manager deprioritized for FC**: "linkage bed is not an FC-related thing… we can ignore that", handle with the right question when the FC selects newborn; optionally a knowledge-base item (secondary). The FC-relevant handling is already in Tab-6 (healthy-with-mother ₹0 bed, in-mother-package attach, twins flag, NICU pathway).
 
 **Built on `feat/newborn-mother-linked` (not pushed):** no automation — only a `mother_linked_kb` reference (scope knowledge_base_only) on estimate.newborn: 3 bed states (rooming_in ₹0 / moved_to_nicu ICU billing / mother_discharged ordinary bed). Metadata-only; no amount change; sanity_family 12/0. §4 note: 507 baby/neonatal clean admissions support the 3 states, but linkage fields (mother adm no., dollar-bed no., discharge/transfer timestamps) aren't in our data — validation base for later.
+
+---
+
+## 2026-07-22 — Tab-8 Package Inclusion/Exclusion (validation + clarification, NO code change)
+
+Doc T8: how the builder handles what a package absorbs vs bills extra; whether a hidden pharmacy/investigation threshold exists (it doesn't). Manager: §1 core design **Agreed** (start from governed package rate + add only source-supported extras — already our approach; four independent per-item decisions; honour cash caps); don't invent GIPSA/Non-GIPSA caps from exclusion frequency **Agreed**; but **"need more info"** on the conditional-extra label, the no-offset rule, Non-GIPSA org-resolution, and data-readiness; **N2 package-rule-schema questioned** ("mostly doesn't seem right approach").
+
+**§4 validation (our RDS):**
+- Cash reconciliation-to-₹0 (`gross = pkg + defined_exc + undefined_exc + nme`): **1,465/1,486 = 98.6%** reconcile — reproduces the doc; UNDEFINED_EXCLUDES is a balancing field → **no hidden threshold/cap**. Insurance reconciles far less (Non-GIPSA 53%, GIPSA 38%) → confirms "excluded lines are not auto patient-payable; don't invent caps".
+- Runtime-ready packages (`has_inclusions AND has_tariff`): **176 cash + 570 Non-GIPSA + 259 GIPSA** — FAR ahead of the doc's snapshot (114 + 45 + 0). The "data not runtime-ready / 0 GIPSA" concern is largely resolved for us.
+- `coverage.js` already implements §1 (parseCoverage/applyCoverage → fully_included / partially_included / capped / excluded / payable_extras from the package rate + source-supported extras).
+
+**Decision: no engine change.** Our engine + data already meet the endorsed design; N2 heavy per-line schema NOT built (manager's instinct confirmed — the four-status coverage model + cash-reconciliation-to-₹0 already covers it). Clarifications written for the manager's 4 "need more info" points (conditional-extra label, no cross-component offset, Non-GIPSA org→agreement→package→rule resolution, data-readiness now much better).
