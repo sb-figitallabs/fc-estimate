@@ -464,3 +464,15 @@ Doc T22: clinical names reliable; combos understated; clean package-rate source 
 **Validation:** final/package ratios (our 17k) — Non-GIPSA 2.08× / GIPSA 2.41× / Cash 1.77× (doc 1.67/1.80/1.09; direction confirmed — package << final, higher for insurance; reference only). Immediate fixes are **project-3 artifacts NOT in our master**: GYN5013 absent; our delivery packages correctly classified (GYN5322 LSCS / GYN5324 Normal Delivery / GYN5109 Forceps — all GYN, not Medical); no SBI packages. Combo detection already exists in the engine (comboDetect.js / flow2.service.js).
 
 **Decision: no engine change** — our package base is correct (full amounts), we follow the finalized inclusion/exclusion rules (ratios reference only), FC-flag-not-final and open-bill≠package-plus-open already respected, combo detection already present. The N7 clean-up / immediate fixes / 21.9% combo verification are project-3 data work, not our engine. Decision-states could be an optional past-IP enrichment.
+
+---
+
+## 2026-07-22 — Tab-23 Handling variants (validation + confirmation, NO code change)
+
+Doc T23: variants as structured attributes on a canonical treatment (approach/scope/side/episode/implant), payer-dependent, never free-text or universal multipliers. Manager: never pool uni+bilateral **Agreed**; **laparoscopic handled like robotic** (approach-specific package or add-on) — validate before applying; FC-text not a benchmark (patients may ask robotic upfront); left/right pool only when commercially equal **Agreed**; laterality conflicts → require confirmation **Agreed**; variant table + backfill from billed/package codes (not surgery_master_names_jsonb) **Agreed**; unknown variant → scenarios not average "need more info"; §4 "Yes validate".
+
+**§4 confirmed — engine already handles variants:** cohort.js keeps distinct families (conventional TKR unilateral vs bilateral; robotic uni-left/uni-right/bilateral) → uni+bi NEVER pooled; robotic priced as a payer-specific add-on (contracted → cohort → TR1-flagged); left/right pooled only within unilateral (commercially equal for TKR); no universal "lap = open +N%" multiplier (families are named cohorts).
+
+**Validation:** robotic packages present (ORT5536 Robotic TKR Bilateral ₹690k / ORT5784 Uni-Left / ORT5535 Uni-Right ₹355k). **Laparoscopic hypothesis CONFIRMED** — 14 lap-specific packages (SGA5169 Lap Cholecystectomy ₹107,120; SGA5698/5699 Inguinal Hernia Lap Bi/Uni), themselves uni/bi-split → laparoscopic IS an approach-specific package (handle like robotic), resolved by package matching, not a multiplier. TKR packages: 14 unilateral / 6 bilateral (separate).
+
+**Decision: no engine change** — uni/bi separate, robotic payer-specific, left/right within-uni, lap-specific packages all already supported. The canonical variant table + backfill (from billed/package codes) and per-family laterality/approach certification are future data work (Agreed, not built). Unknown-variant scenarios (conventional-vs-robotic side by side) is a presentation choice; engine already carries robotic scenarios.
