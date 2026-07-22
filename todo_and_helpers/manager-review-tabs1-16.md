@@ -30,6 +30,7 @@
 | B7 | 19 — Tariff fallback | You asked **"what to use instead of a TR1 fallback?"** (leaning to "use TR1 for now, diff is small"). | **We already do better than a blanket TR1 fallback**, and don't leave anything blank: our engine prices line items from **cohort HISTORY** (what these cases actually billed — `amount_cash_typical`, quartiles), not raw TR1 rates. TR1 is only a **flagged last-resort for cash**. So for insurance with a missing exact rate, we use the historical billed amount (more accurate than TR1) + a "rate not in tariff, based on billed history" flag. **Recommend: keep this; don't switch to blanket TR1.** | Confirm we keep cohort-history (not blanket TR1). |
 | B8 | 19 — Tariff fallback | You asked (service vs investigation, 386 conflicts) **"use service tariff as primary — your thoughts?"** | Agreed as the **default**, with one guard: flag the **386 conflicting codes for per-code review** rather than silently taking service everywhere (a few may legitimately be the investigation rate). Governed precedence per code/tariff/period; `rate_domain` stays *evidence*, not identity. | Confirm service-primary + per-code review of the 386. |
 | B9 | 19 — Tariff fallback | You asked the **7-step hierarchy: "packages or items?"** and flagged **median-of-room** ("need info"). | Two separate things: the **7-step hierarchy is for ITEMS** (service-line pricing), the **stricter package fallback is for PACKAGES** — both are already handled (items → cohort history; packages → never Non-GIPSA→Cash, never borrow another org, PLACEHOLDER guard). **Median-of-room:** when a code has different rates per room type, never average across rooms — require the room category. Our `rateOf` is already **room-specific** (no median-of-room). | Confirm (mostly FYI — already handled). |
+| B10 | 27 — Stage-2 logic | You asked (pharmacy) **"we use context to pick a value between P25–P75, no item-level drill-down — do you agree?"** | **Yes, agreed** — that's exactly our engine: pharmacy is estimated from cohort P25/P50/P75 (context/controls pick within the band), not item-by-item. Item-level only for the specific high-value selections (T20). | Confirm (already how we work). |
 
 ---
 
@@ -53,7 +54,7 @@
 
 ### D2. Approved-but-scoped work (Tab 24 — for the "call")
 You Agreed/aligned on these, and noted "we agreed on a call how to handle" the doctor-input contract. They touch verified add-on logic / expand AI scope, so we've **scheduled, not silently built** them:
-- **>90%-prevalence add-on → preselect-but-confirm** (instead of silent auto-include). Changes the default add-on set → verified-number-adjacent; confirm you want it and we'll do it carefully.
+- **>90%-prevalence add-on → preselect-but-confirm**, and **75–90%-present item >₹1,000 → surface-for-confirm instead of silently dropped** (T27; `services.js:75-76`). Both change the default add-on set → verified-number-adjacent. The >₹1000-drop can *underestimate* today (a common-ish, high-value add-on disappears); you said "need more info to validate" — the impact is exactly this: mid-frequency (75–90%) high-value add-ons are excluded from defaults. Confirm and we'll switch them to a confirm-prompt carefully.
 - **N9 governed AI optional-item suggestion layer** (constrained to approved candidates) — a scoped expansion of AI scope.
 - **Doctor-input contract** with source-span provenance + confidence + field-level override governance (privileged role for code/tariff/rate/inclusion/PF) — per your call.
 - **Mismatch tiers** (block / confirm / inform) and **template consolidation** (validate upside first).
@@ -70,6 +71,6 @@ The engine now returns structured fields for each of these; the estimate-builder
 ---
 
 ## How to reply
-The fastest path: answer **A1–A4** (number-affecting), tick **B1–B9** (confirm my interpretation), and let us know which of **C1–C13** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
+The fastest path: answer **A1–A4** (number-affecting), tick **B1–B10** (confirm my interpretation), and let us know which of **C1–C13** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
 
-*(Covers Tabs 1–24; updated as tabs are reviewed.)*
+*(Covers Tabs 1–27; updated as tabs are reviewed.)*
