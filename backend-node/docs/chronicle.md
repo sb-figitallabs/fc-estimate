@@ -307,3 +307,19 @@ Doc T11: NOT one generic medical estimate — ~15 clinical families × setting (
 Verified: respiratory ward ranged (₹115.5k P50 Pulmonology, n=318); neuro ICU → semi-manual; chemo → route out; general daycare ranged; baseline byte-identical. No regression — 24/0, 12/0.
 
 Open (manager): clarify the "28-admission general-medical template not universal" point; family list + estimable set to be refined with domain input; frontend to render the family/setting picker + semi-manual builder + confidence flags.
+
+---
+
+## 2026-07-22 — Tab-12 Daycare stay/billing modifier + classifier fix
+
+Doc T12: daycare is a stay/billing MODIFIER (treatment/drug drives cost — chemo ₹25.4k vs immunotherapy ₹150.7k vs cystoscopy ₹39.5k), not a generic estimate. Manager: keep foundation; classifier fix (strict ≤12h + 4 statuses) "Sure"; auto-daycare = confirm "Sure"; DMO-excluded/nursing-conditional/no-mix/MSC10-not-procedure "need more info but seems right"; inpatient-conversion contingency "seems right"; oncology previous-cycle only if regimen-equivalence "need more info, will ask hospital + check FC DB"; drug/regimen infusion pricing blocked (chemo tab). §4 validation Sure.
+
+**Validation:** classifier bug reproduced — calendar-date-only "strict" = 2,937 vs real ≤12h = 2,720 (268 extended same-day cases wrongly counted, analogous to the doc's 119). Timestamps carry hours, so the 12h threshold is computable. (ROM0010 line cohort is package-only = 2 rows — open-bill gap; used timestamp-hours split across all short-stay admissions instead.)
+
+**Built on `feat/daycare` (not pushed):**
+- `src/modules/engine/daycare.js` — `classifyDaycareStatus(hours, sameDay)` (12h fix: strict_daycare / extended_same_day_daycare / daycare_cross_midnight / converted_to_inpatient) + `buildDaycareModifier()` → additive `estimate.daycare`, base unchanged. auto-daycare=confirm (confirmed=false when auto_suggested); ROM0010 (never both w/ RNS0075); DMO excluded; nursing conditional; MSC10 not a procedure; inpatient_conversion contingency (retain daycare + ward/ICU from conversion + excess-LOS if packaged); oncology_cycle reuse only_if_regimen_equivalence_confirmed; routing=exact_treatment_regimen_cohort.
+- schema: daycare_expected_hours, daycare_auto_suggested, daycare_inpatient_conversion (fires when setting=Daycare).
+
+Verified: classifier 8h→strict/16h→extended/20h→cross-midnight/30h→converted; conversion toggles; chemo → oncology-cycle guard; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open (manager): confirm whether non-strict daycare cases are needed for modelling; DMO/nursing/conversion details "seems right, need more info"; oncology cycle-reuse — check FC DB handling of repeating treatments; infusion drug/regimen pricing depends on the Chemo tab (file 13).

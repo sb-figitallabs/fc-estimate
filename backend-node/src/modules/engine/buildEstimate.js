@@ -35,6 +35,7 @@ import { buildNewbornScenario } from './newborn.js';
 import { buildCrossConsults } from './crossConsult.js';
 import { buildOutsidePackageLos } from './outsidePackageLos.js';
 import { buildMedicalManagement } from './medicalManagement.js';
+import { buildDaycareModifier } from './daycare.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1124,6 +1125,22 @@ export async function buildEstimate(input) {
         highValueItems: mm.high_value_items || [], indicationText: mm.indication_text, forceSemiManual: mm.semi_manual,
       });
       if (medical) estimate.medical_management = medical;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17h. Daycare modifier (doc T12) — a stay/billing modifier when the setting
+  // resolves to daycare; additive, treatment-driven, auto-suggested → confirm.
+  try {
+    if (controls.setting === 'Daycare') {
+      const daycare = buildDaycareModifier({
+        isDaycare: true,
+        expectedHours: controls.daycare_expected_hours,
+        autoSuggested: controls.daycare_auto_suggested,
+        inpatientConversion: controls.daycare_inpatient_conversion,
+        hasPackage: !!packageOffer?.package?.package_code,
+        treatmentText: input.clinical.treatment_text || input.clinical.procedure,
+      });
+      if (daycare) estimate.daycare = daycare;
     }
   } catch { /* additive — never break the estimate */ }
 

@@ -148,6 +148,11 @@ export const EstimateInput = z.object({
       indication_text: z.string().optional(),
       semi_manual: z.boolean().optional(),
     }).optional(),
+    // Daycare modifier (doc T12) — applies when setting = Daycare. See
+    // modules/engine/daycare.js.
+    daycare_expected_hours: z.number().nonnegative().optional(),  // drives strict(<=12h)/extended/cross-midnight status
+    daycare_auto_suggested: z.boolean().optional(),               // suggested (not FC-picked) → needs confirm
+    daycare_inpatient_conversion: z.boolean().optional(),         // model the conversion contingency
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
