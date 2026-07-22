@@ -440,3 +440,15 @@ Doc T20: two capabilities — routine pharmacy from historical distributions (ke
 Verified: mesh → ₹15,061 (sale_rate); vaccine → ₹2,800 (mrp); custom → ₹140k (user); unknown → PENDING; baseline byte-identical. No regression — 24/0, 12/0.
 
 Open: curated v_pharmacy_fc_selectable_items (active, materially-priced high-value only); current catalog prices for implants/devices/chemo (6,132/11,254 unpriced → P50 fallback meanwhile); reconcile cleaned bucket vs legacy net_pharmacy_amount; frontend UOM dropdown + selectable-item picker.
+
+---
+
+## 2026-07-22 — Tab-21 Non-package handling (validation + details, NO code change)
+
+Doc T21: financial data strong; exact treatment / multi-treatment mappings over-confident. Manager firm "Agreed" only on **historical FC estimates are evidence not templates — never copy** (our engine already uses cohort history, not old FC estimates); everything else "need more info, sounds serious, need details to evaluate"; §4 validation "Okay".
+
+**§4 contamination screen — REPRODUCED on our mart:** surgery codes spanning ≥5 departments (sentinel mis-map proxy): **RT0006 "100 MCI THERAPY DOSE" across 34 departments / 1,629 admissions** (exactly the doc's example), 20G Vitrectomy 25 depts, 23G Vitrectomy 20, 3D Angio 18, etc. **2,514 procedure admissions** flow through ≥5-dept codes (doc ~1,754 sentinel); open-bill procedure cohort 4,297 (doc 4,149). Contamination confirmed.
+
+**Engine relevance:** our estimate cohorts are FAMILY-based + ≥15-case gated + governed-fallback, NOT raw surgery_cd → partly insulated; but the raw surgery-master feeding family selection can still pull contaminated cases. Recommend gating treatment-level cohorts on CLEANED mappings (exclude sentinel codes like RT0006) before treatment-level production; keep the strong financial data (services_json / cleaned_pharmacy_net / fc_actual_bucket_totals, NOT legacy service_net_amount=0); use reconstruction for composition, reported final for calibration — no blanket 10% uplift; never copy old FC estimates (already so).
+
+**Decision: no engine change now** — N8 rebuild (clean surgery-master evidence, revalidate 756 multi-treatment, component-verify combos, governed medical master, hierarchical cohort fallback) HELD pending the manager's evaluation. Contamination evidence delivered for that evaluation.
