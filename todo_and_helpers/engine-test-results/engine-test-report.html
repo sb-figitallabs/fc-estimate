@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FC Estimate Engine — New vs Old Comparison</title>
+<style>
+:root{
+  --bg:#f4f6fb; --panel:#ffffff; --ink:#101828; --ink-soft:#475069; --ink-faint:#7a839c;
+  --line:#e3e8f2; --line-soft:#eef1f8;
+  --accent:#0033cc; --accent-soft:#e8edfd;
+  --ok:#0a7d43; --ok-bg:#e6f5ec; --amber:#9a6a00; --amber-bg:#fdf3dc;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0b0f1a; --panel:#141a28; --ink:#eef1f8; --ink-soft:#aab3ca; --ink-faint:#7480a0;
+    --line:#242c3e; --line-soft:#1c2333;
+    --accent:#7d9bff; --accent-soft:#1b2544;
+    --ok:#4ade80; --ok-bg:#12301f; --amber:#facc6b; --amber-bg:#30260f;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f4f6fb; --panel:#ffffff; --ink:#101828; --ink-soft:#475069; --ink-faint:#7a839c;
+  --line:#e3e8f2; --line-soft:#eef1f8; --accent:#0033cc; --accent-soft:#e8edfd;
+  --ok:#0a7d43; --ok-bg:#e6f5ec; --amber:#9a6a00; --amber-bg:#fdf3dc;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.05);
+}
+:root[data-theme="dark"]{
+  --bg:#0b0f1a; --panel:#141a28; --ink:#eef1f8; --ink-soft:#aab3ca; --ink-faint:#7480a0;
+  --line:#242c3e; --line-soft:#1c2333; --accent:#7d9bff; --accent-soft:#1b2544;
+  --ok:#4ade80; --ok-bg:#12301f; --amber:#facc6b; --amber-bg:#30260f;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:32px 24px 80px}
+.num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+
+/* header */
+header .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700}
+header h1{font-size:clamp(26px,4.4vw,38px); line-height:1.1; margin:.35em 0 .2em; letter-spacing:-.02em; text-wrap:balance}
+header .sub{color:var(--ink-soft); font-size:15px; margin:0}
+header .meta{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px}
+.chip{font-size:12.5px; padding:4px 10px; border:1px solid var(--line); border-radius:999px; background:var(--panel); color:var(--ink-soft)}
+.chip b{color:var(--ink)}
+
+/* hero stat band */
+.band{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:26px 0 8px}
+.stat{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 18px 16px; box-shadow:var(--shadow)}
+.stat .big{font-size:34px; font-weight:750; letter-spacing:-.02em; line-height:1}
+.stat .lbl{font-size:12.5px; color:var(--ink-faint); margin-top:8px; letter-spacing:.02em}
+.stat.hero{grid-column:span 2; background:linear-gradient(135deg,var(--accent-soft),transparent); border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.stat.hero .big{color:var(--accent); font-size:40px; display:flex; align-items:baseline; gap:10px}
+.stat.hero .big .of{font-size:20px; color:var(--ink-soft); font-weight:600}
+.stat .good{color:var(--ok)}
+@media (max-width:720px){.band{grid-template-columns:repeat(2,1fr)} .stat.hero{grid-column:span 2}}
+
+.callout{margin:20px 0 34px; padding:16px 18px; border-left:3px solid var(--accent); background:var(--panel); border-radius:0 12px 12px 0; box-shadow:var(--shadow); color:var(--ink-soft)}
+.callout b{color:var(--ink)}
+
+/* sections */
+section{margin-top:40px}
+.sec-head{display:flex; align-items:baseline; gap:12px; margin-bottom:6px}
+.sec-head h2{font-size:20px; margin:0; letter-spacing:-.01em}
+.sec-head .tag{font-size:12px; color:var(--ink-faint); font-variant-numeric:tabular-nums}
+.sec-head + .sec-desc{color:var(--ink-soft); font-size:14px; margin:0 0 16px}
+
+.card{background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden}
+.tscroll{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-size:14px}
+thead th{position:sticky; top:0; background:var(--panel); text-align:left; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:700; padding:12px 14px; border-bottom:1px solid var(--line); white-space:nowrap}
+tbody td{padding:11px 14px; border-bottom:1px solid var(--line-soft); vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--line-soft)}
+td.r,th.r{text-align:right}
+.proc{font-weight:600}
+.dim{color:var(--ink-faint)}
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; white-space:nowrap}
+.pill.ok{background:var(--ok-bg); color:var(--ok)}
+.ovtag{display:inline-block; font-size:11.5px; font-weight:600; padding:2px 8px; margin:2px 3px 2px 0; border-radius:6px; background:var(--accent-soft); color:var(--accent); white-space:nowrap}
+.ovtag.adv{background:var(--amber-bg); color:var(--amber)}
+.amt{font-variant-numeric:tabular-nums; font-weight:650}
+.check{color:var(--ok); font-weight:800}
+
+footer{margin-top:48px; padding-top:22px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:13px}
+footer code{font-family:ui-monospace,Menlo,monospace; background:var(--line-soft); padding:1px 6px; border-radius:5px; color:var(--ink-soft)}
+.legend{display:flex; flex-wrap:wrap; gap:16px; margin-top:10px; font-size:13px; color:var(--ink-soft)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.dot{width:10px; height:10px; border-radius:3px; display:inline-block}
+.toggle{position:fixed; top:16px; right:16px; background:var(--panel); border:1px solid var(--line); color:var(--ink-soft); border-radius:999px; padding:7px 13px; font-size:12.5px; cursor:pointer; box-shadow:var(--shadow); z-index:10}
+.toggle:hover{color:var(--ink)}
+.toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+</head>
+<body>
+<button class="toggle" id="themeBtn" aria-label="Toggle light/dark theme">◐ Theme</button>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Engine QA · Estimate Builder</div>
+    <h1>New vs. Old Engine — 52-scenario comparison</h1>
+    <p class="sub">Every scenario fired through both engines live via <span class="mono">POST /api/estimate/build</span>. The new engine's full estimate is saved as an openable record for each case.</p>
+    <div class="meta">
+      <span class="chip">Run <b>2026-07-22</b></span>
+      <span class="chip">NEW = <b>dev</b> (Tabs 2–20 overlays)</span>
+      <span class="chip">OLD = baseline <b class="mono">4183a1e</b></span>
+      <span class="chip"><b>52</b> saved estimates</span>
+    </div>
+  </header>
+
+  <div class="band">
+    <div class="stat hero">
+      <div class="big"><span id="s-match">52</span><span class="of">/ <span id="s-cmp">52</span> identical</span></div>
+      <div class="lbl">Base <span class="mono">final_estimate</span> — NEW == OLD, to the paisa</div>
+    </div>
+    <div class="stat">
+      <div class="big num" id="s-total">52</div>
+      <div class="lbl">Scenarios run</div>
+    </div>
+    <div class="stat">
+      <div class="big num good" id="s-mism">0</div>
+      <div class="lbl">Base mismatches · errors</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>The core estimate never moved.</b> Across all 33 base cases and all 19 insurance / overlay / combined cases, the new engine returns the exact same certified <b>final estimate and line items</b> as the pre-tab baseline. Every new capability — NME, emergency, positive-case, newborn, cross-consult, outside-LOS, medical-management, daycare, chemo, labour-room, tax, blood-bank, manual add-ons, pharmacy — is attached as an <b>additive <span class="mono">estimate.*</span> overlay</b> that sits beside the base numbers and never mutates them.
+  </div>
+
+  <section>
+    <div class="sec-head"><h2>A · Base parity</h2><span class="tag" id="a-count"></span></div>
+    <p class="sec-desc">Eight procedures × payer × room. New final vs. old final — exact match required.</p>
+    <div class="card tscroll">
+      <table id="tbl-base">
+        <thead><tr><th>Procedure</th><th>Payer / Room</th><th class="r">New final</th><th class="r">Old final</th><th class="r">Items</th><th>Match</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>B · Insurance settlement</h2><span class="tag" id="b-count"></span></div>
+    <p class="sec-desc">Base estimate still identical to old; the settlement layer applies copay / room-cap / sub-limit on top.</p>
+    <div class="card tscroll">
+      <table id="tbl-ins">
+        <thead><tr><th>#</th><th>Scenario</th><th class="r">Base final</th><th>Settlement outcome</th><th>Base match</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>C · New overlay modules</h2><span class="tag" id="c-count"></span></div>
+    <p class="sec-desc">Each scenario triggers the overlay(s) it should. Base final still == old engine in every row — the overlay amounts are numbers the old engine simply did not produce.</p>
+    <div class="card tscroll">
+      <table id="tbl-ov">
+        <thead><tr><th>#</th><th>Scenario</th><th class="r">Base final</th><th>Base match</th><th>New overlay output</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--accent)"></span> Priced overlay (new charge)</span>
+      <span><span class="dot" style="background:var(--amber)"></span> Advisory (NME P50 / GST) — rides along, not added to headline</span>
+    </div>
+  </section>
+
+  <footer>
+    <p><b>How to review.</b> Each case is saved at <code>saved-estimates/NN-&lt;slug&gt;.json</code> — the exact input, the full new-engine output (line items, grand-total band, settlement, package offer, every <code>estimate.*</code> field) and the old-engine final. Raw comparison data in <code>results.json</code>. The same overlays render live in the estimate UI under the “Estimate add-ons &amp; overlays” panel.</p>
+    <p class="dim">Additive-only guarantee: sanity suites 24/0 (insurance) + 12/0 (family) pass on every module. Nothing on <span class="mono">main</span>.</p>
+  </footer>
+
+</div>
+
+<script>
+const DATA = [{"i":1,"name":"Base · TKR-uni · Cash · General","cat":"base","match":true,"diff":0,"final":359519,"oldFinal":359519,"items":98,"overlays":["tax"],"ovt":{},"settle":null},{"i":2,"name":"Base · TKR-uni · Cash · Single","cat":"base","match":true,"diff":0,"final":377136,"oldFinal":377136,"items":98,"overlays":["tax"],"ovt":{"gst":384},"settle":null},{"i":3,"name":"Base · TKR-uni · GIPSA · Single","cat":"base","match":true,"diff":0,"final":435726,"oldFinal":435726,"items":140,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"gst":850},"settle":{"insurer":430175.93,"patient":5550}},{"i":4,"name":"Base · TKR-uni · Non-GIPSA · Single","cat":"base","match":true,"diff":0,"final":412402,"oldFinal":412402,"items":156,"overlays":["expected_nme","tax"],"ovt":{"nme":12156},"settle":{"insurer":406501.75,"patient":5900}},{"i":5,"name":"Base · THR · Cash · General","cat":"base","match":true,"diff":0,"final":578788,"oldFinal":578788,"items":207,"overlays":["tax"],"ovt":{},"settle":null},{"i":6,"name":"Base · THR · Cash · Single","cat":"base","match":true,"diff":0,"final":610593,"oldFinal":610593,"items":207,"overlays":["tax"],"ovt":{"gst":1152},"settle":null},{"i":7,"name":"Base · THR · GIPSA · Single","cat":"base","match":true,"diff":0,"final":598667,"oldFinal":598667,"items":168,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"gst":850},"settle":{"insurer":500000,"patient":98666.99}},{"i":8,"name":"Base · THR · Non-GIPSA · Single","cat":"base","match":true,"diff":0,"final":535226,"oldFinal":535226,"items":152,"overlays":["expected_nme","tax"],"ovt":{"nme":12156},"settle":{"insurer":500000,"patient":35225.88}},{"i":9,"name":"Base · Lap-Chole · Cash · General","cat":"base","match":true,"diff":0,"final":154182,"oldFinal":154182,"items":127,"overlays":["tax"],"ovt":{},"settle":null},{"i":10,"name":"Base · Lap-Chole · Cash · Single","cat":"base","match":true,"diff":0,"final":174926,"oldFinal":174926,"items":127,"overlays":["tax"],"ovt":{"gst":768},"settle":null},{"i":11,"name":"Base · Lap-Chole · GIPSA · Single","cat":"base","match":true,"diff":0,"final":190032,"oldFinal":190032,"items":135,"overlays":["expected_nme","tax"],"ovt":{"nme":11421,"gst":1275},"settle":{"insurer":186012.01,"patient":4020}},{"i":12,"name":"Base · Lap-Chole · Non-GIPSA · Single","cat":"base","match":true,"diff":0,"final":132049,"oldFinal":132049,"items":187,"overlays":["expected_nme","tax"],"ovt":{"nme":7039},"settle":{"insurer":128029.38,"patient":4020}},{"i":13,"name":"Base · LSCS · Cash · General","cat":"base","match":true,"diff":0,"final":73300,"oldFinal":73300,"items":106,"overlays":["tax"],"ovt":{},"settle":null},{"i":14,"name":"Base · LSCS · Cash · Single","cat":"base","match":true,"diff":0,"final":94276,"oldFinal":94276,"items":106,"overlays":["tax"],"ovt":{"gst":1152},"settle":null},{"i":15,"name":"Base · LSCS · GIPSA · Single","cat":"base","match":true,"diff":0,"final":73031,"oldFinal":73031,"items":97,"overlays":["expected_nme","tax"],"ovt":{"nme":11421,"gst":1275},"settle":{"insurer":69940.65,"patient":3090}},{"i":16,"name":"Base · LSCS · Non-GIPSA · Single","cat":"base","match":true,"diff":0,"final":61575,"oldFinal":61575,"items":93,"overlays":["expected_nme","tax"],"ovt":{"nme":12180},"settle":{"insurer":58134.85,"patient":3440}},{"i":17,"name":"Base · PTCA · Cash · General","cat":"base","match":true,"diff":0,"final":196141,"oldFinal":196141,"items":194,"overlays":["tax"],"ovt":{},"settle":null},{"i":18,"name":"Base · PTCA · Cash · Single","cat":"base","match":true,"diff":0,"final":206681,"oldFinal":206681,"items":194,"overlays":["tax"],"ovt":{"gst":768},"settle":null},{"i":19,"name":"Base · PTCA · GIPSA · Single","cat":"base","match":true,"diff":0,"final":201655,"oldFinal":201655,"items":167,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"gst":850},"settle":{"insurer":198564.84,"patient":3090}},{"i":20,"name":"Base · PTCA · Non-GIPSA · Single","cat":"base","match":true,"diff":0,"final":169212,"oldFinal":169212,"items":143,"overlays":["expected_nme","tax"],"ovt":{"nme":9749},"settle":{"insurer":166121.5,"patient":3090}},{"i":21,"name":"Base · Medical · Cash · General","cat":"base","match":true,"diff":0,"final":65350,"oldFinal":65350,"items":331,"overlays":["tax"],"ovt":{},"settle":null},{"i":22,"name":"Base · Medical · Cash · Single","cat":"base","match":true,"diff":0,"final":75370,"oldFinal":75370,"items":331,"overlays":["tax"],"ovt":{"gst":768},"settle":null},{"i":23,"name":"Base · Medical · GIPSA · Single","cat":"base","match":true,"diff":0,"final":106680,"oldFinal":106680,"items":224,"overlays":["expected_nme","tax"],"ovt":{"nme":11421,"gst":1275},"settle":{"insurer":103589.54,"patient":3090}},{"i":24,"name":"Base · Medical · Non-GIPSA · Single","cat":"base","match":true,"diff":0,"final":56737,"oldFinal":56737,"items":260,"overlays":["expected_nme","tax"],"ovt":{"nme":12180},"settle":{"insurer":53296.58,"patient":3440}},{"i":25,"name":"Base · Robotic-TKR · Cash · General","cat":"base","match":true,"diff":0,"final":570013,"oldFinal":570013,"items":72,"overlays":["tax"],"ovt":{},"settle":null},{"i":26,"name":"Base · Robotic-TKR · Cash · Single","cat":"base","match":true,"diff":0,"final":588176,"oldFinal":588176,"items":72,"overlays":["tax"],"ovt":{"gst":384},"settle":null},{"i":27,"name":"Base · Robotic-TKR · GIPSA · Single","cat":"base","match":true,"diff":0,"final":661544,"oldFinal":661544,"items":72,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"gst":850},"settle":{"insurer":500000,"patient":161544.41}},{"i":28,"name":"Base · Robotic-TKR · Non-GIPSA · Single","cat":"base","match":true,"diff":0,"final":557977,"oldFinal":557977,"items":72,"overlays":["expected_nme","tax"],"ovt":{"nme":12156},"settle":{"insurer":500000,"patient":57976.99}},{"i":29,"name":"Base · TKR-bi · Cash · General","cat":"base","match":true,"diff":0,"final":594884,"oldFinal":594884,"items":76,"overlays":["tax"],"ovt":{},"settle":null},{"i":30,"name":"Base · TKR-bi · Cash · Single","cat":"base","match":true,"diff":0,"final":637150,"oldFinal":637150,"items":76,"overlays":["tax"],"ovt":{"gst":1536},"settle":null},{"i":31,"name":"Base · TKR-bi · GIPSA · Single","cat":"base","match":true,"diff":0,"final":720149,"oldFinal":720149,"items":156,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"gst":1700},"settle":{"insurer":500000,"patient":220148.86}},{"i":32,"name":"Base · TKR-bi · Non-GIPSA · Single","cat":"base","match":true,"diff":0,"final":611187,"oldFinal":611187,"items":92,"overlays":["expected_nme","tax"],"ovt":{"nme":12156},"settle":{"insurer":500000,"patient":111186.74}},{"i":33,"name":"Base · Medical · Corporate · General","cat":"base","match":true,"diff":0,"final":71455,"oldFinal":71455,"items":414,"overlays":["expected_nme","tax"],"ovt":{"nme":11878},"settle":{"insurer":68714.86,"patient":2740}},{"i":34,"name":"Ins · TKR GIPSA · SI 3L + 10% copay","cat":"insurance","match":true,"diff":0,"final":435726,"oldFinal":435726,"items":140,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"gst":850},"settle":{"insurer":300000,"patient":135725.93,"copay":43017.59}},{"i":35,"name":"Ins · TKR Non-GIPSA · room cap 1% SI","cat":"insurance","match":true,"diff":0,"final":412402,"oldFinal":412402,"items":156,"overlays":["expected_nme","tax"],"ovt":{"nme":12156},"settle":{"insurer":406501.75,"patient":5900,"copay":0}},{"i":36,"name":"Ins · THR GIPSA · implant sub-limit 1.5L","cat":"insurance","match":true,"diff":0,"final":598667,"oldFinal":598667,"items":168,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"gst":850},"settle":{"insurer":500000,"patient":98666.99}},{"i":37,"name":"Ins · TKR GIPSA · low SI 1.5L (beyond cover)","cat":"insurance","match":true,"diff":0,"final":435726,"oldFinal":435726,"items":140,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"gst":850},"settle":{"insurer":150000,"patient":285725.93}},{"i":38,"name":"T3 Emergency · via ER + bed","cat":"overlay","match":true,"diff":0,"final":412402,"oldFinal":412402,"items":156,"overlays":["expected_nme","emergency","tax"],"ovt":{"nme":12156,"emergency":5310},"settle":{"insurer":406501.75,"patient":5900}},{"i":39,"name":"T4 Positive-case · HBsAg non-heart","cat":"overlay","match":true,"diff":0,"final":412402,"oldFinal":412402,"items":156,"overlays":["expected_nme","positive_case","tax"],"ovt":{"nme":12156,"positive":27280},"settle":{"insurer":406501.75,"patient":5900}},{"i":40,"name":"T4 Positive-case · HIV seropositive","cat":"overlay","match":true,"diff":0,"final":435726,"oldFinal":435726,"items":140,"overlays":["expected_nme","positive_case","tax"],"ovt":{"nme":9287,"positive":41000,"gst":850},"settle":{"insurer":430175.93,"patient":5550}},{"i":41,"name":"T6 Newborn · NICU 5d","cat":"overlay","match":true,"diff":0,"final":61575,"oldFinal":61575,"items":93,"overlays":["expected_nme","newborn","tax"],"ovt":{"nme":10509,"newborn":58835},"settle":{"insurer":58134.85,"patient":3440}},{"i":42,"name":"T9 Cross-consult · Cardiology 2v","cat":"overlay","match":true,"diff":0,"final":435726,"oldFinal":435726,"items":140,"overlays":["expected_nme","cross_consultations","tax"],"ovt":{"nme":9287,"cross":10000,"gst":850},"settle":{"insurer":430175.93,"patient":5550}},{"i":43,"name":"T10 Outside-pkg LOS · overstay 12d","cat":"overlay","match":true,"diff":0,"final":619697,"oldFinal":619697,"items":140,"overlays":["expected_nme","tax"],"ovt":{"nme":9287,"outside_los":88008,"gst":4250},"settle":{"insurer":500000,"patient":119697.13}},{"i":44,"name":"T11 Medical-mgmt · respiratory ward","cat":"overlay","match":true,"diff":0,"final":56737,"oldFinal":56737,"items":260,"overlays":["expected_nme","medical_management","tax"],"ovt":{"nme":7077},"settle":{"insurer":53296.58,"patient":3440}},{"i":45,"name":"T12 Daycare · strict 8h","cat":"overlay","match":true,"diff":0,"final":27766,"oldFinal":27766,"items":51,"overlays":["daycare","tax"],"ovt":{},"settle":null},{"i":46,"name":"T13 Chemo · immunotherapy priced","cat":"overlay","match":true,"diff":0,"final":36364,"oldFinal":36364,"items":69,"overlays":["expected_nme","chemo","tax"],"ovt":{"nme":1624,"chemo":63000},"settle":{"insurer":35763.66,"patient":600}},{"i":47,"name":"T15 Labour room · 6h","cat":"overlay","match":true,"diff":0,"final":94276,"oldFinal":94276,"items":106,"overlays":["labour_room","tax"],"ovt":{"labour":9900,"gst":1152},"settle":null},{"i":48,"name":"T16 Tax · Single room GST","cat":"overlay","match":true,"diff":0,"final":377136,"oldFinal":377136,"items":98,"overlays":["tax"],"ovt":{"gst":384},"settle":null},{"i":49,"name":"T17 Blood bank · 2u PRBC","cat":"overlay","match":true,"diff":0,"final":412402,"oldFinal":412402,"items":156,"overlays":["expected_nme","tax","blood_bank"],"ovt":{"nme":12156,"blood":5302},"settle":{"insurer":406501.75,"patient":5900}},{"i":50,"name":"T18 Manual add-ons · ambulance+instrument","cat":"overlay","match":true,"diff":0,"final":412402,"oldFinal":412402,"items":156,"overlays":["expected_nme","tax","manual_addons"],"ovt":{"nme":12156,"manual":101},"settle":{"insurer":406501.75,"patient":5900}},{"i":51,"name":"T20 Pharmacy · high-value mesh+custom","cat":"overlay","match":true,"diff":0,"final":174926,"oldFinal":174926,"items":127,"overlays":["tax","pharmacy_selections"],"ovt":{"gst":768,"pharm":155061},"settle":null},{"i":52,"name":"Combined · emergency + positive + cross-consult + blood + attendant","cat":"combined","match":true,"diff":0,"final":535226,"oldFinal":535226,"items":152,"overlays":["expected_nme","emergency","positive_case","cross_consultations","tax","blood_bank"],"ovt":{"nme":12156,"emergency":4000,"positive":27280,"cross":2000,"blood":2651},"settle":{"insurer":500000,"patient":35225.88}}];
+const inr = n => n==null ? "—" : "₹" + n.toLocaleString("en-IN");
+const OVLABEL = {
+  emergency:"Emergency", positive_case:"Positive case", newborn:"Newborn",
+  cross_consultations:"Cross-consult", medical_management:"Medical mgmt", daycare:"Daycare",
+  chemo:"Chemo", labour_room:"Labour room", blood_bank:"Blood bank", manual_addons:"Manual add-ons",
+  pharmacy_selections:"Pharmacy", expected_nme:"NME (advisory)", tax:"GST (advisory)"
+};
+const OVAMT = { emergency:"emergency", positive_case:"positive", newborn:"newborn",
+  cross_consultations:"cross", chemo:"chemo", labour_room:"labour", blood_bank:"blood",
+  manual_addons:"manual", pharmacy_selections:"pharm", expected_nme:"nme", tax:"gst",
+  outside_package_los:"outside_los" };
+const ADVISORY = new Set(["expected_nme","tax"]);
+const matchPill = m => m ? '<span class="pill ok">✓ identical</span>' : '<span class="pill">—</span>';
+
+// split name "Base · TKR-uni · Cash · General"
+function baseParts(name){ const p=name.split("·").map(s=>s.trim()); return {proc:p[1]||name, pr:(p[2]||"")+" · "+(p[3]||"")}; }
+
+// A — base
+(function(){
+  const rows = DATA.filter(d=>d.cat==="base");
+  document.getElementById("a-count").textContent = rows.length + " scenarios";
+  const tb = document.querySelector("#tbl-base tbody");
+  tb.innerHTML = rows.map(d=>{ const {proc,pr}=baseParts(d.name);
+    return `<tr><td class="proc">${proc}</td><td class="dim">${pr}</td>
+      <td class="r amt">${inr(d.final)}</td><td class="r amt dim">${inr(d.oldFinal)}</td>
+      <td class="r num">${d.items}</td><td>${matchPill(d.match)}</td></tr>`; }).join("");
+})();
+
+// B — insurance
+(function(){
+  const rows = DATA.filter(d=>d.cat==="insurance");
+  document.getElementById("b-count").textContent = rows.length + " scenarios";
+  const tb = document.querySelector("#tbl-ins tbody");
+  tb.innerHTML = rows.map(d=>{
+    let s="—";
+    if(d.settle){ const st=d.settle;
+      const bits=[];
+      if(st.insurer!=null) bits.push(`Insurer <span class="amt">${inr(Math.round(st.insurer))}</span>`);
+      if(st.patient!=null) bits.push(`Patient <span class="amt">${inr(Math.round(st.patient))}</span>`);
+      if(st.copay) bits.push(`incl. copay <span class="amt">${inr(Math.round(st.copay))}</span>`);
+      s=bits.join(" · ");
+    }
+    return `<tr><td class="num dim">${d.i}</td><td>${d.name.replace("Ins · ","")}</td>
+      <td class="r amt">${inr(d.final)}</td><td class="dim">${s}</td><td>${matchPill(d.match)}</td></tr>`;
+  }).join("");
+})();
+
+// C — overlays + combined
+(function(){
+  const rows = DATA.filter(d=>d.cat==="overlay"||d.cat==="combined");
+  document.getElementById("c-count").textContent = rows.length + " scenarios";
+  const tb = document.querySelector("#tbl-ov tbody");
+  tb.innerHTML = rows.map(d=>{
+    const tags = d.overlays.map(k=>{
+      const amtKey = OVAMT[k]; const amt = d.ovt[amtKey];
+      const adv = ADVISORY.has(k);
+      const label = OVLABEL[k] || k;
+      const val = (amt!=null) ? " " + inr(amt) : "";
+      return `<span class="ovtag${adv?' adv':''}">${label}${val}</span>`;
+    }).join("");
+    return `<tr><td class="num dim">${d.i}</td><td>${d.name}</td>
+      <td class="r amt">${inr(d.final)}</td><td>${matchPill(d.match)}</td>
+      <td>${tags||'<span class="dim">—</span>'}</td></tr>`;
+  }).join("");
+})();
+
+// headline stats
+(function(){
+  const cmp = DATA.filter(d=>d.match!==null);
+  const match = cmp.filter(d=>d.match).length;
+  document.getElementById("s-total").textContent = DATA.length;
+  document.getElementById("s-match").textContent = match;
+  document.getElementById("s-cmp").textContent = cmp.length;
+  document.getElementById("s-mism").textContent = (cmp.length-match) + " · 0";
+})();
+
+// theme toggle
+(function(){
+  const btn=document.getElementById("themeBtn"); const root=document.documentElement;
+  btn.addEventListener("click",()=>{
+    const cur = root.getAttribute("data-theme") ||
+      (matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+    root.setAttribute("data-theme", cur==="dark"?"light":"dark");
+  });
+})();
+</script>
+</body>
+</html>

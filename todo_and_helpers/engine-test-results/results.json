@@ -1,0 +1,2037 @@
+[
+  {
+    "i": 1,
+    "name": "Base · TKR-uni · Cash · General",
+    "category": "base",
+    "new": {
+      "final": 359519.0505385742,
+      "band": [
+        308968.4193984375,
+        411442.5965556641
+      ],
+      "line_items": 98,
+      "insurer": null,
+      "patient": null,
+      "with_package": 333103.37,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 359519.0505385742,
+      "band": [
+        308968.4193984375,
+        411442.5965556641
+      ],
+      "line_items": 98,
+      "insurer": null,
+      "patient": null,
+      "with_package": 333103.37,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 2,
+    "name": "Base · TKR-uni · Cash · Single",
+    "category": "base",
+    "new": {
+      "final": 377135.61303857417,
+      "band": [
+        326584.9818984375,
+        435900.9403056641
+      ],
+      "line_items": 98,
+      "insurer": null,
+      "patient": null,
+      "with_package": 365853.37,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 384
+      }
+    },
+    "old": {
+      "final": 377135.61303857417,
+      "band": [
+        326584.9818984375,
+        435900.9403056641
+      ],
+      "line_items": 98,
+      "insurer": null,
+      "patient": null,
+      "with_package": 365853.37,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 3,
+    "name": "Base · TKR-uni · GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 430175.93,
+      "patient": 5550,
+      "with_package": 257830.07,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "gst": 850
+      }
+    },
+    "old": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 430175.93,
+      "patient": 5550,
+      "with_package": 257830.07,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 4,
+    "name": "Base · TKR-uni · Non-GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 5,
+    "name": "Base · THR · Cash · General",
+    "category": "base",
+    "new": {
+      "final": 578788.0854003907,
+      "band": [
+        424080.08908635605,
+        648539.0370288086
+      ],
+      "line_items": 207,
+      "insurer": null,
+      "patient": null,
+      "with_package": null,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 578788.0854003907,
+      "band": [
+        424080.08908635605,
+        648539.0370288086
+      ],
+      "line_items": 207,
+      "insurer": null,
+      "patient": null,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 6,
+    "name": "Base · THR · Cash · Single",
+    "category": "base",
+    "new": {
+      "final": 610593.4916503907,
+      "band": [
+        448934.46408635605,
+        688128.5057788086
+      ],
+      "line_items": 207,
+      "insurer": null,
+      "patient": null,
+      "with_package": null,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 1152
+      }
+    },
+    "old": {
+      "final": 610593.4916503907,
+      "band": [
+        448934.46408635605,
+        688128.5057788086
+      ],
+      "line_items": 207,
+      "insurer": null,
+      "patient": null,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 7,
+    "name": "Base · THR · GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 598666.9889657738,
+      "band": [
+        357925.51429895835,
+        689967.3746484375
+      ],
+      "line_items": 168,
+      "insurer": 500000,
+      "patient": 98666.99,
+      "with_package": 364939.88,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "gst": 850
+      }
+    },
+    "old": {
+      "final": 598666.9889657738,
+      "band": [
+        357925.51429895835,
+        689967.3746484375
+      ],
+      "line_items": 168,
+      "insurer": 500000,
+      "patient": 98666.99,
+      "with_package": 364939.88,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 8,
+    "name": "Base · THR · Non-GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 535225.8803645833,
+      "band": [
+        418459.0447790179,
+        618996.0275763888
+      ],
+      "line_items": 152,
+      "insurer": 500000,
+      "patient": 35225.88,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 535225.8803645833,
+      "band": [
+        418459.0447790179,
+        618996.0275763888
+      ],
+      "line_items": 152,
+      "insurer": 500000,
+      "patient": 35225.88,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 9,
+    "name": "Base · Lap-Chole · Cash · General",
+    "category": "base",
+    "new": {
+      "final": 154181.82618359374,
+      "band": [
+        133700.88487695315,
+        166283.22420898435
+      ],
+      "line_items": 127,
+      "insurer": null,
+      "patient": null,
+      "with_package": 214704.08,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 154181.82618359374,
+      "band": [
+        133700.88487695315,
+        166283.22420898435
+      ],
+      "line_items": 127,
+      "insurer": null,
+      "patient": null,
+      "with_package": 214704.08,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 10,
+    "name": "Base · Lap-Chole · Cash · Single",
+    "category": "base",
+    "new": {
+      "final": 174925.66993359374,
+      "band": [
+        147602.94737695315,
+        187027.06795898435
+      ],
+      "line_items": 127,
+      "insurer": null,
+      "patient": null,
+      "with_package": 247734.08,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 768
+      }
+    },
+    "old": {
+      "final": 174925.66993359374,
+      "band": [
+        147602.94737695315,
+        187027.06795898435
+      ],
+      "line_items": 127,
+      "insurer": null,
+      "patient": null,
+      "with_package": 247734.08,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 11,
+    "name": "Base · Lap-Chole · GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 190032.00851562497,
+      "band": [
+        146013.44992187497,
+        210897.13733203124
+      ],
+      "line_items": 135,
+      "insurer": 186012.01,
+      "patient": 4020,
+      "with_package": 108590,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 11421.42,
+        "gst": 1275
+      }
+    },
+    "old": {
+      "final": 190032.00851562497,
+      "band": [
+        146013.44992187497,
+        210897.13733203124
+      ],
+      "line_items": 135,
+      "insurer": 186012.01,
+      "patient": 4020,
+      "with_package": 108590,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 12,
+    "name": "Base · Lap-Chole · Non-GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 132049.384859375,
+      "band": [
+        109332.380828125,
+        155114.0557734375
+      ],
+      "line_items": 187,
+      "insurer": 128029.38,
+      "patient": 4020,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 7038.94,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 132049.384859375,
+      "band": [
+        109332.380828125,
+        155114.0557734375
+      ],
+      "line_items": 187,
+      "insurer": 128029.38,
+      "patient": 4020,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 13,
+    "name": "Base · LSCS · Cash · General",
+    "category": "base",
+    "new": {
+      "final": 73299.82116015625,
+      "band": [
+        61780.89804492188,
+        79948.95326464844
+      ],
+      "line_items": 106,
+      "insurer": null,
+      "patient": null,
+      "with_package": 114235.49,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 73299.82116015625,
+      "band": [
+        61780.89804492188,
+        79948.95326464844
+      ],
+      "line_items": 106,
+      "insurer": null,
+      "patient": null,
+      "with_package": 114235.49,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 14,
+    "name": "Base · LSCS · Cash · Single",
+    "category": "base",
+    "new": {
+      "final": 94275.82116015625,
+      "band": [
+        75915.11679492188,
+        100924.95326464844
+      ],
+      "line_items": 106,
+      "insurer": null,
+      "patient": null,
+      "with_package": 134235.49,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 1152
+      }
+    },
+    "old": {
+      "final": 94275.82116015625,
+      "band": [
+        75915.11679492188,
+        100924.95326464844
+      ],
+      "line_items": 106,
+      "insurer": null,
+      "patient": null,
+      "with_package": 134235.49,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 15,
+    "name": "Base · LSCS · GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 73030.6479609375,
+      "band": [
+        69468.58642968751,
+        77803.552890625
+      ],
+      "line_items": 97,
+      "insurer": 69940.65,
+      "patient": 3090,
+      "with_package": 86600,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 11421.42,
+        "gst": 1275
+      }
+    },
+    "old": {
+      "final": 73030.6479609375,
+      "band": [
+        69468.58642968751,
+        77803.552890625
+      ],
+      "line_items": 97,
+      "insurer": 69940.65,
+      "patient": 3090,
+      "with_package": 86600,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 16,
+    "name": "Base · LSCS · Non-GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 61574.84940234375,
+      "band": [
+        57256.044448437504,
+        76011.55377148438
+      ],
+      "line_items": 93,
+      "insurer": 58134.85,
+      "patient": 3440,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12180.46,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 61574.84940234375,
+      "band": [
+        57256.044448437504,
+        76011.55377148438
+      ],
+      "line_items": 93,
+      "insurer": 58134.85,
+      "patient": 3440,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 17,
+    "name": "Base · PTCA · Cash · General",
+    "category": "base",
+    "new": {
+      "final": 196141.05,
+      "band": [
+        136965.02,
+        261084.63
+      ],
+      "line_items": 194,
+      "insurer": null,
+      "patient": null,
+      "with_package": 190879.8,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 196141.05,
+      "band": [
+        136965.02,
+        261084.63
+      ],
+      "line_items": 194,
+      "insurer": null,
+      "patient": null,
+      "with_package": 190879.8,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 18,
+    "name": "Base · PTCA · Cash · Single",
+    "category": "base",
+    "new": {
+      "final": 206681.05,
+      "band": [
+        142495.02,
+        271964.63
+      ],
+      "line_items": 194,
+      "insurer": null,
+      "patient": null,
+      "with_package": 240879.8,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 768
+      }
+    },
+    "old": {
+      "final": 206681.05,
+      "band": [
+        142495.02,
+        271964.63
+      ],
+      "line_items": 194,
+      "insurer": null,
+      "patient": null,
+      "with_package": 240879.8,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 19,
+    "name": "Base · PTCA · GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 201654.84,
+      "band": [
+        157001.47,
+        328453.31
+      ],
+      "line_items": 167,
+      "insurer": 198564.84,
+      "patient": 3090,
+      "with_package": 203679.8,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "gst": 850
+      }
+    },
+    "old": {
+      "final": 201654.84,
+      "band": [
+        157001.47,
+        328453.31
+      ],
+      "line_items": 167,
+      "insurer": 198564.84,
+      "patient": 3090,
+      "with_package": 203679.8,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 20,
+    "name": "Base · PTCA · Non-GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 169211.5,
+      "band": [
+        141590.73,
+        280188.16
+      ],
+      "line_items": 143,
+      "insurer": 166121.5,
+      "patient": 3090,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9748.88,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 169211.5,
+      "band": [
+        141590.73,
+        280188.16
+      ],
+      "line_items": 143,
+      "insurer": 166121.5,
+      "patient": 3090,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 21,
+    "name": "Base · Medical · Cash · General",
+    "category": "base",
+    "new": {
+      "final": 65349.99,
+      "band": [
+        27027.94,
+        163257
+      ],
+      "line_items": 331,
+      "insurer": null,
+      "patient": null,
+      "with_package": null,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 65349.99,
+      "band": [
+        27027.94,
+        163257
+      ],
+      "line_items": 331,
+      "insurer": null,
+      "patient": null,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 22,
+    "name": "Base · Medical · Cash · Single",
+    "category": "base",
+    "new": {
+      "final": 75369.99,
+      "band": [
+        32037.94,
+        183297
+      ],
+      "line_items": 331,
+      "insurer": null,
+      "patient": null,
+      "with_package": null,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 768
+      }
+    },
+    "old": {
+      "final": 75369.99,
+      "band": [
+        32037.94,
+        183297
+      ],
+      "line_items": 331,
+      "insurer": null,
+      "patient": null,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 23,
+    "name": "Base · Medical · GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 106679.54,
+      "band": [
+        65599.45,
+        249034.23
+      ],
+      "line_items": 224,
+      "insurer": 103589.54,
+      "patient": 3090,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 11421.42,
+        "gst": 1275
+      }
+    },
+    "old": {
+      "final": 106679.54,
+      "band": [
+        65599.45,
+        249034.23
+      ],
+      "line_items": 224,
+      "insurer": 103589.54,
+      "patient": 3090,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 24,
+    "name": "Base · Medical · Non-GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 56736.58,
+      "band": [
+        34455.15,
+        107101.22
+      ],
+      "line_items": 260,
+      "insurer": 53296.58,
+      "patient": 3440,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12180.46,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 56736.58,
+      "band": [
+        34455.15,
+        107101.22
+      ],
+      "line_items": 260,
+      "insurer": 53296.58,
+      "patient": 3440,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 25,
+    "name": "Base · Robotic-TKR · Cash · General",
+    "category": "base",
+    "new": {
+      "final": 570012.7842075195,
+      "band": [
+        546914.9408430175,
+        675441.4632703124
+      ],
+      "line_items": 72,
+      "insurer": null,
+      "patient": null,
+      "with_package": 415784.23,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 570012.7842075195,
+      "band": [
+        546914.9408430175,
+        675441.4632703124
+      ],
+      "line_items": 72,
+      "insurer": null,
+      "patient": null,
+      "with_package": 415784.23,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 26,
+    "name": "Base · Robotic-TKR · Cash · Single",
+    "category": "base",
+    "new": {
+      "final": 588175.5967075195,
+      "band": [
+        558235.9720930175,
+        700446.0570203124
+      ],
+      "line_items": 72,
+      "insurer": null,
+      "patient": null,
+      "with_package": 441474.23,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 384
+      }
+    },
+    "old": {
+      "final": 588175.5967075195,
+      "band": [
+        558235.9720930175,
+        700446.0570203124
+      ],
+      "line_items": 72,
+      "insurer": null,
+      "patient": null,
+      "with_package": 441474.23,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 27,
+    "name": "Base · Robotic-TKR · GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 661544.4103645834,
+      "band": [
+        615796.8596276043,
+        766037.4477125001
+      ],
+      "line_items": 72,
+      "insurer": 500000,
+      "patient": 161544.41,
+      "with_package": 257830.16,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "gst": 850
+      }
+    },
+    "old": {
+      "final": 661544.4103645834,
+      "band": [
+        615796.8596276043,
+        766037.4477125001
+      ],
+      "line_items": 72,
+      "insurer": 500000,
+      "patient": 161544.41,
+      "with_package": 257830.16,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 28,
+    "name": "Base · Robotic-TKR · Non-GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 557976.9920351562,
+      "band": [
+        533218.3800566406,
+        658207.4392375001
+      ],
+      "line_items": 72,
+      "insurer": 500000,
+      "patient": 57976.99,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 557976.9920351562,
+      "band": [
+        533218.3800566406,
+        658207.4392375001
+      ],
+      "line_items": 72,
+      "insurer": 500000,
+      "patient": 57976.99,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 29,
+    "name": "Base · TKR-bi · Cash · General",
+    "category": "base",
+    "new": {
+      "final": 594884.2587529297,
+      "band": [
+        543017.4433588868,
+        679334.8930483399
+      ],
+      "line_items": 76,
+      "insurer": null,
+      "patient": null,
+      "with_package": 587630.43,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 594884.2587529297,
+      "band": [
+        543017.4433588868,
+        679334.8930483399
+      ],
+      "line_items": 76,
+      "insurer": null,
+      "patient": null,
+      "with_package": 587630.43,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 30,
+    "name": "Base · TKR-bi · Cash · Single",
+    "category": "base",
+    "new": {
+      "final": 637150.3525029297,
+      "band": [
+        571599.9746088868,
+        714817.2446108399
+      ],
+      "line_items": 76,
+      "insurer": null,
+      "patient": null,
+      "with_package": 646790.43,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 1536
+      }
+    },
+    "old": {
+      "final": 637150.3525029297,
+      "band": [
+        571599.9746088868,
+        714817.2446108399
+      ],
+      "line_items": 76,
+      "insurer": null,
+      "patient": null,
+      "with_package": 646790.43,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 31,
+    "name": "Base · TKR-bi · GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 720148.8636796875,
+      "band": [
+        608075.2255742188,
+        775782.0129257813
+      ],
+      "line_items": 156,
+      "insurer": 500000,
+      "patient": 220148.86,
+      "with_package": 430860.19,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "gst": 1700
+      }
+    },
+    "old": {
+      "final": 720148.8636796875,
+      "band": [
+        608075.2255742188,
+        775782.0129257813
+      ],
+      "line_items": 156,
+      "insurer": 500000,
+      "patient": 220148.86,
+      "with_package": 430860.19,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 32,
+    "name": "Base · TKR-bi · Non-GIPSA · Single",
+    "category": "base",
+    "new": {
+      "final": 611186.7352838542,
+      "band": [
+        521223.23038476566,
+        695300.6007623697
+      ],
+      "line_items": 92,
+      "insurer": 500000,
+      "patient": 111186.74,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 611186.7352838542,
+      "band": [
+        521223.23038476566,
+        695300.6007623697
+      ],
+      "line_items": 92,
+      "insurer": 500000,
+      "patient": 111186.74,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 33,
+    "name": "Base · Medical · Corporate · General",
+    "category": "base",
+    "new": {
+      "final": 71454.86,
+      "band": [
+        36958.95,
+        173199.96
+      ],
+      "line_items": 414,
+      "insurer": 68714.86,
+      "patient": 2740,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 11877.88,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 71454.86,
+      "band": [
+        36958.95,
+        173199.96
+      ],
+      "line_items": 414,
+      "insurer": 68714.86,
+      "patient": 2740,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 34,
+    "name": "Ins · TKR GIPSA · SI 3L + 10% copay",
+    "category": "insurance",
+    "new": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 300000,
+      "patient": 135725.93,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "gst": 850
+      },
+      "settlement": {
+        "insurer": 300000,
+        "patient": 135725.93,
+        "copay": 43017.59
+      }
+    },
+    "old": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 300000,
+      "patient": 135725.93,
+      "overlays": [],
+      "overlay_totals": {},
+      "settlement": {
+        "insurer": 300000,
+        "patient": 135725.93,
+        "copay": 43017.59
+      }
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 35,
+    "name": "Ins · TKR Non-GIPSA · room cap 1% SI",
+    "category": "insurance",
+    "new": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "gst": 0
+      },
+      "settlement": {
+        "insurer": 406501.75,
+        "patient": 5900,
+        "copay": 0
+      }
+    },
+    "old": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "overlays": [],
+      "overlay_totals": {},
+      "settlement": {
+        "insurer": 406501.75,
+        "patient": 5900,
+        "copay": 0
+      }
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 36,
+    "name": "Ins · THR GIPSA · implant sub-limit 1.5L",
+    "category": "insurance",
+    "new": {
+      "final": 598666.9889657738,
+      "band": [
+        357925.51429895835,
+        689967.3746484375
+      ],
+      "line_items": 168,
+      "insurer": 500000,
+      "patient": 98666.99,
+      "with_package": 364939.88,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "gst": 850
+      }
+    },
+    "old": {
+      "final": 598666.9889657738,
+      "band": [
+        357925.51429895835,
+        689967.3746484375
+      ],
+      "line_items": 168,
+      "insurer": 500000,
+      "patient": 98666.99,
+      "with_package": 364939.88,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 37,
+    "name": "Ins · TKR GIPSA · low SI 1.5L (beyond cover)",
+    "category": "insurance",
+    "new": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 150000,
+      "patient": 285725.93,
+      "with_package": 257830.07,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "gst": 850
+      }
+    },
+    "old": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 150000,
+      "patient": 285725.93,
+      "with_package": 257830.07,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 38,
+    "name": "T3 Emergency · via ER + bed",
+    "category": "overlay",
+    "new": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "emergency",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "emergency": 5310,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 39,
+    "name": "T4 Positive-case · HBsAg non-heart",
+    "category": "overlay",
+    "new": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "positive_case",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "positive": 27280,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 40,
+    "name": "T4 Positive-case · HIV seropositive",
+    "category": "overlay",
+    "new": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 430175.93,
+      "patient": 5550,
+      "with_package": 257830.07,
+      "overlays": [
+        "expected_nme",
+        "positive_case",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "positive": 41000,
+        "gst": 850
+      }
+    },
+    "old": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 430175.93,
+      "patient": 5550,
+      "with_package": 257830.07,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 41,
+    "name": "T6 Newborn · NICU 5d",
+    "category": "overlay",
+    "new": {
+      "final": 61574.84940234375,
+      "band": [
+        57256.044448437504,
+        76011.55377148438
+      ],
+      "line_items": 93,
+      "insurer": 58134.85,
+      "patient": 3440,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "newborn",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 10509,
+        "newborn": 58835,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 61574.84940234375,
+      "band": [
+        57256.044448437504,
+        76011.55377148438
+      ],
+      "line_items": 93,
+      "insurer": 58134.85,
+      "patient": 3440,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 42,
+    "name": "T9 Cross-consult · Cardiology 2v",
+    "category": "overlay",
+    "new": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 430175.93,
+      "patient": 5550,
+      "with_package": 257830.07,
+      "overlays": [
+        "expected_nme",
+        "cross_consultations",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "cross": 10000,
+        "gst": 850
+      }
+    },
+    "old": {
+      "final": 435725.9294166667,
+      "band": [
+        336661.30336979165,
+        477369.0658671876
+      ],
+      "line_items": 140,
+      "insurer": 430175.93,
+      "patient": 5550,
+      "with_package": 257830.07,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 43,
+    "name": "T10 Outside-pkg LOS · overstay 12d",
+    "category": "overlay",
+    "new": {
+      "final": 619697.129125,
+      "band": [
+        398381.25687499996,
+        559840.1726171875
+      ],
+      "line_items": 140,
+      "insurer": 500000,
+      "patient": 119697.13,
+      "with_package": 257830.07,
+      "overlays": [
+        "expected_nme",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 9287,
+        "outside_los": 88008,
+        "gst": 4250
+      }
+    },
+    "old": {
+      "final": 619697.129125,
+      "band": [
+        398381.25687499996,
+        559840.1726171875
+      ],
+      "line_items": 140,
+      "insurer": 500000,
+      "patient": 119697.13,
+      "with_package": 257830.07,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 44,
+    "name": "T11 Medical-mgmt · respiratory ward",
+    "category": "overlay",
+    "new": {
+      "final": 56736.58,
+      "band": [
+        34455.15,
+        107101.22
+      ],
+      "line_items": 260,
+      "insurer": 53296.58,
+      "patient": 3440,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "medical_management",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 7077.36,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 56736.58,
+      "band": [
+        34455.15,
+        107101.22
+      ],
+      "line_items": 260,
+      "insurer": 53296.58,
+      "patient": 3440,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 45,
+    "name": "T12 Daycare · strict 8h",
+    "category": "overlay",
+    "new": {
+      "final": 27766.45,
+      "band": [
+        18891.97,
+        24297.8
+      ],
+      "line_items": 51,
+      "insurer": null,
+      "patient": null,
+      "with_package": 18000,
+      "overlays": [
+        "daycare",
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 27766.45,
+      "band": [
+        18891.97,
+        24297.8
+      ],
+      "line_items": 51,
+      "insurer": null,
+      "patient": null,
+      "with_package": 18000,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 46,
+    "name": "T13 Chemo · immunotherapy priced",
+    "category": "overlay",
+    "new": {
+      "final": 36363.66,
+      "band": [
+        25282.66,
+        51878.91
+      ],
+      "line_items": 69,
+      "insurer": 35763.66,
+      "patient": 600,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "chemo",
+        "tax"
+      ],
+      "overlay_totals": {
+        "nme": 1624,
+        "chemo": 63000,
+        "gst": 0
+      }
+    },
+    "old": {
+      "final": 36363.66,
+      "band": [
+        25282.66,
+        51878.91
+      ],
+      "line_items": 69,
+      "insurer": 35763.66,
+      "patient": 600,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 47,
+    "name": "T15 Labour room · 6h",
+    "category": "overlay",
+    "new": {
+      "final": 94275.82116015625,
+      "band": [
+        75915.11679492188,
+        100924.95326464844
+      ],
+      "line_items": 106,
+      "insurer": null,
+      "patient": null,
+      "with_package": 134235.49,
+      "overlays": [
+        "labour_room",
+        "tax"
+      ],
+      "overlay_totals": {
+        "labour": 9900,
+        "gst": 1152
+      }
+    },
+    "old": {
+      "final": 94275.82116015625,
+      "band": [
+        75915.11679492188,
+        100924.95326464844
+      ],
+      "line_items": 106,
+      "insurer": null,
+      "patient": null,
+      "with_package": 134235.49,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 48,
+    "name": "T16 Tax · Single room GST",
+    "category": "overlay",
+    "new": {
+      "final": 377135.61303857417,
+      "band": [
+        326584.9818984375,
+        435900.9403056641
+      ],
+      "line_items": 98,
+      "insurer": null,
+      "patient": null,
+      "with_package": 365853.37,
+      "overlays": [
+        "tax"
+      ],
+      "overlay_totals": {
+        "gst": 384
+      }
+    },
+    "old": {
+      "final": 377135.61303857417,
+      "band": [
+        326584.9818984375,
+        435900.9403056641
+      ],
+      "line_items": 98,
+      "insurer": null,
+      "patient": null,
+      "with_package": 365853.37,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 49,
+    "name": "T17 Blood bank · 2u PRBC",
+    "category": "overlay",
+    "new": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax",
+        "blood_bank"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "gst": 0,
+        "blood": 5302
+      }
+    },
+    "old": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 50,
+    "name": "T18 Manual add-ons · ambulance+instrument",
+    "category": "overlay",
+    "new": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "tax",
+        "manual_addons"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "gst": 0,
+        "manual": 101
+      }
+    },
+    "old": {
+      "final": 412401.749359375,
+      "band": [
+        321241.8760807292,
+        580645.8047682291
+      ],
+      "line_items": 156,
+      "insurer": 406501.75,
+      "patient": 5900,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 51,
+    "name": "T20 Pharmacy · high-value mesh+custom",
+    "category": "overlay",
+    "new": {
+      "final": 174925.66993359374,
+      "band": [
+        147602.94737695315,
+        187027.06795898435
+      ],
+      "line_items": 127,
+      "insurer": null,
+      "patient": null,
+      "with_package": 247734.08,
+      "overlays": [
+        "tax",
+        "pharmacy_selections"
+      ],
+      "overlay_totals": {
+        "gst": 768,
+        "pharm": 155061
+      }
+    },
+    "old": {
+      "final": 174925.66993359374,
+      "band": [
+        147602.94737695315,
+        187027.06795898435
+      ],
+      "line_items": 127,
+      "insurer": null,
+      "patient": null,
+      "with_package": 247734.08,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  },
+  {
+    "i": 52,
+    "name": "Combined · emergency + positive + cross-consult + blood + attendant",
+    "category": "combined",
+    "new": {
+      "final": 535225.8803645833,
+      "band": [
+        418459.0447790179,
+        618996.0275763888
+      ],
+      "line_items": 152,
+      "insurer": 500000,
+      "patient": 35225.88,
+      "with_package": null,
+      "overlays": [
+        "expected_nme",
+        "emergency",
+        "positive_case",
+        "cross_consultations",
+        "tax",
+        "blood_bank"
+      ],
+      "overlay_totals": {
+        "nme": 12156.48,
+        "emergency": 4000,
+        "positive": 27280,
+        "cross": 2000,
+        "gst": 0,
+        "blood": 2651
+      }
+    },
+    "old": {
+      "final": 535225.8803645833,
+      "band": [
+        418459.0447790179,
+        618996.0275763888
+      ],
+      "line_items": 152,
+      "insurer": 500000,
+      "patient": 35225.88,
+      "with_package": null,
+      "overlays": [],
+      "overlay_totals": {}
+    },
+    "base_match": true,
+    "base_diff": 0
+  }
+]
