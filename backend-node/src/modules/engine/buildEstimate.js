@@ -34,6 +34,7 @@ import { annotateDnbDisposition } from '../insurance/dnbDisposition.js';
 import { buildNewbornScenario } from './newborn.js';
 import { buildCrossConsults } from './crossConsult.js';
 import { buildOutsidePackageLos } from './outsidePackageLos.js';
+import { buildMedicalManagement } from './medicalManagement.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1090,6 +1091,39 @@ export async function buildEstimate(input) {
         payorBucket: input.payment.payor_bucket,
       });
       if (crossConsults) estimate.cross_consultations = crossConsults;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17g. Medical management (doc T11) — family × setting policy-first menu with a
+  // semi-manual fallback. Additive; explicit selection only.
+  try {
+    const mm = controls.medical_management;
+    if (mm && mm.family) {
+      const setting = mm.setting || (drivers.icu?.selected > 0 ? 'icu' : (drivers.los?.selected ?? 0) <= 1 ? 'daycare' : 'ward');
+      // validated cohort band for this setting (+ department when given)
+      let settingBand = null;
+      try {
+        const dept = input.clinical.department_name;
+        const settingSql = setting === 'icu' ? 'coalesce(patient_icu_stay,0) > 0'
+          : setting === 'daycare' ? 'coalesce(patient_ward_stay,0)+coalesce(patient_icu_stay,0) <= 1'
+          : 'coalesce(patient_icu_stay,0) = 0 AND coalesce(patient_ward_stay,0)+coalesce(patient_icu_stay,0) > 1';
+        const { rows } = await query(
+          `SELECT count(*)::int n,
+             percentile_cont(0.25) WITHIN GROUP (ORDER BY open_bill_amount::numeric) p25,
+             percentile_cont(0.50) WITHIN GROUP (ORDER BY open_bill_amount::numeric) p50,
+             percentile_cont(0.75) WITHIN GROUP (ORDER BY open_bill_amount::numeric) p75
+           FROM fc.package_bill_admissions
+          WHERE open_bill_or_pkg_bill = 'Open Bill' AND surgery_name IS NULL AND open_bill_amount::numeric > 0
+            AND ${settingSql}${dept ? ' AND department_name ILIKE $1' : ''}`,
+          dept ? [dept] : []);
+        if (rows[0]?.n > 0) settingBand = { n: rows[0].n, p25: Number(rows[0].p25), p50: Number(rows[0].p50), p75: Number(rows[0].p75) };
+      } catch { /* band optional */ }
+      const medical = buildMedicalManagement({
+        family: mm.family, setting, losDays: drivers.los?.selected,
+        payorBucket: input.payment.payor_bucket, settingBand,
+        highValueItems: mm.high_value_items || [], indicationText: mm.indication_text, forceSemiManual: mm.semi_manual,
+      });
+      if (medical) estimate.medical_management = medical;
     }
   } catch { /* additive — never break the estimate */ }
 
