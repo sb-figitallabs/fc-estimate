@@ -535,3 +535,23 @@ Doc T28: use a SPECIFIC treatment cohort over a BROAD one (broad = fallback only
 
 ## ===== FC Estimate Builder review — ALL 28 TABS COMPLETE (2026-07-22) =====
 Tabs 1-28 of the estimate-builder Google Doc reviewed against the manager's inline responses and processed. New engine modules built + deployed to dev (additive, no verified-number regression — sanity 24/0 + 12/0 on every one): T2 NME advisory, T3 emergency, T4 positive-case, T5 DNB four-value, T6/7 newborn, T9 cross-consult, T10 outside-package-LOS, T11 medical-management, T12 daycare, T13 chemo, T15 labour-room, T16 tax, T17 blood-bank, T18 manual-addons, T20 pharmacy-selection. Validation/confirmation-only (engine already correct): T8, T14, T19, T21, T22, T23, T24, T25, T26, T27, T28. Consolidated manager review: todo_and_helpers/manager-review-tabs1-16.md (A1-A4 number-changing, B1-B10 interpretations, C1-C13 hospital/Finance data, D2 scoped-for-call). Data deliverable: missing-tariff-codes-per-TR.md.
+
+
+---
+
+## 2026-07-22 — Engine regression test: NEW vs OLD, 52 scenarios (additivity PROVEN)
+
+Manager asked to test the new engine and see it as saved estimates. Ran **52 real estimate scenarios** through **two live engines side-by-side** via `POST /api/estimate/build`:
+- **NEW** = current `dev` (all Tab 2–20 overlay modules).
+- **OLD** = baseline commit `4183a1e` — the last commit *before* the T2–T28 tab work (has T1 package-PF, none of the overlays). Run from a throwaway git worktree on `:4322`; NEW on `:4321`.
+
+**Result — the certified base estimate never moved on a single test:**
+- 52 scenarios run · **52/52 base `final_estimate` IDENTICAL new==old (to the paisa)** · 0 mismatches · 0 errors.
+- Coverage: **A** 33 base cases (8 procedures — TKR uni/bi, THR, Lap-Chole, LSCS, PTCA, general-medical, robotic-TKR — × Cash/GIPSA/Non-GIPSA/Corporate × room). **B** 4 insurance settlements (10% copay → ₹43,018 correctly deducted; room-cap 1%SI → patient limited to ₹5,900; implant sub-limit ₹1.5L; low-SI ₹1.5L beyond-cover). **C** 14 overlay cases (one per new module) + 1 stacked combined case (emergency + HBsAg-positive + cross-consult + blood + attendant on one THR).
+- Every new capability comes through as an **additive `estimate.*` overlay** beside the untouched base number: emergency ₹5,310 · positive-case ₹27,280/₹41,000 · newborn-NICU ₹58,835 · cross-consult ₹10,000 · outside-LOS ₹88,008 · chemo ₹63,000 · labour-room ₹9,900 · blood ₹5,302 · pharmacy ₹1,55,061 · manual-addons · daycare · medical-mgmt · NME/GST advisory. Combined case stacked cleanly with base still == old.
+
+This is the parity-pin guarantee (sanity 24/0 + 12/0) demonstrated end-to-end on 52 cases, not just the unit suites.
+
+**Deliverables** (`todo_and_helpers/engine-test-results/`, not pushed to any branch): `engine-test-report.html` (manager dashboard, all 52 rows, theme-aware), `ENGINE-TEST-REPORT.md`, `saved-estimates/` (52 openable JSON records — input + full new-engine output + old-engine final each), `results.json` (raw new-vs-old comparison).
+
+**Note:** two insurance scenarios first errored on a malformed copay/room-cap *input shape* (`type:'%'` / `'percent_si'`) — but both engines rejected them identically (no regression); re-run with the correct schema (`type:'percentage'` / `type:'pct_of_si'` + `ward_pct`) and both pass. **No engine change** — this was a verification run; the finding is that the overlay work is provably additive.
