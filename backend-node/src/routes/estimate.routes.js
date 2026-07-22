@@ -162,6 +162,10 @@ export const EstimateInput = z.object({
       chemoport: z.boolean().optional(),
       prior_cycle_ref: z.object({ bill: z.number().optional(), note: z.string().optional() }).optional(),
     }).optional(),
+    // Labour room (doc T15) — maternal location add-on, additive to the ward
+    // charge. Default 0-4h slot. See modules/engine/labourRoom.js.
+    labour_room: z.boolean().optional(),              // delivery pathway selected → enable
+    labour_room_hours: z.number().nonnegative().optional(),  // projected occupancy hours
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),
