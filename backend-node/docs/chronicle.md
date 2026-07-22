@@ -397,3 +397,19 @@ Doc T17: three events (reserve→cross-match / issue→component / transfuse→p
 Verified: default PRBC 1u → ₹3,510; 3u FFP → ₹4,080; baseline byte-identical. No regression — 24/0, 12/0.
 
 Open: manager validating the 99.6% double-charge with the hospital; units modelled only if the doctor specifies a significant count; frontend to render the transfusion-needed add-on question.
+
+---
+
+## 2026-07-22 — Tab-18 Equipment & manual add-on catalogue
+
+Doc T18: governed manual add-on catalogue (OT/ward/ICU equipment, respiratory, bedside, transport) — billing basis, valid locations, mutual exclusions, payer admissibility, four financial columns; staff-confirmed suggestions, never auto. Manager: fetch missing-master supply codes from **past IPs / the tariff dataset**; **MRD/MRT = normal positive charge** (not a discount).
+
+**Validation:** equipment/add-on codes fetchable from tariff (EQP0018 AngioJet, HSP0042 ambulance, ORT arthroscopy, OTI instruments…).
+
+**Built on `feat/manual-addons` (not pushed):**
+- `src/modules/engine/manualAddons.js buildManualAddons()` — additive `estimate.manual_addons`, base unchanged. Prices FC-selected add-ons from tariff × billing basis; four-column separation (expected_gross / included_in_package / separately_claimable / expected_patient_payable) by payer+package (insurer-admissible→claimable else patient-payable; "separately billed"≠"separately payable"); mutual-exclusion conflict detection; valid-location check; staff_confirmation mandatory; unknown code→CONTEXT_REQUIRED; MRD/MRT positive. Seed CATALOG (HSP0042/EQP0018/OTI0018); governed masters curated from tariff+past IPs.
+- schema: manual_addons [{code, name?, basis?, qty?, location?, mutex?, admissible?, package_included?}].
+
+Verified: ambulance → patient-payable; instrument → claimable; two same-mutex → conflict; cash → all patient; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: expand the governed catalogue masters (basis/locations/admissibility/rates) from tariff + past IPs; supply the missing-master codes (cradle, arthroscopy major/minor, microscope>3h, NIV variants, retropositive, external PF, hospitality); frontend to render the staff-confirmed add-on picker + incompatibility warnings.
