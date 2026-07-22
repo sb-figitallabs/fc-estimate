@@ -520,3 +520,18 @@ Doc T27: our estimation architecture is VALIDATED. Endorsed: Gross P50 + bucket-
 **Notable: the N12 "general add-on compiler" gap is now substantially FILLED** by the Tab 3-18 work — emergency (T3), positive-case/isolation (T4), blood (T17), cross-consult (T9), labour (T15), attendant/tax (T16), newborn (T6), manual-addons/implant (T18/T20). Insurer-vs-patient allocation is done in settle() (T5 DNB four-value). Certification stays relaxed (manual review).
 
 **Decision: no engine change now** — architecture endorsed; the one recommended fix (>₹1000 surface-confirm) is held for the manager's validation. Pharmacy P25-P75-range approach confirmed as ours. Double-count: our P50+allocation avoids it; the deterministic-components+residual method stays family-by-family-after-backtest (not bulk).
+
+---
+
+## 2026-07-22 — Tab-28 Treatment review (broad vs specific) — FINAL TAB (validation + confirmation, NO code change)
+
+Doc T28: use a SPECIFIC treatment cohort over a BROAD one (broad = fallback only). Verdict: our architecture already leans this way. Manager: enforce exact-first, cohort size sets confidence after clinical matching **"validate this approach"**; label broad concepts fallback_only **Agreed**; same treatment ≠ same amount, never let a broad cohort supply a package price **"makes sense, need clarity on package-price part"**; N13 data (353 family selections, 88 missing concepts, hierarchy fields) **"Okay, validate usefulness"**; §4 **"Okay"**.
+
+**§4 validation — CONFIRMED our engine enforces specific-over-broad:** (a) exact-first matching in familyResolve (exact family keys, specific-token preference, fallback DISCLOSES the relaxed dimension — "matched but has NO {payor} history — preferring {withCases}"); (b) **package price from the exact identity only** — packages.service lookup priority tariff+package_code → package_name → alias (package_master → v_package_runtime_lookup), room-specific; a broad cohort NEVER supplies a package price; (c) specific concepts are distinct named families (cohort.js robotic_tkr_unilateral_right etc.) — total_knee_replacement_unilateral outranks a generic TKR.
+
+**Clarification (package-price point):** a PACKAGE price must come from the exact package identity (package_code + payer/tariff + room + effective date) in the master, never from averaging a broad treatment cohort's historical bills. Our engine does exactly this; broad cohorts only inform the OPEN-BILL range/confidence.
+
+**Decision: no engine change** — exact-first, fallback-exposes-relaxed, and package-price-from-code are all already implemented. The N13 taxonomy/data work (add 353 family selections + 88 missing concepts, adopt hierarchy fields clinical_concept_id/parent/level/specificity_rank/permitted_fallback_parent, label fallback_only) is data-layer work (Agreed/Okay), not engine code.
+
+## ===== FC Estimate Builder review — ALL 28 TABS COMPLETE (2026-07-22) =====
+Tabs 1-28 of the estimate-builder Google Doc reviewed against the manager's inline responses and processed. New engine modules built + deployed to dev (additive, no verified-number regression — sanity 24/0 + 12/0 on every one): T2 NME advisory, T3 emergency, T4 positive-case, T5 DNB four-value, T6/7 newborn, T9 cross-consult, T10 outside-package-LOS, T11 medical-management, T12 daycare, T13 chemo, T15 labour-room, T16 tax, T17 blood-bank, T18 manual-addons, T20 pharmacy-selection. Validation/confirmation-only (engine already correct): T8, T14, T19, T21, T22, T23, T24, T25, T26, T27, T28. Consolidated manager review: todo_and_helpers/manager-review-tabs1-16.md (A1-A4 number-changing, B1-B10 interpretations, C1-C13 hospital/Finance data, D2 scoped-for-call). Data deliverable: missing-tariff-codes-per-TR.md.
