@@ -349,3 +349,19 @@ Doc T14: the 8-sheet hospital billing checklist workbook — useful as a RULE-EN
 **Validation:** OT slot ladder (normal OTC0005-0020 / emergency OTC0054-0069) + PF rules already implemented in the engine (lineItems otSlots + Tab-1 PF cascade). Urology instruments OTI0058/0059 = 150 tariff rows each but **0 history admissions** (confirms doc's "absent from history"); present as SEPARATE billable codes → consistent with "instrument not in base" (full threshold-mechanics validation limited by the package-only line gap). ROM0013/MSC1891 = 0 tariff, 0 history → keep inactive.
 
 **Decision: no engine change.** The workbook confirms + enriches existing logic; its only danger (the final-insurance PF block) is IGNORED per manager (same D1/D2 as the PF tab, already decided). Any incremental billing-unit / instrument-tier rules are training evidence in fc_curated, promoted rule-by-rule — not bulk-imported.
+
+---
+
+## 2026-07-22 — Tab-15 Maternal labour-room add-on
+
+Doc T15: labour-room = a maternal LOCATION add-on billed by occupancy duration, additive to (never replacing) the ward charge, never the room category. Manager: agreed; **default <4h at FC estimate time** (no live bed transfer → projected hours as FC input); **"use 0-4 slot as default"**; find the code in the tariff.
+
+**Validation (his ask):** labour-room codes ROM0121 "LABOUR ROOM CHARGES UP TO 4 HRS" ₹9,900 and ROM5166 "LABOUR ROOM CHARGES" ₹15,000 (both flat across ward groups, TR1). No explicit 4-8h/8-12h codes.
+
+**Built on `feat/labour-room` (not pushed):**
+- `src/modules/engine/labourRoom.js buildLabourRoom()` — additive `estimate.labour_room`, base unchanged. Rule: <4h → occupied-bed only (charge 0, billed=false); 4-8h → ROM0121 ₹9,900; 8-12h → ROM5166 ₹15,000; additive_to_ward (never room category); off unless delivery pathway/hours; default 0-4h slot. package_open_handling=apply_after.
+- schema: labour_room, labour_room_hours.
+
+Verified: default/<4h → ₹0 occupied-bed only; 6h → ROM0121 ₹9,900; 10h → ROM5166 ₹15,000; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: confirm the exact slot→code mapping with the billing head (tariff lacks explicit 4-8/8-12 codes); frontend to render the projected-hours input under the delivery pathway.
