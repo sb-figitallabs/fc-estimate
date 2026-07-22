@@ -323,3 +323,19 @@ Doc T12: daycare is a stay/billing MODIFIER (treatment/drug drives cost — chem
 Verified: classifier 8h→strict/16h→extended/20h→cross-midnight/30h→converted; conversion toggles; chemo → oncology-cycle guard; baseline byte-identical. No regression — 24/0, 12/0.
 
 Open (manager): confirm whether non-strict daycare cases are needed for modelling; DMO/nursing/conversion details "seems right, need more info"; oncology cycle-reuse — check FC DB handling of repeating treatments; infusion drug/regimen pricing depends on the Chemo tab (file 13).
+
+---
+
+## 2026-07-22 — Tab-13 Chemotherapy conservative estimator
+
+Doc T13: dedicated systemic-therapy engine — drug/dose/brand/vial explains the bill; default routine chemo → open-bill daycare; never a generic chemo total. Manager AGREED with the conservative approach (add only sure things = base daycare + PF; pharmacy = structured doctor/user input; trigger a separate chemo form) but wanted to FIRST validate how chemo is handled in the hospital FC data, and HELD the deep work (drug master, price audit, prior-cycle) pending hospital confirmation.
+
+**Validation (his ask):** chemo FC estimates ARE created — Estimate-Variance shows 1,624 chemo/oncology admissions with an FC counselled amount (P25 ₹25.1k / P50 ₹44.5k / P75 ₹98.5k, range ₹27k-₹627k). Procedure Name mostly blank → estimate not driven by a structured regimen field today (the gap this module fills). Financial-Counselling "Service Name" is a counselling-event type (Query/Admission/Discharge), not a procedure.
+
+**Built on `feat/chemo` (not pushed):**
+- `src/modules/engine/chemo.js buildChemo()` — additive `estimate.chemo`, base unchanged. 5 routes; regimen items priced ONLY from user-supplied unit prices (× vials) else drug_cost_pending (no silent zero, low_confidence); dose_source=treating_team (never computed); never_generic_total; supportive infusions + chemoport SEPARATE; prior_cycle=rebuild_not_copy. `held[]` lists the 3 deferred deep pieces.
+- schema: chemo {route, regimen_items[], supportive_infusions[], chemoport, prior_cycle_ref}.
+
+Verified: routine → pending/low-confidence; immunotherapy priced ₹113k + chemoport/supportive separate; baseline byte-identical. No regression — 24/0, 12/0.
+
+HELD per manager (not built): systemic-therapy drug/regimen master; pharmacy-price-coverage audit (6,132/11,254 unpriced → last-observed provisional + confirm); prior-cycle auto-retrieval by UMR. Ties to Tab-12 daycare infusion pricing.

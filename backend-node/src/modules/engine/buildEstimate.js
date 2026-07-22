@@ -36,6 +36,7 @@ import { buildCrossConsults } from './crossConsult.js';
 import { buildOutsidePackageLos } from './outsidePackageLos.js';
 import { buildMedicalManagement } from './medicalManagement.js';
 import { buildDaycareModifier } from './daycare.js';
+import { buildChemo } from './chemo.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1141,6 +1142,22 @@ export async function buildEstimate(input) {
         treatmentText: input.clinical.treatment_text || input.clinical.procedure,
       });
       if (daycare) estimate.daycare = daycare;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17i. Chemotherapy / systemic therapy (doc T13) — conservative: sure things
+  // (base daycare + PF) auto; therapy drug cost is a structured doctor/user
+  // input, never dose-computed, never a generic total. Additive.
+  try {
+    if (controls.chemo && (controls.chemo.route || controls.chemo.regimen_items?.length)) {
+      const chemo = buildChemo({
+        route: controls.chemo.route,
+        regimenItems: controls.chemo.regimen_items || [],
+        supportiveInfusions: controls.chemo.supportive_infusions || [],
+        chemoport: controls.chemo.chemoport,
+        priorCycleRef: controls.chemo.prior_cycle_ref,
+      });
+      if (chemo) estimate.chemo = chemo;
     }
   } catch { /* additive — never break the estimate */ }
 
