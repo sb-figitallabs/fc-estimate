@@ -43,6 +43,7 @@
 | C7 | 13 — Chemo | **Systemic-therapy drug/regimen master**; **pharmacy-price coverage** (6,132/11,254 items unpriced); **prior-cycle UMR** retrieval. | All **held** per your call; drug cost is a structured user input meanwhile; unpriced items would show last-observed provisional + confirm. |
 | C8 | 5 — DNB | The ₹1 "non-show" share (DMO/monitor/etc.) — you noted "need more info". | It's an open-bill/LAN behaviour; our package-only lines can't reproduce the doc's 43–50% (we see ~0–4%). Ties to C1. |
 | C9 | 17 — Blood bank | The history's **99.6% component+cross-match double-charge** — you said "I'll validate with the hospital, don't act on it." | Not reproduced and **not acted on** in the estimate. Just tracking your hospital validation. |
+| C10 | 18 — Equipment/add-ons | **Missing catalogue masters** — codes/rates for cradle, arthroscopy major/minor, microscope >3h, NIV duration variants, retropositive amount, external PF, hospitality, and other editable services. | Engine mechanics (basis pricing, four-column split, mutex/location checks) are **ready**; add-ons priced from tariff, unknown codes flagged `CONTEXT_REQUIRED`. We'll try to fetch codes from past IPs + the tariff (per your note); anything still missing, please supply. MRD/MRT is handled as a **positive** charge as you said. |
 
 ---
 
@@ -58,4 +59,4 @@ The engine now returns structured fields for each of these; the estimate-builder
 ## How to reply
 The fastest path: answer **A1–A4** (number-affecting), tick **B1–B6** (confirm my interpretation), and let us know which of **C1–C9** you're chasing with the hospital/Finance. **C1 (open-bill lines) is the single highest-value unlock** — it moves four items from policy-first to fully certified.
 
-*(Covers Tabs 1–17; updated as tabs are reviewed.)*
+*(Covers Tabs 1–18; updated as tabs are reviewed.)*
