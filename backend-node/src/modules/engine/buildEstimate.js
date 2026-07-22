@@ -27,6 +27,21 @@ import { P3_NAMED_DRUG_FAMILIES, p3NamedDrugEnabled, P3_MIN_DRUG_AMOUNT, matchNa
 import { packageOfferForEstimate, computePackageQuote } from '../packages/packages.service.js';
 import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../packages/coverage.js';
 import { settle, settleWithPackage } from '../insurance/settlement.js';
+import { lookupExpectedNme } from '../insurance/nmeProfile.js';
+import { buildEmergencyOverlay } from './emergency.js';
+import { buildPositiveCaseOverlay } from './positiveCase.js';
+import { annotateDnbDisposition } from '../insurance/dnbDisposition.js';
+import { buildNewbornScenario } from './newborn.js';
+import { buildCrossConsults } from './crossConsult.js';
+import { buildOutsidePackageLos } from './outsidePackageLos.js';
+import { buildMedicalManagement } from './medicalManagement.js';
+import { buildDaycareModifier } from './daycare.js';
+import { buildChemo } from './chemo.js';
+import { buildLabourRoom } from './labourRoom.js';
+import { buildRoomTax } from './tax.js';
+import { buildBloodBank } from './bloodBank.js';
+import { buildManualAddons } from './manualAddons.js';
+import { buildPharmacySelections } from './pharmacySelection.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -408,7 +423,11 @@ export async function buildEstimate(input) {
   // from billed PF history for EVERY pricing mode, Cash included (17-Jul
   // manager feedback #4: the surgical 25% cascade fabricated surgeon fees).
   const medicalPfFamily = cohortDef.rows?.surgical === false;
-  if (pricingMode !== 'Cash / TR1' || medicalPfFamily) {
+  // Only medical-management families price PF from billed history (visit-based,
+  // all modes). Surgical families — cash AND insurance — now use the rule
+  // cascade (manager 21-Jul T1: insurance PF is rule-based FINAL-bill, historic
+  // kept as reference only, not the override).
+  if (medicalPfFamily) {
     const histPfRow = actualMetricsEarly.find(
       (r) => r.basis_label === bases.pf_basis.selected_basis && r.field_key === 'professional_fees'
     );
@@ -730,10 +749,10 @@ export async function buildEstimate(input) {
   const logicPf = bucketTotals['Professional Fees'] ?? 0;
   const histPf = metricOf(bases.pf_basis.selected_basis, 'professional_fees');
   const pfDeviation = histPf?.p50 > 0 ? (logicPf - histPf.p50) / histPf.p50 : null;
-  const pfAnalysis = pricingMode !== 'Cash / TR1' || !histPf
+  const pfAnalysis = medicalPfFamily || !histPf
     ? {
         applicable: false,
-        reason: pricingMode !== 'Cash / TR1'
+        reason: medicalPfFamily
           ? (pfSource === 'historic_p50'
             ? 'PF priced from the historic P50 — the insurer tariff carries token PF rates (15-Jul Q1)'
             : 'PF folded into tariff in insurance mode')
@@ -959,17 +978,259 @@ export async function buildEstimate(input) {
   // 17. insurance settlement: insurer share vs patient share (itemized claim)
   if (input.insurance && input.payment.payor_bucket !== 'Cash') {
     try {
-      estimate.insurance_settlement = settle({
+      estimate.insurance_settlement = annotateDnbDisposition(settle({
         lineItems: lineItems.rows,
         roomKey: room.toLowerCase(),
         drivers,
         insurance: input.insurance,
         grossTotal: lineItems.finalEstimate,
-      });
+      }), input.payment.payor_bucket);
     } catch (err) {
       estimate.insurance_settlement = { error: err.message };
     }
   }
+
+  // 17b. expected NME (patient-borne non-medical) — ADVISORY only, a separate
+  // patient-payable line from the historical HIMS-NME cohort profiles; never
+  // folded into the settled insurer/patient split. Non-Cash only.
+  if (input.payment.payor_bucket !== 'Cash') {
+    try {
+      const nme = await lookupExpectedNme({
+        payer_bucket: input.payment.payor_bucket,
+        package_status: 'Open Bill',
+        department: input.clinical.department_name,
+        los_days: drivers.los?.selected,
+        icu_days: drivers.icu?.selected,
+      });
+      if (nme) estimate.expected_nme = nme;
+    } catch { /* advisory only — never break the estimate */ }
+  }
+
+  // 17c. Emergency billing overlay (doc T3) — a billing overlay on Treatment A.
+  // ADDITIVE and explicit-input-only (manager Q4: nothing inferred); it never
+  // mutates the parity-pinned base line items or totals. Present only when an
+  // emergency input is set.
+  try {
+    const emergency = buildEmergencyOverlay({
+      inputs: {
+        arrivedViaEr: controls.arrived_via_emergency_department,
+        clinicallyEmergency: controls.is_clinically_emergency,
+        emergencyBedExpected: controls.emergency_bed_expected,
+        emergencyBedHours: controls.emergency_bed_hours,
+        emergencyPricingMethod: controls.emergency_pricing_method,
+        mlc: controls.mlc,
+        emergencyOt: controls.emergency_ot,
+      },
+      rateOf: (code) => rates.get(code) || {},
+      payorBucket: input.payment.payor_bucket,
+      room: room.toLowerCase(),
+    });
+    if (emergency) estimate.emergency = emergency;
+  } catch { /* overlay is additive — never break the estimate */ }
+
+  // 17d. Positive-case (infective/seropositive) overlay (doc T4) — verified-status,
+  // explicit-toggle-only billing layer; additive, never mutates base totals.
+  // Positive-management charges sit OUTSIDE the package by default.
+  try {
+    if (controls.positive_status && controls.positive_status !== 'NONE') {
+      const roomKey = room.toLowerCase();
+      const otRow = lineItems.rows.find((r) => r.name === 'OT Charges');
+      const otBase = otRow ? (otRow.selectedCells?.[roomKey] ?? otRow.cells?.[roomKey]?.[1] ?? 0) : 0;
+      const positiveCase = buildPositiveCaseOverlay({
+        inputs: {
+          positiveStatus: controls.positive_status,
+          confirmationSource: controls.confirmation_source,
+          requiresIsolation: controls.requires_isolation,
+          isolationRoomDays: controls.isolation_room_days,
+          isolationIcuDays: controls.isolation_icu_days,
+          surgeryContext: controls.surgery_context,
+          losDays: drivers.los?.selected,
+          daycare: controls.setting === 'Daycare',
+          payerAgreementId: controls.payer_agreement_id,
+        },
+        rateOf: (code) => rates.get(code) || {},
+        payorBucket: input.payment.payor_bucket,
+        room: roomKey,
+        otChargesBase: otBase,
+        hasPackage: !!packageOffer?.package?.package_code,
+      });
+      if (positiveCase) estimate.positive_case = positiveCase;
+    }
+  } catch { /* overlay is additive — never break the estimate */ }
+
+  // 17e. Newborn pathways (doc T6) — a distinct newborn scenario, additive and
+  // explicit-selection-only ("newborn" never auto-adds a bed/PF). Separate from
+  // the mother's estimate; never mutates base totals.
+  try {
+    if (controls.newborn_pathway && controls.newborn_pathway !== 'none') {
+      // the 4 cash newborn packages (well-baby + phototherapy pathways)
+      const { rows: nbPkgs } = await query(
+        `SELECT package_code, package_name, package_amount FROM fc.package_master
+         WHERE package_code = ANY($1)`, [['PAE5048', 'PAE5049', 'PAE5055', 'PAE5061']]);
+      const newbornPackages = Object.fromEntries(nbPkgs.map((p) => [p.package_code, { name: p.package_name, amount: Number(p.package_amount) || null }]));
+      const newborn = buildNewbornScenario({
+        inputs: {
+          pathway: controls.newborn_pathway,
+          stayDays: controls.newborn_stay_days,
+          nicuDays: controls.nicu_days,
+          twins: controls.newborn_twins,
+          inMotherPackage: controls.newborn_in_mother_package,
+          phototherapyDoubleSurface: controls.phototherapy_double_surface,
+        },
+        rateOf: (code) => rates.get(code) || {},
+        room: room.toLowerCase(),
+        newbornPackages,
+      });
+      if (newborn) estimate.newborn = newborn;
+    }
+  } catch { /* scenario is additive — never break the estimate */ }
+
+  // 17f. Cross-consultations (doc T9) — FC-selected (suggest-and-confirm), priced
+  // at the contracted visit tariff by TR code (placeholder department for
+  // insurance). Additive; already excluded from the surgeon-PF base (D3).
+  try {
+    if (Array.isArray(controls.cross_consults) && controls.cross_consults.length) {
+      const crossConsults = await buildCrossConsults({
+        selections: controls.cross_consults,
+        tariffCd: tariff.tariff_cd,
+        room: room.toLowerCase(),
+        losDays: drivers.los?.selected,
+        payorBucket: input.payment.payor_bucket,
+      });
+      if (crossConsults) estimate.cross_consultations = crossConsults;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17g. Medical management (doc T11) — family × setting policy-first menu with a
+  // semi-manual fallback. Additive; explicit selection only.
+  try {
+    const mm = controls.medical_management;
+    if (mm && mm.family) {
+      const setting = mm.setting || (drivers.icu?.selected > 0 ? 'icu' : (drivers.los?.selected ?? 0) <= 1 ? 'daycare' : 'ward');
+      // validated cohort band for this setting (+ department when given)
+      let settingBand = null;
+      try {
+        const dept = input.clinical.department_name;
+        const settingSql = setting === 'icu' ? 'coalesce(patient_icu_stay,0) > 0'
+          : setting === 'daycare' ? 'coalesce(patient_ward_stay,0)+coalesce(patient_icu_stay,0) <= 1'
+          : 'coalesce(patient_icu_stay,0) = 0 AND coalesce(patient_ward_stay,0)+coalesce(patient_icu_stay,0) > 1';
+        const { rows } = await query(
+          `SELECT count(*)::int n,
+             percentile_cont(0.25) WITHIN GROUP (ORDER BY open_bill_amount::numeric) p25,
+             percentile_cont(0.50) WITHIN GROUP (ORDER BY open_bill_amount::numeric) p50,
+             percentile_cont(0.75) WITHIN GROUP (ORDER BY open_bill_amount::numeric) p75
+           FROM fc.package_bill_admissions
+          WHERE open_bill_or_pkg_bill = 'Open Bill' AND surgery_name IS NULL AND open_bill_amount::numeric > 0
+            AND ${settingSql}${dept ? ' AND department_name ILIKE $1' : ''}`,
+          dept ? [dept] : []);
+        if (rows[0]?.n > 0) settingBand = { n: rows[0].n, p25: Number(rows[0].p25), p50: Number(rows[0].p50), p75: Number(rows[0].p75) };
+      } catch { /* band optional */ }
+      const medical = buildMedicalManagement({
+        family: mm.family, setting, losDays: drivers.los?.selected,
+        payorBucket: input.payment.payor_bucket, settingBand,
+        highValueItems: mm.high_value_items || [], indicationText: mm.indication_text, forceSemiManual: mm.semi_manual,
+      });
+      if (medical) estimate.medical_management = medical;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17h. Daycare modifier (doc T12) — a stay/billing modifier when the setting
+  // resolves to daycare; additive, treatment-driven, auto-suggested → confirm.
+  try {
+    if (controls.setting === 'Daycare') {
+      const daycare = buildDaycareModifier({
+        isDaycare: true,
+        expectedHours: controls.daycare_expected_hours,
+        autoSuggested: controls.daycare_auto_suggested,
+        inpatientConversion: controls.daycare_inpatient_conversion,
+        hasPackage: !!packageOffer?.package?.package_code,
+        treatmentText: input.clinical.treatment_text || input.clinical.procedure,
+      });
+      if (daycare) estimate.daycare = daycare;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17i. Chemotherapy / systemic therapy (doc T13) — conservative: sure things
+  // (base daycare + PF) auto; therapy drug cost is a structured doctor/user
+  // input, never dose-computed, never a generic total. Additive.
+  try {
+    if (controls.chemo && (controls.chemo.route || controls.chemo.regimen_items?.length)) {
+      const chemo = buildChemo({
+        route: controls.chemo.route,
+        regimenItems: controls.chemo.regimen_items || [],
+        supportiveInfusions: controls.chemo.supportive_infusions || [],
+        chemoport: controls.chemo.chemoport,
+        priorCycleRef: controls.chemo.prior_cycle_ref,
+      });
+      if (chemo) estimate.chemo = chemo;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17j. Labour room (doc T15) — maternal location add-on, additive to the ward
+  // charge (never the room category). Default 0-4h → occupied-bed only.
+  try {
+    if (controls.labour_room || controls.labour_room_hours != null) {
+      const labour = buildLabourRoom({
+        hours: controls.labour_room_hours,
+        deliveryPathway: controls.labour_room,
+        rateOf: (code) => rates.get(code) || {},
+        room: room.toLowerCase(),
+      });
+      if (labour) estimate.labour_room = labour;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17k. Tax (doc T16) — statutory 5% GST on non-ICU room rent > ₹5,000/day,
+  // computed automatically as a SEPARATE line (never folded into the base
+  // total). Attendant room (18%) is an off-by-default flag (no code yet).
+  try {
+    estimate.tax = buildRoomTax({
+      room: room.toLowerCase(),
+      wardDays: drivers.ward?.selected,
+      icuDays: drivers.icu?.selected,
+      rateOf: (code) => rates.get(code) || {},
+      attendantRoom: controls.attendant_room,
+    });
+  } catch { /* additive — never break the estimate */ }
+
+  // 17l. Blood bank (doc T17) — minimal doctor-inputted transfusion add-on; FC
+  // decides need only (no unit-states / reversal). Additive.
+  try {
+    if (controls.blood_transfusion) {
+      const blood = buildBloodBank({
+        transfusionNeeded: controls.blood_transfusion,
+        component: controls.blood_component,
+        units: controls.blood_units,
+        rateOf: (code) => rates.get(code) || {},
+        room: room.toLowerCase(),
+      });
+      if (blood) estimate.blood_bank = blood;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17m. Equipment & manual add-ons (doc T18) — governed catalogue, staff-
+  // confirmed, four-column financial separation. Additive.
+  try {
+    if (Array.isArray(controls.manual_addons) && controls.manual_addons.length) {
+      const addons = buildManualAddons({
+        selections: controls.manual_addons,
+        rateOf: (code) => rates.get(code) || {},
+        payorBucket: input.payment.payor_bucket,
+        hasPackage: !!packageOffer?.package?.package_code,
+        room: room.toLowerCase(),
+      });
+      if (addons) estimate.manual_addons = addons;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17n. Pharmacy exact item selection (doc T20) — high-value items, source-
+  // mapped pricing; routine pharmacy stays the historical distribution. Additive.
+  try {
+    if (Array.isArray(controls.pharmacy_selections) && controls.pharmacy_selections.length) {
+      const pharm = await buildPharmacySelections(controls.pharmacy_selections);
+      if (pharm) estimate.pharmacy_selections = pharm;
+    }
+  } catch { /* additive — never break the estimate */ }
 
   // Package tariff differs per room type: use the room's tier from
   // room_amounts (derived from fc.package_master.room_rates_jsonb), falling
@@ -995,22 +1256,71 @@ export async function buildEstimate(input) {
       // insurance settlement over the PACKAGE route (package + settled extras)
       if (input.insurance && input.payment.payor_bucket !== 'Cash') {
         try {
-          packageOffer.insurance_settlement = settleWithPackage({
+          packageOffer.insurance_settlement = annotateDnbDisposition(settleWithPackage({
             packageAmount: pkgAmt,
             coverageRows: coverage.rows,
             lineItems: lineItems.rows,
             roomKey: room.toLowerCase(),
             drivers,
             insurance: input.insurance,
-          });
+          }), input.payment.payor_bucket);
         } catch (err) {
           packageOffer.insurance_settlement = { error: err.message };
         }
+      }
+      // advisory expected NME over the PACKAGE route (package bills carry far
+      // less NME than open bills — the profile reflects that)
+      if (input.payment.payor_bucket !== 'Cash') {
+        try {
+          const nme = await lookupExpectedNme({
+            payer_bucket: input.payment.payor_bucket,
+            package_status: 'Package Bill',
+            department: input.clinical.department_name,
+            los_days: drivers.los?.selected,
+            icu_days: drivers.icu?.selected,
+          });
+          if (nme) packageOffer.expected_nme = nme;
+        } catch { /* advisory only */ }
       }
     } catch (err) {
       packageOffer.coverage = { error: err.message };
     }
   }
+
+  // 18a. Outside-package LOS (doc T10) — when the estimated stay exceeds the
+  // governed package LOS, add incremental excess-day care at actuals. The
+  // package base and its PF are NEVER recomputed. Additive; per-setting ledger
+  // when a ward/ICU breakdown exists, else total excess LOS (manager).
+  try {
+    const pkgDur = Number(packageOffer?.package?.package_duration);
+    if (packageOffer?.package && Number.isFinite(pkgDur) && (drivers.los?.selected ?? 0) > pkgDur) {
+      let physicianVisitRate = 0;
+      try {
+        const dept = input.clinical.department_name;
+        if (dept) {
+          const { rows } = await query(
+            `SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY charge::numeric) AS med
+               FROM fc.consultation_tariff_rate_matrix
+              WHERE tariff_cd = ANY($1) AND department_name ILIKE $2 AND charge::numeric > 0`,
+            [[tariff.tariff_cd, 'TR1'], dept]);
+          physicianVisitRate = Number(rows[0]?.med) || 0;
+        }
+      } catch { /* visit rate optional */ }
+      const opl = buildOutsidePackageLos({
+        packageDurationDays: pkgDur,
+        estimatedLos: drivers.los?.selected,
+        wardDays: drivers.ward?.selected,
+        icuDays: drivers.icu?.selected,
+        packageWardDays: Number(packageOffer.package.pkg_defined_ward_stay) || null,
+        packageIcuDays: Number(packageOffer.package.pkg_defined_icu_stay) || null,
+        rateOf: (code) => rates.get(code) || {},
+        room: room.toLowerCase(),
+        physicianVisitRate,
+        payorBucket: input.payment.payor_bucket,
+      });
+      if (opl) packageOffer.outside_package_los = opl;
+    }
+  } catch { /* additive — never break the estimate */ }
 
   // 18b. conversion alert (15-Jul flow doc): the open→package conversion is
   // driven by inclusion/exclusion text parsing — when the converted total
@@ -1049,6 +1359,7 @@ export async function buildEstimate(input) {
       packageOffer.quote = computePackageQuote({
         pkg: packageOffer.package,
         roomKey: room.toLowerCase(),
+        payorBucket: input.payment?.payor_bucket ?? null,
         coverageExtras: packageOffer.coverage && !packageOffer.coverage.error
           ? packageOffer.coverage.totals?.payable_extras
           : null,

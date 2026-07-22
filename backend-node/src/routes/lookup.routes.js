@@ -94,6 +94,73 @@ router.post('/resolve-treatment', async (req, res, next) => {
 });
 
 /**
+ * GET /api/lookup/treatment-directory  (G3, manager's 17_july_inp clinical spec)
+ * Every treatment the hospital has seen, with historical case counts (total +
+ * per payor), surgical/medical, daycare/robotic/emergency rates, typical
+ * LOS/ICU/OT/cath — one scan over the mart, cached 10 minutes.
+ */
+let DIR_CACHE = null;
+router.get('/treatment-directory', async (_req, res, next) => {
+  try {
+    if (DIR_CACHE && Date.now() - DIR_CACHE.at < 10 * 60 * 1000) return res.json(DIR_CACHE.rows);
+    const { rows } = await query(`
+      WITH adm AS (
+        SELECT t.template, m.admission_no, m.payor_bucket, m.surgical_medical,
+               m.is_daycare_broad, m.has_emergency_origin, m.department_name,
+               m.normalized_billable_stay_days AS stay, m.icu_days,
+               m.derived_ot_hours AS ot_hours, m.derived_cath_lab_hours AS cath_hours,
+               (r.ip_no IS NOT NULL) AS robotic
+        FROM mart.main_table m
+        CROSS JOIN LATERAL jsonb_array_elements_text(
+          CASE jsonb_typeof(m.curated_template_names_jsonb) WHEN 'array' THEN m.curated_template_names_jsonb ELSE '[]'::jsonb END
+        ) AS t(template)
+        LEFT JOIN fc.robotic_admission_classification r
+               ON r.ip_no = m.admission_no AND r.robotic_billed
+      )
+      SELECT template,
+        count(*)::int AS cases,
+        jsonb_object_agg(payor_bucket, payor_n) FILTER (WHERE payor_bucket IS NOT NULL) AS payor_counts_raw,
+        NULL AS _sep,
+        mode() WITHIN GROUP (ORDER BY surgical_medical) AS care_type,
+        mode() WITHIN GROUP (ORDER BY department_name) AS department,
+        round(100.0 * count(*) FILTER (WHERE is_daycare_broad) / count(*))::int AS daycare_pct,
+        round(100.0 * count(*) FILTER (WHERE robotic) / count(*))::int AS robotic_pct,
+        round(100.0 * count(*) FILTER (WHERE has_emergency_origin) / count(*))::int AS emergency_pct,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY stay) AS los_p25,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY stay) AS los_p50,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY stay) AS los_p75,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY icu_days) AS icu_p50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY ot_hours) FILTER (WHERE ot_hours > 0) AS ot_p50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY cath_hours) FILTER (WHERE cath_hours > 0) AS cath_p50
+      FROM (
+        SELECT *, count(*) OVER (PARTITION BY template, payor_bucket) AS payor_n FROM adm
+      ) x
+      GROUP BY template
+      HAVING count(*) >= 1
+      ORDER BY cases DESC`);
+    const fams = new Map(listFamilies().map((f) => [f.label, f]));
+    const out = rows.map((r) => {
+      const f = fams.get(r.template);
+      const n1 = (v) => (v == null ? null : Math.round(Number(v) * 10) / 10);
+      return {
+        template: r.template,
+        family: f?.family ?? null,
+        family_kind: f?.family_kind ?? (r.care_type === 'Medical' ? 'medical' : 'surgical'),
+        department: r.department,
+        cases: r.cases,
+        payor_counts: r.payor_counts_raw ?? {},
+        care_type: r.care_type,
+        daycare_pct: r.daycare_pct, robotic_pct: r.robotic_pct, emergency_pct: r.emergency_pct,
+        los: { p25: n1(r.los_p25), p50: n1(r.los_p50), p75: n1(r.los_p75) },
+        icu_p50: n1(r.icu_p50), ot_hours_p50: n1(r.ot_p50), cath_hours_p50: n1(r.cath_p50),
+      };
+    });
+    DIR_CACHE = { at: Date.now(), rows: out };
+    res.json(out);
+  } catch (err) { next(err); }
+});
+
+/**
  * POST /api/lookup/package-gate  body: { treatment, payor_bucket, organization_cd? }
  * Intake classification chain (manager 14-Jul): payor → tariff → package in
  * master? → details usable? → FC history? → route. Every step is returned

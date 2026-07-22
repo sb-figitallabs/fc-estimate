@@ -105,6 +105,97 @@ export const EstimateInput = z.object({
     robotic: z.enum(['yes', 'no', 'auto']).default('auto'),
     emergency_ot: z.enum(['No', 'Yes']).default('No'), // switches OT pricing to the OT-E slot ladder
     mlc: z.enum(['No', 'Yes']).default('No'),          // applies the MLC charge row (HSP0047)
+    // Emergency overlay (doc T3) — explicit answers only; NOTHING is inferred.
+    // Drive the emergency billing overlay (ER physician / ER assessment /
+    // emergency bed / package-% method). See modules/engine/emergency.js.
+    arrived_via_emergency_department: z.enum(['No', 'Yes']).default('No'), // ER-origin — gates ER physician + assessment
+    is_clinically_emergency: z.enum(['No', 'Yes']).default('No'),         // clinical urgency (context; no auto-charge)
+    emergency_bed_expected: z.enum(['No', 'Yes']).default('No'),          // ER-bed use expected — gates emergency-bed row
+    emergency_bed_hours: z.number().nonnegative().optional(),             // hours in the emergency bed (1–4h blocks)
+    emergency_pricing_method: z.enum(['none', 'ot_e', 'package_pct']).default('none'), // Q3: mutually exclusive method
+    // Positive-case (infective/seropositive) overlay (doc T4) — VERIFIED status
+    // only, explicit toggle, never inferred from a test order. See
+    // modules/engine/positiveCase.js.
+    positive_status: z.enum(['NONE', 'HBSAG', 'HCV', 'HIV_SEROPOSITIVE', 'H1N1', 'OTHER_INFECTIVE']).default('NONE'),
+    confirmation_source: z.enum(['green_sticker', 'lab', 'clinical', 'manual']).optional(), // status must be verified
+    requires_isolation: z.enum(['No', 'Yes']).default('No'),
+    isolation_room_days: z.number().nonnegative().optional(),
+    isolation_icu_days: z.number().nonnegative().optional(),
+    surgery_context: z.enum(['non_heart', 'ct', 'cath_lab', 'medical']).optional(), // resolves the HBsAg/HCV context code
+    payer_agreement_id: z.string().optional(),
+    // Newborn pathways (doc T6) — "newborn" never auto-adds a bed/PF; the FC
+    // selects a pathway explicitly. See modules/engine/newborn.js.
+    newborn_pathway: z.enum(['none', 'healthy_with_mother', 'well_baby_package', 'phototherapy', 'nicu']).default('none'),
+    newborn_stay_days: z.number().nonnegative().optional(),
+    nicu_days: z.number().nonnegative().optional(),                 // NICU room days — NOT the generic icu field
+    newborn_twins: z.enum(['No', 'Yes']).default('No'),
+    newborn_in_mother_package: z.enum(['No', 'Yes']).default('No'),
+    phototherapy_double_surface: z.enum(['No', 'Yes']).default('No'),
+    // Cross-consultations (doc T9) — FC-selected (suggest-and-confirm), never
+    // auto-included. Priced at the contracted visit tariff by TR code. See
+    // modules/engine/crossConsult.js.
+    cross_consults: z.array(z.object({
+      department: z.string(),
+      visits: z.number().positive().optional(),
+      doctor_cd: z.string().optional(),
+    })).optional(),
+    // Medical management (doc T11) — family × setting menu, policy-first, with a
+    // semi-manual fallback. See modules/engine/medicalManagement.js.
+    medical_management: z.object({
+      family: z.string(),
+      setting: z.enum(['ward', 'icu', 'daycare']).optional(),
+      high_value_items: z.array(z.object({ name: z.string(), amount: z.number().optional() })).optional(),
+      indication_text: z.string().optional(),
+      semi_manual: z.boolean().optional(),
+    }).optional(),
+    // Daycare modifier (doc T12) — applies when setting = Daycare. See
+    // modules/engine/daycare.js.
+    daycare_expected_hours: z.number().nonnegative().optional(),  // drives strict(<=12h)/extended/cross-midnight status
+    daycare_auto_suggested: z.boolean().optional(),               // suggested (not FC-picked) → needs confirm
+    daycare_inpatient_conversion: z.boolean().optional(),         // model the conversion contingency
+    // Chemotherapy / systemic therapy (doc T13) — conservative: sure things auto,
+    // therapy drug cost is a structured doctor/user input. See modules/engine/chemo.js.
+    chemo: z.object({
+      route: z.enum(['routine_cytotoxic', 'immunotherapy_targeted', 'supportive_infusion_only', 'planned_inpatient', 'high_dose_bmt']).optional(),
+      regimen_items: z.array(z.object({ drug: z.string(), brand: z.string().optional(), strength: z.string().optional(), vials: z.number().optional(), unit_price: z.number().optional() })).optional(),
+      supportive_infusions: z.array(z.object({ name: z.string(), amount: z.number().optional() })).optional(),
+      chemoport: z.boolean().optional(),
+      prior_cycle_ref: z.object({ bill: z.number().optional(), note: z.string().optional() }).optional(),
+    }).optional(),
+    // Labour room (doc T15) — maternal location add-on, additive to the ward
+    // charge. Default 0-4h slot. See modules/engine/labourRoom.js.
+    labour_room: z.boolean().optional(),              // delivery pathway selected → enable
+    labour_room_hours: z.number().nonnegative().optional(),  // projected occupancy hours
+    // Tax (doc T16) — room-rent GST is computed automatically; attendant room is
+    // an off-by-default flag (no tariff code yet). See modules/engine/tax.js.
+    attendant_room: z.boolean().optional(),
+    // Blood bank (doc T17) — doctor-inputted transfusion add-on; FC decides need,
+    // not unit-level states. See modules/engine/bloodBank.js.
+    blood_transfusion: z.boolean().optional(),
+    blood_component: z.enum(['prbc', 'ffp']).optional(),
+    blood_units: z.number().positive().optional(),
+    // Equipment & manual add-ons (doc T18) — governed catalogue, staff-confirmed,
+    // four-column financial separation. See modules/engine/manualAddons.js.
+    manual_addons: z.array(z.object({
+      code: z.string(),
+      name: z.string().optional(),
+      basis: z.enum(['flat', 'per_event', 'per_hour', 'per_day', '12h', '24h', 'per_shock', 'per_km', 'editable']).optional(),
+      qty: z.number().positive().optional(),
+      location: z.enum(['ot', 'ward', 'icu', 'er', 'labour', 'nicu', 'cathlab']).optional(),
+      mutex: z.string().optional(),
+      admissible: z.string().optional(),
+      package_included: z.boolean().optional(),
+    })).optional(),
+    // Pharmacy exact item selection (doc T20) — high-value items with source-
+    // mapped pricing; routine pharmacy stays the historical distribution.
+    pharmacy_selections: z.array(z.object({
+      item_code: z.string().optional(),
+      name: z.string().optional(),
+      quantity: z.number().positive().optional(),
+      user_amount: z.number().nonnegative().optional(),
+      uom: z.string().optional(),
+      source_date: z.string().optional(),
+    })).optional(),
     // Narrow the clinical cohort to a specific care type / setting. Omitted =>
     // use the family's own mix. Drives cohort filter + template row structure.
     care_type: z.enum(['Surgical', 'Medical']).optional(),

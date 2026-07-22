@@ -72,6 +72,23 @@ Shipped this day (engine `1250c28`→`79216d2`, HO `67a0b69`→`d1d2759`):
 - **"Ask the Project" launched** at `/ask` on the engine (`aa9f5a2`→`349e4e8`): this chronicle + the auto-refreshed git log ride the Ask-AI context, so "what is the logic / what was it before / when did it change / what did the manager say" questions get dated, cited answers. Added: standalone chat page, **server-side conversation storage** (`fc.ask_conversations` — shared across browsers, sidebar with past chats), **screenshot understanding** (paste/attach/drop up to 4 images; the agent reads the figures, verifies them against live queries, and explains each number's provenance).
 - **Agent hardening after the manager's first real failure** ("list the 7 robotic TKR cases" → "could not produce an answer"): two causes — (1) the robotic tables + stay columns weren't in the agent's schema notes; (2) at tool-budget exhaustion the model was still mid-query, so the empty final turn hit the canned fallback DESPITE having all rows in hand. Fixes (`9c3d01d`+`349e4e8`): schema notes now cover the robotic classification tables, raw-vs-ceiled stay fields and the cohort-reproduction recipe; live `information_schema` discovery is mandatory before giving up; tool budget 6→9; and a forced no-tools final-synthesis pass answers from gathered results when the budget runs out. Standing rule: never chase a conversation-quoted count — data drifts; present what the data shows and note the difference.
 
+### 2026-07-18 (late) — surgery master received, measured, wired in
+- Manager shared `Surgery Master _SSG.xlsx` — the hospital's canonical surgery/procedure list (14,885 rows, 7,938 codes, 38 tariffs); "it's what the FC currently uses to map what the doctor has written to which dropdown to select"; medical management deliberately has no list.
+- **G1 coverage analysis** (`fc.surgery_master` ingested, report `g1-surgery-master-coverage-18jul.md`): 97.7% of billed surgical admissions map (code 86% + name 12%); 95.2% of ALL surgical IP admissions map via OT-booking/package/bill-line codes; medical maps 1.6% (expected negative control). ~159 billed codes are missing from the master (reconciliation export for the hospital); legacy 2024 OT names are the other gap class.
+- **G2** (`ccb440e`): the surgery master became a first-class stage-1 matching corpus in the gate/build/flow-2 ranking, with `master_match` provenance on candidates. Verified: "DJ STENTING (DOUBLE J STENTING) - UNILATERAL" and "cystoscopy with DJ stenting" both surface URO5443 at the real ₹70,000; TKR candidates/verdicts unchanged.
+- **G3** (`5695a30`): treatment directory at `/treatments.html` — all 309 treatments with case counts (total + per payor), surgical/medical, daycare/robotic/emergency rates, LOS p25/50/75 and ICU/OT/cath typicals from one mart scan (10-min cache); rows drill into Flow 2 prefilled. This is the `17_july_inp.pdf` clinical-part directory ("we should have a list of all hospital treatments… know the top treatments").
+- **D4 closed** — verified on flow-2: the DJ-stenting wording now decides `billing_type: package [URO5443] ₹70,000` via the "similar package NAME" ladder rung (F1+G2 fixed it; the manager's original complaint was a bare minor-procedure answer).
+- **D5 closed** — 45-vs-26 reconciled with zero missing data: his 45 = umbrella count of any cash admission mentioning DJ stenting (42 distinct; mostly URSL+DJ combos + bilateral); our numbers are scoped per exact package (URO5011=30, URO5443=0 billed, family cohort=6). Union matches.
+- **D6 verified compliant** — the only silent historic overrides are the sanctioned historic-PF paths; cash PF is flag+button; Q3 backfill is additive-only; bands are reference. His PF doc is wanted only for validation samples.
+- **F2 closed, no change** — mart already classifies GIPSA per his TR290-org rule with zero violations (3,396 GIPSA all TR290; no non-GIPSA on TR290); the gap existed only in his raw extract, which the engine never uses for buckets. Manager: "no gipsa changes for the moment". His "new pdf" declared waste — rates come from Service-All (A2), LOS from the package master (A1); the only remaining GIPSA ask is the incl/excl delta beyond the MOUs.
+
+### 2026-07-20 (later) — neonatal packages + Due Mobilisation B2
+- **Neonatal cash packages (i22, engine `9c8d4b1`):** PAE5048/5049 (Well Baby, MOTHER_BED), PAE5055/5061 (Phototherapy, WARD) added to the FINANCIAL package layer (package_master + room_rates + org_applicability, TR1/cash) — the codes already existed in the clinical surgery_master, so this enriched rather than duplicated. "Surgeon Charges" normalized to professional_fee (neonatologist — role label pending manager confirm). Effective 17-Jun (three) / 18-May (PAE5061). Verified: all four surface as top cash gate candidates at their real rates. Builder can now route: healthy baby 1d→PAE5048 / 2d→PAE5049; phototherapy single→PAE5055×days, double→PAE5061×days; NICU stays a separate flow; phototherapy during a well-baby package is a separate package (excluded from well-baby). NOTE: ingest gotcha — a best-effort INSERT to a maybe-absent table (fc_source_registry) inside the txn aborted it and COMMIT silently rolled back; moved post-COMMIT. Also the runtime view INNER-JOINs package_organization_applicability, so a new package needs an applicability row to appear.
+- **Due Mobilisation tool** — new parallel product, separate worktree `feat/due-mobilisation`. B2 shipped: migration 098 (due_mob schema) + ingest module (header-signature schema detection, merge-by-UMR/IP, snapshot-per-day) + upload/ledger API. Not in the estimate engine.
+
+### 2026-07-20 — Phase 2 kickoff (edge cases + Due Mobilisation)
+Two meetings set the next phase. Estimate Builder declared ~90% done; remaining = edge cases validated against the manager's cleaned DB (~14k IP). **Mandated workflow:** he sends raw+Codex topic docs → our agent validates against OUR data → we produce a per-topic REVIEW FILE → he approves → only then we implement (noisy inputs archived, never auto-implemented). Four topic docs received and reviewed same day — review files at `todo_and_helpers/review-01..04`: **T1 PF/multi-treatment/extended-stay** (spec + Gen-Doc-6 + his i21 validation; key open question: LAN 25% vs final-insurance 35% surface for the FC estimate, and whether rule-percentages replace the Q1 historic-P50 insurer-PF override), **T2 NME hybrid estimator** (rules classify, history prices, zero-inflated display), **T3 emergency overlay** (six independent facts, decision workflow, OT-E replace-not-add), **T4 positive-case layer** (verified-status-driven, context codes, isolation, MOU OT surcharges). Master plan: `20jul-phase2-master-todo.md`. **Parallel new product: Due Mobilisation tool** (daily report uploads → admitted-patient ledger → collect/enhance worklists) to be built in a separate Hospital_OS worktree, our own PRD, then handover to Gautam.
+
 ---
 
 ## Part 2 — Logic reference (current logic + its history)
@@ -90,7 +107,7 @@ Shipped this day (engine `1250c28`→`79216d2`, HO `67a0b69`→`d1d2759`):
 
 ### Package matching (which package for this wording?)
 **Now:** alias word-match on `fc.package_alias` → if empty, master-catalog NAME search (17-Jul TR287 fix) → AI clinical ranking at temperature 0 → deterministic per-candidate verdicts (18-Jul B1: laterality/side aware — unilateral ask ⇒ bilateral marked not-a-match; robotic/revision reasons) → robotic answer re-biases to the robotic package (B3) → a not-a-match candidate never leads. The FC can override to ANY candidate (B2) — same surgery under different commercial packages (THR 1/2/3) is explicitly the user's pick (his 17-Jul call; the hospital's own assignment rule for those variants is still an open ask, #8).
-**History:** aliases-only at first → 17-Jul master-name fallback (TR287 had 951 aliases but only 2 KNEE ones — gate/build disagreed) → 18-Jul verdicts + robotic bias + override.
+**History:** aliases-only at first → 17-Jul master-name fallback (TR287 had 951 aliases but only 2 KNEE ones — gate/build disagreed) → 18-Jul verdicts + robotic bias + override → 18-Jul (late, G2) the hospital's **surgery master** (`fc.surgery_master`, 7,938 canonical codes — literally the FC's dropdown list, received from the manager that day) became a first-class candidate source: word-match on SURGERYNAME → surgery_cd → package on the tariff, unioned with alias/master-name candidates before AI ranking (G1 had measured ~95% of surgical IP bills carry these codes; fixed the DJ-stenting candidate surfacing).
 
 ### Package pricing (what does the package cost?)
 **Now:** priority per (tariff, package, room): ① Service-All matrix (`fc.service_tariff_rate_matrix`, 18-Jul A2 — his "the package tariff should come from the service tariff" directive) → ② structured `room_rates_jsonb` → ③ per-room rescue parsed from `tariff_information` markdown (17-Jul #3). Charges ≤ ₹1,000 anywhere are placeholders, never prices (18-Jul F1 — the matrix itself carries dup ₹10 TR1 rows). The with-package quote prefers the room-tier price; a band-check can fall back to the scalar; a real room-tier price un-blocks master "not ready" readiness.
@@ -129,5 +146,412 @@ Shipped this day (engine `1250c28`→`79216d2`, HO `67a0b69`→`d1d2759`):
 - Star Allied absent from the non-GIPSA tariff-bearing insurer list (F3 of 17-Jul report).
 - Implant-heavy cases (bilateral TKR, PTCA-with-stent) under-estimate ~50% — implants ride as exclusions in real bills; pending token-OT (Q2) + implants work.
 
-### Waiting on the manager
-GIPSA incl/excl Excel (Billur/Satya) · common-exclusions sheet · updated GIPSA+MOU sheet · pre-2024 historical dataset · surgery master sheet (+ usage) · GIPSA business-rules JSON · PF handling doc with samples (promised 18-Jul) · THR 1/2/3 assignment rule confirmation · his 45-vs-26 query result · visit-based medical PF fee sheet.
+### Waiting on the manager (current as of 18-Jul night)
+1. **GIPSA incl/excl DELTA** — only the additions beyond the previously-extracted MOUs (he's chasing the hospital). The old "updated GIPSA+MOU sheet" ask was **dropped 18-Jul** ("the new pdf is waste") — rates come from Service-All (A2 done), LOS from the package master (A1 done).
+2. **Common-exclusions sheet** — always-excluded items (cross-consultation etc.) that apply to every package.
+3. ~~Historical dataset~~ — ✅ **received + ingested 18-Jul night**: the Dec-2024→Apr-2025 window (his two xlsx exports) loaded via the standard snapshot pipeline — package-bill admissions 12,648 → 17,002 (+34%), 690k lines, coverage back to Aug-2024, reconciliation 98.6% within 1%, bucket metrics + robotic classification rebuilt. Anything older than Dec-2024 would be a future drop.
+4. **PF doc with samples** — for VALIDATION only; the flag-not-override semantics are already implemented and verified (D6).
+5. **Cleaned FC data Dec-2024→** (doctor remarks, billing tags, estimates, actual bills) — he does the cleaning.
+6. **GIPSA business-rules JSON.**
+7. **THR 1/2/3 assignment-rule confirmation** — hospital rule vs purely the FC's pick (today: user's pick, B2).
+8. **His OK on the 45-vs-26 reconciliation** (D5 closed our side: no missing data, scope difference) + his PR292 note if it changes anything.
+9. **Hospital-side data cleanups** (guarded in code, source still dirty): duplicate ₹10 TR1 tariff rows; ~159 billed surgery codes missing from the surgery master (export ready).
+10. **Visit-based medical-PF fee sheet** (medical PF interim = billed history P50).
+
+RECEIVED so far: surgery master sheet ✅ (18-Jul — measured G1, wired G2, directory G3); read-only DB access delivered ✅.
+
+---
+
+## 2026-07-22 — Tab-2 NME unblocked: HIMS NME ingest + cohort profiles + advisory wiring
+
+Manager's i23.md revealed the real NME target is **`HIMS NME Amount (Rs.)`** in `Estimate-Variance-Report (1).csv` — NOT `fc.package_bill_admissions.nme_amount` (that set is ~all zero: 192/17,002 positive). Constraint: import ONLY IPs present in our DB, relevant fields only, no PII; HIMS vs FC NME separate; quarantine negatives. Built on branch `feat/nme-phase1` (not pushed):
+
+- **migration 003** `fc.fc_nme_source` (16,389 present-IP admissions; 10 EVR orphans dropped; 29 negatives quarantined; lineage-preserving, no PII) + `fc.nme_profile` (cohort positive-prob + positive-only P25/P50/P75/P80; ladder L1 payer+package+dept+LOS+ICU → L2 dept → L3 payer+package; min-sample gating ≥30/15-29 blended/<15 fallback). `scripts/backfill-nme.js` idempotent ETL over `matched_in_mart` clean cohort (14,031). Reconciles to manager targets within ~1% (P50 5,466 vs 5,524; P75 9,235 vs 9,272; pos 4,321 vs 4,212).
+- **`nmeProfile.js` `lookupExpectedNme()`** + `buildEstimate.js`: `estimate.expected_nme` (Open Bill) + `packageOffer.expected_nme` (Package Bill), **non-Cash only**, as a SEPARATE advisory patient-payable line (P50 typical-when-present + positive_prob) — never folded into the settled insurer/patient split. Cash → null; table-absent → null (never breaks the estimate).
+- Verified: Non-GIPSA ortho open-bill ₹12,156 @86% (L1); package ₹280 @30%; GIPSA → L2; Cash null. **No regression** — sanity_insurance 24/0, sanity_family 12/0; settle()/totals byte-identical.
+
+Open: push pending approval; frontend must render the advisory line; International Open-Bill L3 is a 2-sample ₹150k outlier (winsorize later); Phase-2 still needs companion exports (clean spine, open-bill service lines, pharmacy lines) — FC folder alone only unblocks admission-level NME.
+
+---
+
+## 2026-07-22 — Tab-3 Emergency billing overlay
+
+Doc T3: emergency is a **billing overlay on Treatment A** — never a separate treatment, never one surcharge; a decision workflow, not auto-charges. Manager approved the components ("Make sense"), confirmed Q1 (ER-physician auto-on only when arrived-via-ER=yes, rest opt-in), Q3 (one mutually-exclusive method), and the governing principle Q4 **"we don't infer"**. Q2 (emergency-OT) left "need more info". §5 validation ("Sure") run first.
+
+**§5 validation** (fc.package_bill_lines, 17,002 admissions): D000806 ER-physician median ₹1,000 (n≈91); EME5060 ER-assessment ₹3,000 (n=56, ~96% of occurrences insurance, ~0% cash — the doc's "93-94%" is the payer *share* of occurrences, not a penetration rate; base rate is low); EME0065 emergency-bed ₹1,310 (n=49); **OTC0054-0069 emergency-OT = 0 admissions** → confirms Q2 gap, marks OT-E ACTIVE_POLICY (not history-validated).
+
+**Built on `feat/emergency-overlay` (not pushed):**
+- `emergency.js buildEmergencyOverlay()` — additive, explicit-input-only, never mutates the parity-pinned base totals. ER physician (history-priced, no tariff row), ER assessment (tariff, insurance default-on / cash default-off), emergency bed (tariff, ask). Package-% flagged `requires_agreement` (mutually exclusive w/ OT-E, Q3); emergency-OT `ACTIVE_POLICY`; variable services as range display. Attached as `estimate.emergency`.
+- Estimate schema: `arrived_via_emergency_department, is_clinically_emergency, emergency_bed_expected(+hours), emergency_pricing_method` (all default off).
+
+Verified: insurance ER arrival → physician+assessment ₹4,000; +bed ₹5,310; cash → assessment OFF, ₹1,000; **baseline byte-identical**. No regression — sanity_insurance 24/0, sanity_family 12/0.
+
+Open (for manager): Q2 emergency-OT still needs data to validate (0 historical); ER-physician priced from history (no tariff row) — confirm ₹1,000 reference; holiday calendar not built (Q4 — no auto-apply); package emergency-% needs per-org agreement table; variable-services range dataset not yet wired.
+
+---
+
+## 2026-07-22 — Tab-4 Positive-case (infective/seropositive) billing layer
+
+Doc T4: a separate positive-case billing-rule layer — VERIFIED status only, explicit FC toggle (or explicit doctor's-note selection), NEVER inferred from a test order (MIC0066 is in 2,840 admissions incl. 905 medical — just an investigation). Manager approved §2 rules; key answers: #5 OT surcharge 50%/100% is **standard for GIPSA+Non-GIPSA (no MOU list needed)**; #6 package-case OT base = package-embedded OT with review flag; Q1 single toggle; Q2 positive-OT + emergency-OT share the OT base, separate lines, **no compounding**; Q3 **policy-first** (124 samples → ACTIVE_POLICY/PROVISIONAL); §5 validation first ("Sure"). Blocked #1-4 → handle with flags (rare).
+
+**§5 validation** (package-bill lines only — package_bill_lines has ZERO open-bill line data, 4,906 pkg IPs): RNS0123 51 / RNS0122 12 / RNS0121 1 / RNS0116 5 vs doc full-cohort 83/13/1/31; cohort 67 vs ~124. The delta is open-bill positive cases we have no line data for — **the same open-bill gap as NME Phase-2**. RNS0123 priced ₹16,280 = tariff median. HSP5020-5024 in TR1 (priceable); RNS0123/0121/0122 in TR177 only; MSC2816 ₹10 placeholder (Blocked #3).
+
+**Built on `feat/positive-case-overlay` (not pushed):**
+- `positiveCase.js buildPositiveCaseOverlay()` — additive overlay `estimate.positive_case`, never mutates base totals; charges outside package by default. HBsAg/HCV context code by surgery_context (medical = no charge); HIV LOS-banded HSP5020-5024; isolation RNS0101 (ICU isolation CONTEXT_REQUIRED); OT surcharge +50%/+100% standard GIPSA+Non-GIPSA, OT base only, separate line, no compounding w/ emergency-OT. Rate = payer tariff + TR1 fallback, never hardcoded; absent → CONTEXT_REQUIRED. Policy-first flags. Blocked #3/#4/#6 as flags.
+- schema: positive_status, confirmation_source, requires_isolation, isolation_room/icu_days, surgery_context, payer_agreement_id.
+
+Verified: HBsAg non-heart ₹16,280 +50% OT; HIV HSP5022 ₹11,000 +100%; +isolation ₹25,760; cash → no OT surcharge; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
+
+Open (for manager): ICU isolation code (#1), rates effective date (#2), MSC2816 conflict (#3), RNS0116 validity (#4) — all pending hospital; open-bill line data needed to see the full 124 cohort; frontend to render the positive-case toggle + section.
+
+---
+
+## 2026-07-22 — Tab-5 Insurance DNB four-value billing-disposition model (N1)
+
+Doc T5: 12 "Do Not Bill" items that must never make the patient liable — FC estimate shows only patient_payable; SI exhaustion never transfers these to the patient. Manager answers: D1 → **follow final-bill logic (GIPSA vs Non-GIPSA differ)**; cash rules don't apply to insurance; **N1 four-value model APPROVED as metadata-only** (UI = covered/non-covered; hide items where patient pays ₹0); patient-facing = only patient_payable (confirmed); drug-admin-as-NME = **moot** (drug-admin not present in insurance; NME is insurance-only); ₹1-share reproduction + N1 wiring = "need more info".
+
+**Engine audit:** classifyRow already routes most DNB items off the patient (monitor/intensivist/ICU-nursing → icu; asst-anaesthetist/asst-physician/DMO → associated) — the "patient ₹0" goal is largely already met; no separate patient-side PF lines, so the "suppression lowers insurance PF" concern is mild for us.
+
+**§5 ₹1-share validation BLOCKED:** package_bill_lines is package-bill-only, so our shares are ~0-4% vs the doc's 43-50% (DMO 1.6% vs 46.5%, monitor 0.6% vs 43.4%). The ₹1 non-show is an open-bill/LAN phenomenon — needs open-bill service lines (3rd time this gap bites: NME Phase-2, positive-case cohort, DNB ₹1-share).
+
+**Built on `feat/dnb-disposition` (not pushed):**
+- `src/modules/insurance/dnbDisposition.js annotateDnbDisposition()` — PURE metadata annotation on the settlement rows; changes NO amount. Each row gets billing_disposition (CLAIM_AND_WAIVE_IF_DENIED / INCLUDED_IN_PARENT_TARIFF / LAN_NON_SHOW_RUPEE_ONE / SUPPRESS_DO_NOT_BILL / PATIENT_PAYABLE_NME_GIPSA / PATIENT_PAYABLE / COVERED) + four_value block + fc_hidden (patient ₹0 → hidden from FC). GIPSA general-instruments → PATIENT_PAYABLE_NME_GIPSA (label only). `dnb` summary on the settlement.
+- Wired into buildEstimate for both estimate.insurance_settlement and packageOffer.insurance_settlement.
+
+Verified: insurer_total/patient.total unchanged; sanity_insurance 24/0, sanity_family 12/0.
+
+Open (for manager): ₹1-share needs open-bill line data + manager clarity ("need more info"); GIPSA general-instruments NME **amount-move** (currently label-only) is a verified-number change held for confirmation; N1 metadata is ready but UI wiring (covered/non-covered + insurer/audit view) is a frontend follow-up.
+
+---
+
+## 2026-07-22 — Tab-6 Newborn pathways
+
+Doc T6: four DISTINCT newborn pathways (healthy-with-mother / well-baby-in-package / phototherapy / NICU), never one "newborn" estimate. Manager: "newborn" never auto-adds bed/PF — explicit select then confirm (Agreed); NICU days from NICU room-service codes not generic icu_days (Agreed); provided **4 cash newborn packages** (verified in package_master: PAE5048 ₹11k / PAE5049 ₹18k / PAE5055 ₹22k / PAE5061 ₹23k); cradle code missing → flag; mother-baby linkage = ask the FC (FC perspective); §4 validation "Sure".
+
+**Built on `feat/newborn-pathways` (not pushed):**
+- `src/modules/engine/newborn.js buildNewbornScenario()` — additive scenario `estimate.newborn`, explicit-selection-only, never mutates base totals. healthy_with_mother (₹0 bed + neonatologist/paediatrician PF history modes ₹8k/₹4k + BIO5229 screening + BIO0240 bilirubin); well_baby_package (PAE5048/5049, or attach-to-mother); phototherapy (PAE5055/5061 per-day × days + PF); nicu (ROM5015 NICU bed × nicu_days + PF + investigations, NOT icu_days). Priced from payer tariff (TR1 fallback) / 4 cash packages / history PF. N3 blocks as flags (cradle code, package master beyond 4 pkgs, mother-baby linkage).
+- schema: newborn_pathway, newborn_stay_days, nicu_days, newborn_twins, newborn_in_mother_package, phototherapy_double_surface.
+
+§4 validation note: 144 healthy-newborn cohort (median PF ₹8k, cash P25/P50/P75 ≈ 9.2k/15.1k/18.9k) is open-bill/minimal → not fully reproducible on our package-bill-only lines; pathways are tariff/package-priced, not history-certified (consistent open-bill gap).
+
+Verified: healthy ₹19,290; well-baby-2d ₹18,000; in-mother attach ₹0; phototherapy-3d ₹69,000+PF; NICU-5d ₹55,840; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
+
+Open: cradle code (asked hospital); Tab-7 mother-linked-bed is the companion; frontend to render the 4 pathways + provisional-then-confirm flow.
+
+---
+
+## 2026-07-22 — Tab-7 Newborn mother-linked bed (KB-only)
+
+Doc T7: newborn linked to mother via a "dollar bed" (522§1) — ₹0 while rooming-in, chargeable on NICU-transfer or mother-discharge. **Manager deprioritized for FC**: "linkage bed is not an FC-related thing… we can ignore that", handle with the right question when the FC selects newborn; optionally a knowledge-base item (secondary). The FC-relevant handling is already in Tab-6 (healthy-with-mother ₹0 bed, in-mother-package attach, twins flag, NICU pathway).
+
+**Built on `feat/newborn-mother-linked` (not pushed):** no automation — only a `mother_linked_kb` reference (scope knowledge_base_only) on estimate.newborn: 3 bed states (rooming_in ₹0 / moved_to_nicu ICU billing / mother_discharged ordinary bed). Metadata-only; no amount change; sanity_family 12/0. §4 note: 507 baby/neonatal clean admissions support the 3 states, but linkage fields (mother adm no., dollar-bed no., discharge/transfer timestamps) aren't in our data — validation base for later.
+
+---
+
+## 2026-07-22 — Tab-8 Package Inclusion/Exclusion (validation + clarification, NO code change)
+
+Doc T8: how the builder handles what a package absorbs vs bills extra; whether a hidden pharmacy/investigation threshold exists (it doesn't). Manager: §1 core design **Agreed** (start from governed package rate + add only source-supported extras — already our approach; four independent per-item decisions; honour cash caps); don't invent GIPSA/Non-GIPSA caps from exclusion frequency **Agreed**; but **"need more info"** on the conditional-extra label, the no-offset rule, Non-GIPSA org-resolution, and data-readiness; **N2 package-rule-schema questioned** ("mostly doesn't seem right approach").
+
+**§4 validation (our RDS):**
+- Cash reconciliation-to-₹0 (`gross = pkg + defined_exc + undefined_exc + nme`): **1,465/1,486 = 98.6%** reconcile — reproduces the doc; UNDEFINED_EXCLUDES is a balancing field → **no hidden threshold/cap**. Insurance reconciles far less (Non-GIPSA 53%, GIPSA 38%) → confirms "excluded lines are not auto patient-payable; don't invent caps".
+- Runtime-ready packages (`has_inclusions AND has_tariff`): **176 cash + 570 Non-GIPSA + 259 GIPSA** — FAR ahead of the doc's snapshot (114 + 45 + 0). The "data not runtime-ready / 0 GIPSA" concern is largely resolved for us.
+- `coverage.js` already implements §1 (parseCoverage/applyCoverage → fully_included / partially_included / capped / excluded / payable_extras from the package rate + source-supported extras).
+
+**Decision: no engine change.** Our engine + data already meet the endorsed design; N2 heavy per-line schema NOT built (manager's instinct confirmed — the four-status coverage model + cash-reconciliation-to-₹0 already covers it). Clarifications written for the manager's 4 "need more info" points (conditional-extra label, no cross-component offset, Non-GIPSA org→agreement→package→rule resolution, data-readiness now much better).
+
+---
+
+## 2026-07-22 — Tab-9 Cross-consultation pricing
+
+Doc T9: hybrid detect-and-confirm; separate subtotal under Professional Charges; excluded from surgeon-PF denominator; diet consult (DIE0001) is NOT a cross-consult. Core (exclusion + grouping) already shipped D3 (17-Jul) — confirmed. Manager: never auto-include (suggest-and-confirm) Agreed; **one visit/consultant/day** (cross-consults only, not primary) Confirmed; role placeholders when doctor unknown, specific doctor needs name+verified code; **Non-GIPSA/TR201 kept as EXCLUSION** until a TR201 include-guideline is added; **insurance → placeholder department (not doctor name), contracted rates by TR code — "validate this once before implementing"**.
+
+**Validation (his ask):** `fc.consultation_tariff_rate_matrix` = 35,372 rows, 57 depts × 30 tariffs, tariff_cd populated (34,119) — resolves the old `v_consultation_rates_current` null-tariff blocker. Rates are FLAT per dept+tariff+ward (TR290/GENERAL: Ortho ₹2,500, Cardiology ₹3,000, across all doctors) → placeholder-department pricing by TR code is valid.
+
+**Built on `feat/cross-consult` (not pushed):**
+- `src/modules/engine/crossConsult.js buildCrossConsults()` — FC-selected, suggest-and-confirm, additive `estimate.cross_consultations`; base unchanged. Prices from consultation_tariff_rate_matrix by (payer tariff + dept + ward); INSURANCE → placeholder dept CROSS:<DEPT> (real doctor code before billing); doctor_cd → specific rate (cash/open). One visit/day cap (visits ≤ LOS). Charged separately at visit tariff, not PF %. TR1 fallback; absent → CONTEXT_REQUIRED. package_treatment=excluded_charge_separately (GIPSA 96.5% / Non-GIPSA 91.7%; TR201 kept excluded).
+- schema: cross_consults [{department, visits?, doctor_cd?}].
+
+Verified: GIPSA Cardiology 2v ₹6,000 + Nephrology ₹2,750; cash specific-doctor ₹1,000; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
+
+Open: supply a governed consultation tariff-code mapping for exact per-doctor auto-pricing (placeholder-department works meanwhile); ~92% outside-package reproduction is package-bill-limited (open-bill gap); frontend to render the suggest-and-confirm cross-consult picker.
+
+---
+
+## 2026-07-22 — Tab-10 Outside-package LOS excess-day model
+
+Doc T10: beyond the package LOS, package stays the base charge; only incremental excess-day care added at actuals; package + PF never recomputed. Manager: outside-package ≠ collect from patient (apply insurer eligibility after) Agreed; per-setting ledger **only when ward/ICU breakdown exists, else total LOS regardless of setting**; new procedure during excess = separate treatment (Yes); no double-charge (PACKAGE_EXCLUSION xor POST_PACKAGE_LOS) Agreed; **drug-admin on excess pharmacy = CASH only** (for outside-package pharmacy it applies on cash); "recheck package master for LOS".
+
+**Validation:** package_master LOS coverage = **1,149/1,149 have package_duration (0 missing)** — the manager's 743-missing concern is resolved for us. No prior explicit excess-day charge model existed (only package_duration as the LOS default).
+
+**Built on `feat/outside-package-los` (not pushed):**
+- `src/modules/engine/outsidePackageLos.js buildOutsidePackageLos()` — additive `packageOffer.outside_package_los`, package base+PF untouched. Per excess day: room (ward ROM0001/0024/0036 / ICU ROM5009), DMO (ROM0093, ward), intensivist (ICC0002, ICU), physician visits (1 ward/2 ICU/day at the treating-dept consultation median). Net pharmacy + investigations as RANGES. All lines POST_PACKAGE_LOS. Per-setting ledger when ward/ICU breakdown present, else total excess LOS. Drug-admin on excess pharmacy CASH-only. collectability=apply_insurer_eligibility_after. New procedure during excess = separate treatment (flag).
+- Wired into the package route (fires only when drivers.los.selected > package_duration).
+
+Verified: GIPSA overstay 12d (pkg LOS 4) → 8 excess days, ₹44,008 deterministic (ward room 8×₹3,000 + DMO 8×₹1 [GIPSA ₹1-non-show] + physician 8×₹2,500), pf_recomputed=false, no drug-admin on insurance; no overstay → none; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: ward/ICU package-level breakdown not in package_master (pkg_defined_*_stay) → total-LOS fallback used; net-pharmacy/investigations exact numbers need per-day cohort data (open-bill gap); frontend to render the excess-day breakdown.
+
+---
+
+## 2026-07-22 — Tab-11 Medical management (family × setting menu)
+
+Doc T11: NOT one generic medical estimate — ~15 clinical families × setting (ward/ICU/daycare), exact room+PF, ranged pharmacy/investigations, doctor high-value items auto-added, 5-step hybrid mapping. Manager: Agreed on the model; procedure-like items get a separate UI name (Agreed, asked Subha to confirm — yes); 28-admission general template = "need more info"; policy-first with **semi-manual FC builder fallback** (auto-add calculable room/drug-admin/PF, FC manually adds pharmacy/investigations) when no strong template; doctor indication must be structured (remarks are counselling language); §4 validation Yes.
+
+**Validation:** setting bands (open-bill non-surgical) — Ward P50 ₹75,053 (doc ₹73.5k ✓), ICU-involved P50 ₹210,046 (doc ₹1.73L), Daycare/Obs P50 ₹36,256 (doc ₹28.2k). Top medical depts: Med Onc, Nephrology, Paediatrics, Internal Med, Neonatology, Pulmonology, GI, Cardiology.
+
+**Built on `feat/medical-management` (not pushed):**
+- `src/modules/engine/medicalManagement.js buildMedicalManagement()` — additive `estimate.medical_management`, base unchanged. calculable auto: room (setting×LOS), governed PF (1 ward/2 ICU per day), drug-admin (cash only). pharmacy/investigations/bedside → historical RANGES (estimable families) or MANUAL (semi-manual). PROCEDURE_LIKE (chemo/dialysis/transfusion/endoscopy/IR/planned) → route_out. semi-manual fallback (auto room/PF/drug-admin, FC adds pharmacy+investigations). high-value items = confirm-before-add; indication_text preserved; refresh triggers (24h/ICU-transfer/LOS/high-cost-investigation/pharmacy-escalation).
+- buildEstimate queries the validated setting band (by setting + department) for the range.
+- schema: medical_management {family, setting?, high_value_items?, indication_text?, semi_manual?}.
+
+Verified: respiratory ward ranged (₹115.5k P50 Pulmonology, n=318); neuro ICU → semi-manual; chemo → route out; general daycare ranged; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open (manager): clarify the "28-admission general-medical template not universal" point; family list + estimable set to be refined with domain input; frontend to render the family/setting picker + semi-manual builder + confidence flags.
+
+---
+
+## 2026-07-22 — Tab-12 Daycare stay/billing modifier + classifier fix
+
+Doc T12: daycare is a stay/billing MODIFIER (treatment/drug drives cost — chemo ₹25.4k vs immunotherapy ₹150.7k vs cystoscopy ₹39.5k), not a generic estimate. Manager: keep foundation; classifier fix (strict ≤12h + 4 statuses) "Sure"; auto-daycare = confirm "Sure"; DMO-excluded/nursing-conditional/no-mix/MSC10-not-procedure "need more info but seems right"; inpatient-conversion contingency "seems right"; oncology previous-cycle only if regimen-equivalence "need more info, will ask hospital + check FC DB"; drug/regimen infusion pricing blocked (chemo tab). §4 validation Sure.
+
+**Validation:** classifier bug reproduced — calendar-date-only "strict" = 2,937 vs real ≤12h = 2,720 (268 extended same-day cases wrongly counted, analogous to the doc's 119). Timestamps carry hours, so the 12h threshold is computable. (ROM0010 line cohort is package-only = 2 rows — open-bill gap; used timestamp-hours split across all short-stay admissions instead.)
+
+**Built on `feat/daycare` (not pushed):**
+- `src/modules/engine/daycare.js` — `classifyDaycareStatus(hours, sameDay)` (12h fix: strict_daycare / extended_same_day_daycare / daycare_cross_midnight / converted_to_inpatient) + `buildDaycareModifier()` → additive `estimate.daycare`, base unchanged. auto-daycare=confirm (confirmed=false when auto_suggested); ROM0010 (never both w/ RNS0075); DMO excluded; nursing conditional; MSC10 not a procedure; inpatient_conversion contingency (retain daycare + ward/ICU from conversion + excess-LOS if packaged); oncology_cycle reuse only_if_regimen_equivalence_confirmed; routing=exact_treatment_regimen_cohort.
+- schema: daycare_expected_hours, daycare_auto_suggested, daycare_inpatient_conversion (fires when setting=Daycare).
+
+Verified: classifier 8h→strict/16h→extended/20h→cross-midnight/30h→converted; conversion toggles; chemo → oncology-cycle guard; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open (manager): confirm whether non-strict daycare cases are needed for modelling; DMO/nursing/conversion details "seems right, need more info"; oncology cycle-reuse — check FC DB handling of repeating treatments; infusion drug/regimen pricing depends on the Chemo tab (file 13).
+
+---
+
+## 2026-07-22 — Tab-13 Chemotherapy conservative estimator
+
+Doc T13: dedicated systemic-therapy engine — drug/dose/brand/vial explains the bill; default routine chemo → open-bill daycare; never a generic chemo total. Manager AGREED with the conservative approach (add only sure things = base daycare + PF; pharmacy = structured doctor/user input; trigger a separate chemo form) but wanted to FIRST validate how chemo is handled in the hospital FC data, and HELD the deep work (drug master, price audit, prior-cycle) pending hospital confirmation.
+
+**Validation (his ask):** chemo FC estimates ARE created — Estimate-Variance shows 1,624 chemo/oncology admissions with an FC counselled amount (P25 ₹25.1k / P50 ₹44.5k / P75 ₹98.5k, range ₹27k-₹627k). Procedure Name mostly blank → estimate not driven by a structured regimen field today (the gap this module fills). Financial-Counselling "Service Name" is a counselling-event type (Query/Admission/Discharge), not a procedure.
+
+**Built on `feat/chemo` (not pushed):**
+- `src/modules/engine/chemo.js buildChemo()` — additive `estimate.chemo`, base unchanged. 5 routes; regimen items priced ONLY from user-supplied unit prices (× vials) else drug_cost_pending (no silent zero, low_confidence); dose_source=treating_team (never computed); never_generic_total; supportive infusions + chemoport SEPARATE; prior_cycle=rebuild_not_copy. `held[]` lists the 3 deferred deep pieces.
+- schema: chemo {route, regimen_items[], supportive_infusions[], chemoport, prior_cycle_ref}.
+
+Verified: routine → pending/low-confidence; immunotherapy priced ₹113k + chemoport/supportive separate; baseline byte-identical. No regression — 24/0, 12/0.
+
+HELD per manager (not built): systemic-therapy drug/regimen master; pharmacy-price-coverage audit (6,132/11,254 unpriced → last-observed provisional + confirm); prior-cycle auto-retrieval by UMR. Ties to Tab-12 daycare infusion pricing.
+
+---
+
+## 2026-07-22 — Tab-14 Billing Training Guide (confirmation/enrichment, NO code change)
+
+Doc T14: the 8-sheet hospital billing checklist workbook — useful as a RULE-ENRICHMENT source (billing units, OT slots), NOT a rate master or complete policy. Manager: 133/135 codes already in our tariff, join canonical, ROM0013 (Triple Sharing) + MSC1891 (Cadaver) inactive (Agreed); workbook confirms our LAN PF rules (25/15/25, GIPSA pkg 20 / Non-GIPSA pkg 25, corp 16, cardio 20) (Agreed); **IGNORE the workbook's final-insurance PF block** (35-40/35/45) — "use what we already confirmed, not this"; monitor code error EME0019 (workbook Half-Day vs our Per-Day) — don't import as alias (Agreed); "ignore what contradicts, use only what we already confirmed"; urology-instrument threshold: **"the instrument itself is NOT in the base — validate with the dataset"**.
+
+**Validation:** OT slot ladder (normal OTC0005-0020 / emergency OTC0054-0069) + PF rules already implemented in the engine (lineItems otSlots + Tab-1 PF cascade). Urology instruments OTI0058/0059 = 150 tariff rows each but **0 history admissions** (confirms doc's "absent from history"); present as SEPARATE billable codes → consistent with "instrument not in base" (full threshold-mechanics validation limited by the package-only line gap). ROM0013/MSC1891 = 0 tariff, 0 history → keep inactive.
+
+**Decision: no engine change.** The workbook confirms + enriches existing logic; its only danger (the final-insurance PF block) is IGNORED per manager (same D1/D2 as the PF tab, already decided). Any incremental billing-unit / instrument-tier rules are training evidence in fc_curated, promoted rule-by-rule — not bulk-imported.
+
+---
+
+## 2026-07-22 — Tab-15 Maternal labour-room add-on
+
+Doc T15: labour-room = a maternal LOCATION add-on billed by occupancy duration, additive to (never replacing) the ward charge, never the room category. Manager: agreed; **default <4h at FC estimate time** (no live bed transfer → projected hours as FC input); **"use 0-4 slot as default"**; find the code in the tariff.
+
+**Validation (his ask):** labour-room codes ROM0121 "LABOUR ROOM CHARGES UP TO 4 HRS" ₹9,900 and ROM5166 "LABOUR ROOM CHARGES" ₹15,000 (both flat across ward groups, TR1). No explicit 4-8h/8-12h codes.
+
+**Built on `feat/labour-room` (not pushed):**
+- `src/modules/engine/labourRoom.js buildLabourRoom()` — additive `estimate.labour_room`, base unchanged. Rule: <4h → occupied-bed only (charge 0, billed=false); 4-8h → ROM0121 ₹9,900; 8-12h → ROM5166 ₹15,000; additive_to_ward (never room category); off unless delivery pathway/hours; default 0-4h slot. package_open_handling=apply_after.
+- schema: labour_room, labour_room_hours.
+
+Verified: default/<4h → ₹0 occupied-bed only; 6h → ROM0121 ₹9,900; 10h → ROM5166 ₹15,000; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: confirm the exact slot→code mapping with the billing head (tariff lacks explicit 4-8/8-12 codes); frontend to render the projected-hours input under the delivery pathway.
+
+---
+
+## 2026-07-22 — Tab-16 Room-rent GST (highest-confidence, statutory)
+
+Doc T16: statutory 5% GST on non-ICU room rent > ₹5,000/day, on the FULL amount; ICU/CCU/ICCU/NICU/HDU exempt; by service code not ward name; same math all payers; room rent only. Attendant room 18% (no code yet). Manager: guard rails Agreed; **attendant room OFF by default, flag if user selects** (will ask hospital); **HDU assume untaxed for now**; three categories "okay".
+
+**Validation:** no existing GST in the engine. Room bed rates (TR1): ROM0001 general ₹3,320 / ROM0024 twin ₹4,660 (< ₹5,000 → no GST), ROM0036 single ₹7,680 (> ₹5,000 → 5%), ROM5009 ICU ₹10,500 (exempt).
+
+**Built on `feat/tax` (not pushed):**
+- `src/modules/engine/tax.js buildRoomTax()` — SEPARATE `estimate.tax` line, additive, never folded into the parity-pinned base total. 5% GST on non-ICU room rent > ₹5,000/day (full amount, strictly above; exactly ₹5,000 → ₹0). ICU → CRITICAL_CARE_ROOM_EXEMPT. Attendant room = no_code_flag_only (18%, off by default). package_rule=tax_identifiable_room_component_only. Categories PATIENT_ROOM_5_ABOVE_5000 / CRITICAL_CARE_ROOM_EXEMPT / ATTENDANT_ACCOMMODATION_18.
+- schema: attendant_room. Computed automatically on every estimate.
+
+Verified: General → GST ₹0; Single 3d ₹7,680/day → GST ₹1,152; ICU exempt; attendant flag; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: attendant-room code/SAC/rate/date from Finance; HDU tax status from Finance (assumed untaxed); frontend to render the "GST on room rent @ 5%" line + attendant-room flag. GST is currently a separate line (not in the headline total) to preserve parity — confirm whether it should roll into the patient-payable headline.
+
+---
+
+## 2026-07-22 — Tab-17 Blood bank (minimal transfusion add-on)
+
+Doc T17: three events (reserve→cross-match / issue→component / transfuse→per-unit); history doesn't follow cross-match reversal (99.6% keep both = probable double-charge). Manager strongly simplified for FC: blood bank only if doctor-inputted; **no unit-level states** ("we don't need this for FC"); **no reversal** (real-time); **FC should only decide if transfusion is needed or not, not units** unless significant impact; **ignore the double-charge for now** (validating with hospital, "don't act on it").
+
+**Validation:** EME0088 Transfusion TR1 ₹1,270; BLD0024 PRBC ₹2,650; BLD0027 FFP ₹500. Blood cohort 1,034 package-only (doc 2,379 full — open-bill gap).
+
+**Built on `feat/blood-bank` (not pushed):**
+- `src/modules/engine/bloodBank.js buildBloodBank()` — additive `estimate.blood_bank`, base unchanged. transfusion flag → transfusion service (EME0088) + component (default 1u PRBC BLD0024, or FFP BLD0027). unit_level_model=false; reversal_logic=not_applicable_fc; default 1 unit, optional units. Scope = transfusion service + components only. double_charge_note (not reproduced, not acted on).
+- schema: blood_transfusion, blood_component, blood_units.
+
+Verified: default PRBC 1u → ₹3,510; 3u FFP → ₹4,080; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: manager validating the 99.6% double-charge with the hospital; units modelled only if the doctor specifies a significant count; frontend to render the transfusion-needed add-on question.
+
+---
+
+## 2026-07-22 — Tab-18 Equipment & manual add-on catalogue
+
+Doc T18: governed manual add-on catalogue (OT/ward/ICU equipment, respiratory, bedside, transport) — billing basis, valid locations, mutual exclusions, payer admissibility, four financial columns; staff-confirmed suggestions, never auto. Manager: fetch missing-master supply codes from **past IPs / the tariff dataset**; **MRD/MRT = normal positive charge** (not a discount).
+
+**Validation:** equipment/add-on codes fetchable from tariff (EQP0018 AngioJet, HSP0042 ambulance, ORT arthroscopy, OTI instruments…).
+
+**Built on `feat/manual-addons` (not pushed):**
+- `src/modules/engine/manualAddons.js buildManualAddons()` — additive `estimate.manual_addons`, base unchanged. Prices FC-selected add-ons from tariff × billing basis; four-column separation (expected_gross / included_in_package / separately_claimable / expected_patient_payable) by payer+package (insurer-admissible→claimable else patient-payable; "separately billed"≠"separately payable"); mutual-exclusion conflict detection; valid-location check; staff_confirmation mandatory; unknown code→CONTEXT_REQUIRED; MRD/MRT positive. Seed CATALOG (HSP0042/EQP0018/OTI0018); governed masters curated from tariff+past IPs.
+- schema: manual_addons [{code, name?, basis?, qty?, location?, mutex?, admissible?, package_included?}].
+
+Verified: ambulance → patient-payable; instrument → claimable; two same-mutex → conflict; cash → all patient; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: expand the governed catalogue masters (basis/locations/admissibility/rates) from tariff + past IPs; supply the missing-master codes (cradle, arthroscopy major/minor, microscope>3h, NIV variants, retropositive, external PF, hospitality); frontend to render the staff-confirmed add-on picker + incompatibility warnings.
+
+---
+
+## 2026-07-22 — Tab-19 Tariff dataset completeness & fallbacks (validation + deliverable, NO code change)
+
+Doc T19: is our tariff a safe universal price master, and does "missing rate → TR1 fallback" hold? Item identity ~complete (>99.9%, ~23 gaps); insurance exact pricing NOT ready; blanket TR1 fallback REJECTED by held-out (9,710/9,721 failed certification). Manager: ₹1/₹10 placeholder fail-closed **Agreed**; asked **what to use instead of TR1** ("price diff small, your thoughts?"); median-of-room "need info"; **"give me the list of missing codes/rates per TR code"**; service-vs-investigation → lean service-primary, wants our thoughts; 7-step hierarchy "packages or items?".
+
+**§4 engine check confirmed — N6 largely already handled in our engine:** line amounts come from **cohort history** (`amount_cash_typical`, quartiles in artifacts.js), NOT raw ₹1 tariff rows → the "resolver treats ₹1 as valid" failure mode doesn't apply; `PLACEHOLDER_PRICE_MAX = 1000` (packageGate/packages.service/flow2) flags sub-₹1000 placeholder packages (no total + warning); TR1 is a **flagged last-resort** (`tariff_contracted → cohort_history → tariff_tr1_fallback`), cash-only, never a blanket insurance fallback; rateOf is room-specific (no median-of-room).
+
+**Deliverable:** `todo_and_helpers/missing-tariff-codes-per-TR.md` — missing/placeholder frequently-billed codes per insurance TR (TR290 ~640 missing, TR292 & TR274 all 736, TR215 728, TR289 631, TR286 560, TR287 519) for the hospital.
+
+**Decision: no engine change** — our pricing already follows the accurate per-code / cohort-history policy the doc endorses; blanket-TR1 is not used. Recommendations recorded in the manager-review doc (TR1→keep cohort-history; service-tariff primary with per-code conflict review; hierarchy = items vs packages both handled; no median-of-room).
+---
+
+## 2026-07-22 — Tab-20 Pharmacy exact high-value item selection (source-mapped)
+
+Doc T20: two capabilities — routine pharmacy from historical distributions (keep), + exact selection of high-value items with current price / custom item. Manager: exclude-then-add is complicated — **current show-high-contributing-items method is fine**; for selected items **flag + provide the rate WITH its source**, user can enter own amount, **historic P50 fallback with a flag**; **UOM dropdown** for manual high-value; curated selectable = high-value items; custom-item workflow Agreed; static map weak → use historical classification (Agreed); extend replace-don't-add to implants + reconcile totals (Agreed).
+
+**§4 engine check:** replace-don't-add double-count guard already exists (P3 named-drug path: MRP×qty replaces cohort pharmacy via max()). Manager generalises to implants/devices — an extension.
+
+**Built on `feat/pharmacy-selection` (not pushed):**
+- `src/modules/engine/pharmacySelection.js buildPharmacySelections()` — additive `estimate.pharmacy_selections`, base unchanged. Source-mapped rate: user_entered → catalog sale_rate → catalog MRP → historic P50 (flagged) → pending_user_entry (prompt; never silent zero/excluded). UOM + bucket from fc.pharmacy_catalog_rate_reference / pharmacy_item_mapping. double_count=replace_family_baseline.
+- schema: pharmacy_selections [{item_code?, name?, quantity?, user_amount?, uom?, source_date?}].
+
+Verified: mesh → ₹15,061 (sale_rate); vaccine → ₹2,800 (mrp); custom → ₹140k (user); unknown → PENDING; baseline byte-identical. No regression — 24/0, 12/0.
+
+Open: curated v_pharmacy_fc_selectable_items (active, materially-priced high-value only); current catalog prices for implants/devices/chemo (6,132/11,254 unpriced → P50 fallback meanwhile); reconcile cleaned bucket vs legacy net_pharmacy_amount; frontend UOM dropdown + selectable-item picker.
+
+---
+
+## 2026-07-22 — Tab-21 Non-package handling (validation + details, NO code change)
+
+Doc T21: financial data strong; exact treatment / multi-treatment mappings over-confident. Manager firm "Agreed" only on **historical FC estimates are evidence not templates — never copy** (our engine already uses cohort history, not old FC estimates); everything else "need more info, sounds serious, need details to evaluate"; §4 validation "Okay".
+
+**§4 contamination screen — REPRODUCED on our mart:** surgery codes spanning ≥5 departments (sentinel mis-map proxy): **RT0006 "100 MCI THERAPY DOSE" across 34 departments / 1,629 admissions** (exactly the doc's example), 20G Vitrectomy 25 depts, 23G Vitrectomy 20, 3D Angio 18, etc. **2,514 procedure admissions** flow through ≥5-dept codes (doc ~1,754 sentinel); open-bill procedure cohort 4,297 (doc 4,149). Contamination confirmed.
+
+**Engine relevance:** our estimate cohorts are FAMILY-based + ≥15-case gated + governed-fallback, NOT raw surgery_cd → partly insulated; but the raw surgery-master feeding family selection can still pull contaminated cases. Recommend gating treatment-level cohorts on CLEANED mappings (exclude sentinel codes like RT0006) before treatment-level production; keep the strong financial data (services_json / cleaned_pharmacy_net / fc_actual_bucket_totals, NOT legacy service_net_amount=0); use reconstruction for composition, reported final for calibration — no blanket 10% uplift; never copy old FC estimates (already so).
+
+**Decision: no engine change now** — N8 rebuild (clean surgery-master evidence, revalidate 756 multi-treatment, component-verify combos, governed medical master, hierarchical cohort fallback) HELD pending the manager's evaluation. Contamination evidence delivered for that evaluation.
+
+---
+
+## 2026-07-22 — Tab-22 Package handling (validation + confirmation, NO code change)
+
+Doc T22: clinical names reliable; combos understated; clean package-rate source (v_package_rates_current) under-prices ~half. Manager: use the **service tariff dataset (actual current rates)**, not the halved GIPSA-JSON extract; **verify real combos first** then apply; FC-flag≠final **Agreed**; open_bill_amount≠package-plus-open **Agreed** (combos only when multiple treatments); package≠patient-estimate → **follow our finalized inclusion/exclusion rules, ratios as reference only**; immediate fixes "review and rectify"; decision-states "useful enrichment"; §4 validation "Sure do both".
+
+**§4 confirmed — N7 does NOT affect our engine:** FC Builder reads package price from `fc.package_master`/`fc.v_package_runtime_lookup`, NOT the flagged `v_package_rates_current`. Live spot-check: ORT5510 TKR = ₹255,000 / ₹125,000 / ₹199,580 — **full commercial amounts**, not the halved ~₹79k. Under-pricing is an upstream project-3 artifact.
+
+**Validation:** final/package ratios (our 17k) — Non-GIPSA 2.08× / GIPSA 2.41× / Cash 1.77× (doc 1.67/1.80/1.09; direction confirmed — package << final, higher for insurance; reference only). Immediate fixes are **project-3 artifacts NOT in our master**: GYN5013 absent; our delivery packages correctly classified (GYN5322 LSCS / GYN5324 Normal Delivery / GYN5109 Forceps — all GYN, not Medical); no SBI packages. Combo detection already exists in the engine (comboDetect.js / flow2.service.js).
+
+**Decision: no engine change** — our package base is correct (full amounts), we follow the finalized inclusion/exclusion rules (ratios reference only), FC-flag-not-final and open-bill≠package-plus-open already respected, combo detection already present. The N7 clean-up / immediate fixes / 21.9% combo verification are project-3 data work, not our engine. Decision-states could be an optional past-IP enrichment.
+
+---
+
+## 2026-07-22 — Tab-23 Handling variants (validation + confirmation, NO code change)
+
+Doc T23: variants as structured attributes on a canonical treatment (approach/scope/side/episode/implant), payer-dependent, never free-text or universal multipliers. Manager: never pool uni+bilateral **Agreed**; **laparoscopic handled like robotic** (approach-specific package or add-on) — validate before applying; FC-text not a benchmark (patients may ask robotic upfront); left/right pool only when commercially equal **Agreed**; laterality conflicts → require confirmation **Agreed**; variant table + backfill from billed/package codes (not surgery_master_names_jsonb) **Agreed**; unknown variant → scenarios not average "need more info"; §4 "Yes validate".
+
+**§4 confirmed — engine already handles variants:** cohort.js keeps distinct families (conventional TKR unilateral vs bilateral; robotic uni-left/uni-right/bilateral) → uni+bi NEVER pooled; robotic priced as a payer-specific add-on (contracted → cohort → TR1-flagged); left/right pooled only within unilateral (commercially equal for TKR); no universal "lap = open +N%" multiplier (families are named cohorts).
+
+**Validation:** robotic packages present (ORT5536 Robotic TKR Bilateral ₹690k / ORT5784 Uni-Left / ORT5535 Uni-Right ₹355k). **Laparoscopic hypothesis CONFIRMED** — 14 lap-specific packages (SGA5169 Lap Cholecystectomy ₹107,120; SGA5698/5699 Inguinal Hernia Lap Bi/Uni), themselves uni/bi-split → laparoscopic IS an approach-specific package (handle like robotic), resolved by package matching, not a multiplier. TKR packages: 14 unilateral / 6 bilateral (separate).
+
+**Decision: no engine change** — uni/bi separate, robotic payer-specific, left/right within-uni, lap-specific packages all already supported. The canonical variant table + backfill (from billed/package codes) and per-family laterality/approach certification are future data work (Agreed, not built). Unknown-variant scenarios (conventional-vs-robotic side by side) is a presentation choice; engine already carries robotic scenarios.
+
+---
+
+## 2026-07-22 — Tab-24 Flow, package codes & doctor-input / AI boundary (validation + confirmation, NO code change)
+
+Doc T24: package CODE (not name) is the anchor; AI interprets while governed rules decide. Manager: check effective-period exists; cross-payer history = context only **Agreed**; robotics don't auto-decide from prevalence (>90% → preselect+confirm) **Agreed**; AI never invents code/rate/PF/GST/other-payer-pkg **Agreed** (need more info on "infer laterality/robotic/implant as fact"); doctor code = assertion not truth **Agreed**; mismatch tiers block/confirm/inform "sounds right"; N9 governed AI optional-item suggestion layer **Agreed/aligned**; doctor-input contract "agreed on a call"; template consolidation "validate upside first".
+
+**§4 confirmed — architecture already ours:** engine is code-first (production key tariff+package_code+org+room), robotic is a USER selection (cohort.js "payor/tariff/room are user inputs"), AI refuses rather than fabricating (familyResolve: "Never invent packages… return null"). The >90%-prevalence caution maps to our add-on inclusion heuristic (`services.js case_presence_rate > 90 → include`) — the suggest/confirm refinement would apply there.
+
+**Effective-period validation (manager's ask):** `package_master` HAS `effective_from`/`effective_to` → package price can key on effective period; `service_tariff_rate_matrix` has NO effective-date columns → service-line rates cannot key on effective period (gap to flag if the hospital wants effective-dated service rates); `organization_tariff_mapping` none.
+
+**Decision: no engine change now** — the flow + AI boundary are already implemented and endorsed. The approved refinements touch verified logic / need the product call: (a) >90% add-on → preselect-but-confirm (changes the default add-on set — verified-number-adjacent), (b) N9 governed AI optional-item suggestion layer (scoped expansion of AI scope), (c) doctor-input contract with source-span provenance + field-level override governance ("agreed on a call"). Scheduled for that call, not silently built. Effective-dated service rates flagged as a data gap.
+
+---
+
+## 2026-07-22 — Tab-25 Pharmacy item classification (validation + confirmation, NO code change)
+
+Doc T25: bucketing broadly good (8,981/11,254 high-confidence), but the **production implant flag is defective** (whole-word DRUG test excludes "NON DRUG", allows "DRUGS" → 1,436 high-confidence implants missed, some drugs marked implants) and implant type/brand not reliable. Manager: **Agreed** to all — the defective flag must NOT drive FC implant selection; don't let type/brand drive brand pricing; apply the 166 class corrections + 2,786 unmapped resolutions; split into separate fields (primary class / subtype / component / manufacturer / brand / model / size / laterality); validate our engine doesn't inherit the flag.
+
+**§4 validation — OUR ENGINE IS SAFE (does NOT inherit the defective flag):** the FC Builder reads pharmacy/implant buckets from `fc_estimate_bucket` in `fc.pharmacy_item_mapping` (the CORRECTED classification), not the defective production implant flag (artifacts.js: `fc_estimate_bucket`). fc_estimate_bucket = **3,252 implants** (≈ doc's ~3,209 high-confidence); the NON-DRUG/implant rows the flag misses (FIBERSTITCH SUTURE ANCHOR, FIBER STICH IMPLANT → class "Implants / Stents") are correctly bucketed as `implants`. So the implant double-count guard (exclude-implant-family-then-add-selected) uses the corrected bucket and does NOT misfire.
+
+**Decision: no engine change** — our engine already uses the corrected classification, not the defective flag. The N10 data work (166 class corrections, 2,786 unmapped resolutions, field-splitting into primary/subtype/component/manufacturer/brand/model/size/laterality, implant/vendor master, quarantine the 551 review items) is a pharmacy_item_mapping data-layer improvement (Agreed), not engine code — it would further refine the bucket our engine already reads.
+
+---
+
+## 2026-07-22 — Tab-26 Non-pharmacy item grouping (validation + confirmation, NO code change)
+
+Doc T26: historical service mapping reliable (1,634/1,639 codes, 97.52% correct); the clean DB view `fc_clean.v_item_fc_bucket_map` is structurally incomplete (304 codes absent ₹63cr, 1,017 mismatches, 95 conflicts) → do NOT cut over. Manager: don't cut over "need more info"; "Remove/Needed" workflow labels → separate field **Agreed**; rate_domain evidence-only → if all investigation items are in the service tariff, use service tariff as primary (ties Tab-19 B8); Blood Bank regroup "later"; intensivist→PF "need clarification"; **Emergency split Agreed (already done in the emergency tab)**; physio→Therapy/PF + F&B exclude **Agreed**; multi-dimension model "need more info + user-complexity/upside"; §4 "okay".
+
+**§4 validation — OUR ENGINE IS SAFE (uses the detailed historical mapping, NOT the incomplete clean view):** the FC Builder reads service buckets from `fc.service_item_mapping` + `fc_actual_bucket_totals_jsonb` (cohort history) — artifacts.js / buildEstimate.js. **`v_item_fc_bucket_map` / `fc_clean` is NOT referenced anywhere in the engine** → we never cut over to the incomplete clean view. Intensivist is already in the ICU/critical-care class (settlement.js ICU_DAY_ROWS), aligning with the intensivist→Critical Care Consultant regrouping; Emergency is already split (Tab 3).
+
+**Decision: no engine change** — our engine already uses the reliable detailed mapping, not the incomplete clean view; emergency split and intensivist/critical-care classification already match the endorsed regroupings. The N11 data work (Blood Bank out of Investigations, split the emergency bucket in the mapping, separate the Remove/Needed workflow labels, the multi-dimension model rebuild of v_item_fc_bucket_map) is a mapping data-layer improvement (Agreed / need-more-info), not engine code.
+
+---
+
+## 2026-07-22 — Tab-27 Stage-2 estimate logic (ARCHITECTURE VALIDATED, one held refinement)
+
+Doc T27: our estimation architecture is VALIDATED. Endorsed: Gross P50 + bucket-share allocation ("statistically sounder than adding independent bucket P50s"); package construction (base + separately-billable exclusions + verified modifiers + outside-LOS + tax, without adding package-included utilization); mixed-route uses combined-admission historical total; pharmacy IP/OT × drugs/consumables/implants split + presence bands (>90 default / 75-90 confirm / 25-75 optional / <25 manual). Manager: ">₹1000-drop bad" **"need more info to validate"**; pharmacy uses context to pick within the P25-P75 range (no item drill-down) — asked if we agree (**yes — matches our engine**); don't sum independent bucket P25/P75 "sounds right"; general add-on compiler **Agreed**; insurer-vs-patient allocation **Agreed**; certification **"keep relaxed, we do manual review anyway, don't overcomplicate on past-IP data"**.
+
+**§4 — the ">₹1000-drop" rule is live** (`services.js:75-76`): `p > 90 || (p >= 75 && amount_cash_typical <= 1000)` → a 75-90%-present add-on >₹1,000 is excluded from defaults (potential underestimate). Recommended fix: surface-for-confirm ("seen in X% of cases, est ₹Y — confirm") instead of silent drop. **HELD for manager validation** — verified-logic change (alters the default add-on set); same category as Tab-24 D2 (>90% preselect-confirm). The services.js add-on-inclusion refinement is scheduled for the manager's call, not silently flipped.
+
+**Notable: the N12 "general add-on compiler" gap is now substantially FILLED** by the Tab 3-18 work — emergency (T3), positive-case/isolation (T4), blood (T17), cross-consult (T9), labour (T15), attendant/tax (T16), newborn (T6), manual-addons/implant (T18/T20). Insurer-vs-patient allocation is done in settle() (T5 DNB four-value). Certification stays relaxed (manual review).
+
+**Decision: no engine change now** — architecture endorsed; the one recommended fix (>₹1000 surface-confirm) is held for the manager's validation. Pharmacy P25-P75-range approach confirmed as ours. Double-count: our P50+allocation avoids it; the deterministic-components+residual method stays family-by-family-after-backtest (not bulk).
+
+---
+
+## 2026-07-22 — Tab-28 Treatment review (broad vs specific) — FINAL TAB (validation + confirmation, NO code change)
+
+Doc T28: use a SPECIFIC treatment cohort over a BROAD one (broad = fallback only). Verdict: our architecture already leans this way. Manager: enforce exact-first, cohort size sets confidence after clinical matching **"validate this approach"**; label broad concepts fallback_only **Agreed**; same treatment ≠ same amount, never let a broad cohort supply a package price **"makes sense, need clarity on package-price part"**; N13 data (353 family selections, 88 missing concepts, hierarchy fields) **"Okay, validate usefulness"**; §4 **"Okay"**.
+
+**§4 validation — CONFIRMED our engine enforces specific-over-broad:** (a) exact-first matching in familyResolve (exact family keys, specific-token preference, fallback DISCLOSES the relaxed dimension — "matched but has NO {payor} history — preferring {withCases}"); (b) **package price from the exact identity only** — packages.service lookup priority tariff+package_code → package_name → alias (package_master → v_package_runtime_lookup), room-specific; a broad cohort NEVER supplies a package price; (c) specific concepts are distinct named families (cohort.js robotic_tkr_unilateral_right etc.) — total_knee_replacement_unilateral outranks a generic TKR.
+
+**Clarification (package-price point):** a PACKAGE price must come from the exact package identity (package_code + payer/tariff + room + effective date) in the master, never from averaging a broad treatment cohort's historical bills. Our engine does exactly this; broad cohorts only inform the OPEN-BILL range/confidence.
+
+**Decision: no engine change** — exact-first, fallback-exposes-relaxed, and package-price-from-code are all already implemented. The N13 taxonomy/data work (add 353 family selections + 88 missing concepts, adopt hierarchy fields clinical_concept_id/parent/level/specificity_rank/permitted_fallback_parent, label fallback_only) is data-layer work (Agreed/Okay), not engine code.
+
+## ===== FC Estimate Builder review — ALL 28 TABS COMPLETE (2026-07-22) =====
+Tabs 1-28 of the estimate-builder Google Doc reviewed against the manager's inline responses and processed. New engine modules built + deployed to dev (additive, no verified-number regression — sanity 24/0 + 12/0 on every one): T2 NME advisory, T3 emergency, T4 positive-case, T5 DNB four-value, T6/7 newborn, T9 cross-consult, T10 outside-package-LOS, T11 medical-management, T12 daycare, T13 chemo, T15 labour-room, T16 tax, T17 blood-bank, T18 manual-addons, T20 pharmacy-selection. Validation/confirmation-only (engine already correct): T8, T14, T19, T21, T22, T23, T24, T25, T26, T27, T28. Consolidated manager review: todo_and_helpers/manager-review-tabs1-16.md (A1-A4 number-changing, B1-B10 interpretations, C1-C13 hospital/Finance data, D2 scoped-for-call). Data deliverable: missing-tariff-codes-per-TR.md.
+
+
+---
+
+## 2026-07-22 — Engine regression test: NEW vs OLD, 52 scenarios (additivity PROVEN)
+
+Manager asked to test the new engine and see it as saved estimates. Ran **52 real estimate scenarios** through **two live engines side-by-side** via `POST /api/estimate/build`:
+- **NEW** = current `dev` (all Tab 2–20 overlay modules).
+- **OLD** = baseline commit `4183a1e` — the last commit *before* the T2–T28 tab work (has T1 package-PF, none of the overlays). Run from a throwaway git worktree on `:4322`; NEW on `:4321`.
+
+**Result — the certified base estimate never moved on a single test:**
+- 52 scenarios run · **52/52 base `final_estimate` IDENTICAL new==old (to the paisa)** · 0 mismatches · 0 errors.
+- Coverage: **A** 33 base cases (8 procedures — TKR uni/bi, THR, Lap-Chole, LSCS, PTCA, general-medical, robotic-TKR — × Cash/GIPSA/Non-GIPSA/Corporate × room). **B** 4 insurance settlements (10% copay → ₹43,018 correctly deducted; room-cap 1%SI → patient limited to ₹5,900; implant sub-limit ₹1.5L; low-SI ₹1.5L beyond-cover). **C** 14 overlay cases (one per new module) + 1 stacked combined case (emergency + HBsAg-positive + cross-consult + blood + attendant on one THR).
+- Every new capability comes through as an **additive `estimate.*` overlay** beside the untouched base number: emergency ₹5,310 · positive-case ₹27,280/₹41,000 · newborn-NICU ₹58,835 · cross-consult ₹10,000 · outside-LOS ₹88,008 · chemo ₹63,000 · labour-room ₹9,900 · blood ₹5,302 · pharmacy ₹1,55,061 · manual-addons · daycare · medical-mgmt · NME/GST advisory. Combined case stacked cleanly with base still == old.
+
+This is the parity-pin guarantee (sanity 24/0 + 12/0) demonstrated end-to-end on 52 cases, not just the unit suites.
+
+**Deliverables** (`todo_and_helpers/engine-test-results/`, not pushed to any branch): `engine-test-report.html` (manager dashboard, all 52 rows, theme-aware), `ENGINE-TEST-REPORT.md`, `saved-estimates/` (52 openable JSON records — input + full new-engine output + old-engine final each), `results.json` (raw new-vs-old comparison).
+
+**Note:** two insurance scenarios first errored on a malformed copay/room-cap *input shape* (`type:'%'` / `'percent_si'`) — but both engines rejected them identically (no regression); re-run with the correct schema (`type:'percentage'` / `type:'pct_of_si'` + `ward_pct`) and both pass. **No engine change** — this was a verification run; the finding is that the overlay work is provably additive.

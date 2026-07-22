@@ -306,6 +306,42 @@ export async function masterNameCandidates({ text, tariff_code, organization_cd,
 }
 
 /**
+ * G2 (manager 18-Jul, surgery master): the hospital's canonical surgery list
+ * (fc.surgery_master — what the FC's dropdown maps doctor wording to) as a
+ * first-class candidate source. Word-score match on SURGERYNAME for the
+ * resolved tariff (falls back to any tariff — names are canonical), then the
+ * matched surgery_cd resolves to a package on THIS tariff when one exists.
+ * G1 measured this signal: ~95% of surgical IP admissions bill one of these codes.
+ */
+export async function surgeryMasterCandidates({ text, tariff_code, organization_cd, limit = 5 }) {
+  const words = (text || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').split(/\s+/).filter((w) => w.length >= 3);
+  if (!words.length || !tariff_code) return [];
+  const score = words.map((_, i) => `(upper(surgery_name) LIKE $${i + 2})::int`).join(' + ');
+  const params = [tariff_code, ...words.map((w) => `%${w}%`)];
+  let rows = [];
+  try {
+    ({ rows } = await query(
+      `SELECT surgery_cd, surgery_name, MAX(${score}) AS score,
+              MAX((tariff_cd = $1)::int) AS on_tariff
+       FROM fc.surgery_master
+       GROUP BY 1, 2
+       HAVING MAX(${score}) >= ${Math.min(2, words.length)}
+       ORDER BY on_tariff DESC, score DESC
+       LIMIT ${limit * 3}`, params));
+  } catch { return []; } // table absent on an engine without the load — fail open
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    if (seen.has(r.surgery_cd)) continue;
+    seen.add(r.surgery_cd);
+    const pkg = await lookupPackage({ tariff_code, package_code: r.surgery_cd, organization_cd });
+    if (pkg) out.push({ ...pkg, matched_alias: r.surgery_name, alias_confidence: 'SurgeryMaster', master_match: r.surgery_name });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
  * Free-text resolution: alias candidates; Gemini ranks when ambiguous.
  * AI never invents — result must be one of the DB candidates or null.
  */
@@ -477,7 +513,7 @@ export async function bucketExtrasForPackage(package_code, tariff_code) {
  * extras source exists, or the quoted total sits outside the billed band
  * (same ±25% band rule as the conversion check, ≥ 5 cases).
  */
-export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucketExtras = null, billedActuals = null }) {
+export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucketExtras = null, billedActuals = null, payorBucket = null }) {
   if (!pkg) return null;
   const round2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100;
 
@@ -538,12 +574,32 @@ export function computePackageQuote({ pkg, roomKey, coverageExtras = null, bucke
   if (basis == null) blockedReasons.push('no_extras_history');
   if (extras != null && band && !inBand(total)) blockedReasons.push('outside_billed_band');
 
+  // Surgeon PF as a share of the package amount (manager 21-Jul T1: GIPSA 20% /
+  // Non-GIPSA 25% of the package amount; cash = package/doctor-specific). This is
+  // a breakdown of the all-inclusive package price — it is NOT added on top, so
+  // with_package_total is unchanged.
+  const pfPct = (() => {
+    // The manager's rule is PAYER-based (GIPSA 20% / Non-GIPSA 25%), so key off
+    // the estimate's payer bucket; fall back to the package tariff when unknown.
+    const b = String(payorBucket || pkg.payor_bucket || '').toLowerCase();
+    if (b) {
+      if (b.includes('cash')) return null;                          // cash: package/doctor-specific
+      if (b.includes('gipsa') && !b.includes('non')) return 0.20;   // GIPSA
+      return 0.25;                                                  // Non-GIPSA / Corporate / other
+    }
+    const t = pkg.tariff_code;                                      // no bucket → infer from tariff
+    if (t === 'TR1') return null;
+    return t === 'TR290' ? 0.20 : 0.25;
+  })();
+  const surgeonPf = pfPct != null && pkgAmt > 0 ? round2(pfPct * pkgAmt) : null;
+
   return {
     with_package_total: total,
     package_component: pkgAmt,
     package_amount_source: pkgSource,
     extras_component: extras,
     extras_basis: basis,
+    ...(surgeonPf != null ? { surgeon_pf: { pct: pfPct, amount: surgeonPf, base: pkgAmt, of: 'package_amount' } } : {}),
     ...(cases != null ? { extras_cases: cases } : {}),
     ...(band ? { billed_band: { p25: band.p25, p75: band.p75, cases: band.cases } } : {}),
     confidence,

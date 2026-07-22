@@ -831,6 +831,11 @@ $('resultArea').addEventListener('click', (e) => {
     if (drill) { drill.open = true; drill.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   }
 });
+// G3: the treatment directory links here with ?treatment=<canonical name>
+(() => {
+  const t = new URLSearchParams(location.search).get('treatment');
+  if (t) { const el = document.getElementById('treatment'); if (el) { el.value = t; el.focus(); } }
+})();
 </script>
 </body>
 </html>

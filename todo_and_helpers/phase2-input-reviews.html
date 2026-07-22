@@ -1,0 +1,570 @@
+<title>FC Estimate Builder — Phase-2 Input Reviews</title>
+<style>
+  :root{
+    --bg:#f6f8fc; --surface:#ffffff; --surface2:#eef2f9; --rail:#f0f3fa;
+    --ink:#141a2e; --ink-soft:#404a63; --ink-mute:#6d7896; --border:#dde3ef; --border-soft:#e7ecf5;
+    --accent:#0033cc; --accent-soft:#e5eaff; --accent-ink:#0033cc;
+    --ok:#177245; --ok-bg:#e7f4ec; --ok-line:#2b9d5a;
+    --warn:#8a5a00; --warn-bg:#fbf1dd; --warn-line:#c8891a;
+    --crit:#a52a20; --crit-bg:#fbe9e7; --crit-line:#cf4436;
+    --shadow:0 1px 2px rgba(20,26,46,.04),0 4px 16px rgba(20,26,46,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d1120; --surface:#141a2b; --surface2:#1b2236; --rail:#111726;
+      --ink:#e7ebf6; --ink-soft:#b3bcd4; --ink-mute:#8590ad; --border:#26304a; --border-soft:#20293f;
+      --accent:#5c7dff; --accent-soft:#1a2444; --accent-ink:#9db3ff;
+      --ok:#5fd08a; --ok-bg:#12281c; --ok-line:#2f7d4f;
+      --warn:#e6b451; --warn-bg:#2c2410; --warn-line:#9a7523;
+      --crit:#f18f83; --crit-bg:#2c1614; --crit-line:#a2453a;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.28);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f8fc; --surface:#ffffff; --surface2:#eef2f9; --rail:#f0f3fa;
+    --ink:#141a2e; --ink-soft:#404a63; --ink-mute:#6d7896; --border:#dde3ef; --border-soft:#e7ecf5;
+    --accent:#0033cc; --accent-soft:#e5eaff; --accent-ink:#0033cc;
+    --ok:#177245; --ok-bg:#e7f4ec; --ok-line:#2b9d5a;
+    --warn:#8a5a00; --warn-bg:#fbf1dd; --warn-line:#c8891a;
+    --crit:#a52a20; --crit-bg:#fbe9e7; --crit-line:#cf4436;
+    --shadow:0 1px 2px rgba(20,26,46,.04),0 4px 16px rgba(20,26,46,.06);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1120; --surface:#141a2b; --surface2:#1b2236; --rail:#111726;
+    --ink:#e7ebf6; --ink-soft:#b3bcd4; --ink-mute:#8590ad; --border:#26304a; --border-soft:#20293f;
+    --accent:#5c7dff; --accent-soft:#1a2444; --accent-ink:#9db3ff;
+    --ok:#5fd08a; --ok-bg:#12281c; --ok-line:#2f7d4f;
+    --warn:#e6b451; --warn-bg:#2c2410; --warn-line:#9a7523;
+    --crit:#f18f83; --crit-bg:#2c1614; --crit-line:#a2453a;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .shell{display:grid;grid-template-columns:288px minmax(0,1fr);min-height:100vh;}
+  /* ---- top bar ---- */
+  header.top{grid-column:1/-1;position:sticky;top:0;z-index:20;display:flex;align-items:center;
+    justify-content:space-between;gap:16px;padding:14px 26px;background:var(--surface);
+    border-bottom:1px solid var(--border);}
+  .brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+  .brand .mark{font-weight:700;letter-spacing:-.01em;font-size:16px;color:var(--ink);}
+  .brand .sub{font-size:12.5px;color:var(--ink-mute);}
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .legend{display:flex;gap:14px;font-size:11.5px;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.ok{background:var(--ok-line)} .dot.warn{background:var(--warn-line)} .dot.crit{background:var(--crit-line)}
+  .themebtn{border:1px solid var(--border);background:var(--surface2);color:var(--ink-soft);
+    border-radius:8px;padding:7px 11px;font:inherit;font-size:12.5px;cursor:pointer;}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent-ink);}
+  /* ---- sidebar ---- */
+  nav.rail{background:var(--rail);border-right:1px solid var(--border);padding:18px 12px 40px;
+    position:sticky;top:57px;align-self:start;height:calc(100vh - 57px);overflow-y:auto;}
+  .railgroup{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);
+    padding:16px 12px 7px;font-weight:600;}
+  .railgroup:first-child{padding-top:2px;}
+  .tablink{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:none;
+    color:var(--ink-soft);font:inherit;font-size:13.5px;padding:8px 12px;border-radius:8px;cursor:pointer;
+    line-height:1.3;}
+  .tablink:hover{background:var(--surface2);color:var(--ink);}
+  .tablink.active{background:var(--accent);color:#fff;font-weight:600;}
+  .tablink.active .idx{color:#dfe6ff;}
+  .tablink .idx{font-family:var(--mono);font-size:11px;color:var(--ink-mute);min-width:20px;}
+  .tablink .st{margin-left:auto;display:flex;gap:3px;}
+  .tablink .st i{width:7px;height:7px;border-radius:50%;display:block;}
+  .tablink.active .st i{outline:1px solid rgba(255,255,255,.4);}
+  /* ---- main ---- */
+  main{padding:30px 40px 90px;max-width:900px;}
+  section.panel{display:none;animation:fade .25s ease;}
+  section.panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){section.panel.active{animation:none}}
+  .eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);
+    font-weight:600;margin-bottom:8px;}
+  h1.tt{font-size:26px;line-height:1.2;letter-spacing:-.015em;margin:0 0 6px;text-wrap:balance;}
+  .decides{font-size:15.5px;color:var(--ink-soft);margin:2px 0 18px;max-width:64ch;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    padding:5px 11px;border-radius:999px;border:1px solid transparent;}
+  .chip.ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-line);}
+  .chip.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line);}
+  .chip.crit{background:var(--crit-bg);color:var(--crit);border-color:var(--crit-line);}
+  .chip.meta{background:var(--surface2);color:var(--ink-mute);border-color:var(--border);}
+  .block{background:var(--surface);border:1px solid var(--border);border-left-width:3px;
+    border-radius:10px;padding:15px 18px 4px;margin:0 0 16px;box-shadow:var(--shadow);}
+  .block.ok{border-left-color:var(--ok-line);}
+  .block.warn{border-left-color:var(--warn-line);}
+  .block.crit{border-left-color:var(--crit-line);}
+  .block.plain{border-left-color:var(--accent);}
+  .block h3{margin:0 0 4px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;}
+  .block.ok h3{color:var(--ok)} .block.warn h3{color:var(--warn)} .block.crit h3{color:var(--crit)}
+  .block.plain h3{color:var(--accent-ink)}
+  .block ul{margin:8px 0 12px;padding-left:2px;list-style:none;}
+  .block li{position:relative;padding-left:20px;margin:7px 0;color:var(--ink-soft);}
+  .block li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;
+    background:var(--border);}
+  .block.ok li::before{background:var(--ok-line)}
+  .block.warn li::before{background:var(--warn-line)}
+  .block.crit li::before{background:var(--crit-line)}
+  .block.plain li::before{background:var(--accent)}
+  li b, .decides b, p b{color:var(--ink);font-weight:600;}
+  code{font-family:var(--mono);font-size:.86em;background:var(--surface2);padding:1px 5px;border-radius:5px;
+    color:var(--ink);border:1px solid var(--border-soft);white-space:nowrap;}
+  .q{counter-reset:none;}
+  .q li{padding-left:30px;}
+  .q li::before{content:counter(qi);counter-increment:qi;position:absolute;left:0;top:1px;
+    width:19px;height:19px;border-radius:5px;background:var(--accent);color:#fff;font-size:11px;
+    font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono);}
+  .q{counter-reset:qi;}
+  .tag{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);
+    color:var(--ink-mute);background:var(--surface2);margin-left:6px;}
+  .tag.d{color:var(--crit);border-color:var(--crit-line);background:var(--crit-bg);}
+  p.note{font-size:13px;color:var(--ink-mute);margin:2px 0 20px;}
+  .overview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin:18px 0 26px;}
+  .ocard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 15px;
+    box-shadow:var(--shadow);}
+  .ocard .n{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+  .ocard .l{font-size:12.5px;color:var(--ink-mute);margin-top:2px;}
+  table.dec{width:100%;border-collapse:collapse;margin:6px 0 20px;font-size:13.5px;}
+  table.dec th,table.dec td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border-soft);vertical-align:top;}
+  table.dec th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute);}
+  table.dec td:first-child{white-space:nowrap;font-family:var(--mono);font-size:12px;color:var(--accent-ink);font-weight:600;}
+  .hr{height:1px;background:var(--border);margin:26px 0;}
+  a.jump{color:var(--accent-ink);text-decoration:none;border-bottom:1px solid var(--accent-soft);}
+  a.jump:hover{border-bottom-color:var(--accent-ink);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  @media (max-width:820px){
+    .shell{grid-template-columns:1fr;} nav.rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border);}
+    main{padding:22px 18px 70px;} .legend{display:none;}
+  }
+</style>
+
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <span class="mark">FC Estimate Builder · Phase-2 Input Reviews</span>
+      <span class="sub">manager's <code>newinps.docx</code> — one review per tab · 20 Jul 2026</span>
+    </div>
+    <div class="top-right">
+      <div class="legend">
+        <span><i class="dot ok"></i>Ready / matches</span>
+        <span><i class="dot warn"></i>Could worsen — needs call</span>
+        <span><i class="dot crit"></i>Blocked / decision</span>
+      </div>
+      <button class="themebtn" id="themebtn" aria-label="Toggle light or dark theme">◐ Theme</button>
+    </div>
+  </header>
+
+  <nav class="rail" id="rail" aria-label="Topic tabs"></nav>
+
+  <main id="main"></main>
+</div>
+
+<script>
+/* ------- content model: each tab is {id, title, group, decides, chips[], blocks[]} ------- */
+const OK='ok',WARN='warn',CRIT='crit',PLAIN='plain';
+const T = [
+ {id:'overview', title:'Overview', group:'Start here', custom:'overview'},
+
+ /* ============ REVIEWED THIS MORNING ============ */
+ {id:'pf', title:'PF & Multi-Treatment', group:'Reviewed (this morning)', tag:'T1',
+  decides:'How professional fees and multiple treatments/packages are priced across Cash / GIPSA / Non-GIPSA, plus extended-stay visits.',
+  chips:[[OK,'Mostly matches engine'],[WARN,'5 decisions open'],['meta','Full file: review-01']],
+  blocks:[
+   [OK,'Already in our engine — no change',[
+     'Cash cascade (open surgeon 25%, asst 15%, anaesthetist 25% of surgeon, asst-anaesth 25% of anaesthetist) and cash multi-treatment at 100% — <b>exactly ours today</b>.',
+     'Payer routing Cash/GIPSA/Non-GIPSA via org→tariff (<code>TR290</code>=GIPSA) — verified 18-Jul, zero violations.',
+     'Cross-consults excluded from the surgeon-PF base — <b>shipped 18-Jul</b>.',
+     'No universal 10% assistant-physician; medical-management ≠ surgeon cascade — already true.']],
+   [OK,'New & additive (low risk to build as spec’d)',[
+     'Non-GIPSA same-sitting <b>100/50/25/25</b> (validated 70/70) + different-sitting 100% each.',
+     'GIPSA same-sitting default 100/50/25 as <code>PROVISIONAL_POLICY</code> (only 3 comparable cases — your i21).',
+     'Package surgeon PF GIPSA 20% / Non-GIPSA 25% of adjusted package amount; extended-LOS visits (97% support).',
+     'DMO = eligible billing days (not raw LOS); anaesthesia-type gate; component ledger + rule-trace tables.']],
+   [WARN,'Could worsen currently-verified logic — your call',[
+     'Insurer PF: spec’s rule-% vs our <b>live historic-P50 override</b> — they disagree case-by-case. <span class="tag d">D1</span>',
+     'Is the FC estimate the <b>LAN surface (25%)</b> or final-insurance (35%)? <span class="tag d">D2</span>',
+     'Applying factors <b>drops insurance combo totals up to ~37%</b> (intended fix, but numbers change). <span class="tag d">D5</span>']],
+   [CRIT,'Decisions before we build',[
+     'Same-sitting evidence at estimate time (pre-OT) — accept a planned-sitting FC input? <span class="tag d">D4</span>',
+     'Where do the rule tables live for our RDS runtime (not your local <code>fc_curated</code>)? <span class="tag d">D3</span>']],
+  ]},
+
+ {id:'nme', title:'NME estimator', group:'Reviewed (this morning)', tag:'T2',
+  decides:'Replaces the flat ₹5k/₹10k counsellor NME guess with a hybrid: policy classifies each item → historical profiles set the range → treatment-specific items adjust.',
+  chips:[[OK,'Design endorsed'],[WARN,'4 questions'],['meta','Full file: review-02']],
+  blocks:[
+   [OK,'We agree / additive',[
+     'Flat defaults are bad (11–24% open-insurance within ±25%; 0.3–2% packages) — matches our 17-Jul finding.',
+     'Item-rule table + payer classification (covered / patient-NME / DNB / conditional) <b>before</b> amount; zero-inflated display bands; multi-treatment de-dup; ICU-sensitive daily portion.',
+     'GIPSA instrument = NME; Non-GIPSA instrument = billable-not-collected (DNB if denied); Cash = folded into estimate.']],
+   [WARN,'Could worsen verified logic',[
+     'The new range <b>replaces</b> our current history-only NME line in the insurance split — run parallel during validation, or clean cut-over? <span class="tag d">D6</span>']],
+   [CRIT,'Decisions before we build',[
+     'Schema location + who seeds <code>nme_item_rules</code> (we can bootstrap from your list + tariff, you review). <span class="tag d">D3</span>',
+     'Cash: confirmed no separate NME panel; new conditional inputs collapsed into an optional “NME details” disclosure — OK?']],
+  ]},
+
+ {id:'emergency', title:'Emergency handling', group:'Reviewed (this morning)', tag:'T3',
+  decides:'Emergency is a billing overlay on Treatment A (ER physician, ER bed, emergency-OT slot, MLC, agreement %), never one surcharge and never auto-added from the word “emergency”.',
+  chips:[[OK,'Design endorsed'],[WARN,'inflation risk'],['meta','Full file: review-03']],
+  blocks:[
+   [OK,'Matches / additive',[
+     'Our <code>emergency_ot</code> control already switches OT to the emergency slot ladder (<code>OTC0054–0069</code>), <b>replacing</b> not adding. MLC → <code>HSP0047</code> already exists.',
+     'Add: ER physician <code>D000806</code>, ER assessment <code>EME5060</code> (payer-sensitive), emergency bed <code>EME0065</code> (1–4h only), agreement % (Bajaj 15% / ICICI 10%), variable emergency-care services as a range.']],
+   [WARN,'Could worsen verified logic',[
+     'Estimates verified well <b>without</b> ER components — auto-defaults must be careful: ER-physician on only when “arrived via ER” = yes; ER-assessment insurance-default-on; else opt-in. <span class="tag d">D7</span>',
+     'Emergency-OT policy is tariff-backed but <b>zero historical codes</b> — mark <code>ACTIVE_POLICY</code>.']],
+   [CRIT,'Decisions',[
+     'One procedure-level emergency method only (OT-E uplift vs package % vs exact code) — mutually exclusive with agreement exceptions?',
+     'Who supplies / maintains the <b>public-holiday calendar</b> the 8PM–8AM/Sunday/holiday rule needs? <span class="tag d">D7</span>']],
+  ]},
+
+ {id:'positive', title:'+ve (infective) cases', group:'Reviewed (this morning)', tag:'T4',
+  decides:'A positive-case billing layer driven by verified infection status + context + payer + room/LOS — never inferred from a test order.',
+  chips:[[OK,'Design endorsed'],[CRIT,'6 blocked items'],['meta','Full file: review-04']],
+  blocks:[
+   [OK,'Ready to implement',[
+     'HBsAg/HCV mgmt only on qualifying procedure + verified status → context code (non-heart <code>RNS0123</code> / CT <code>RNS0121</code> / cath <code>RNS0122</code>), qty 1, <b>no charge for medical management</b>; never <code>RNS0116</code>+<code>RNS0123</code> together.',
+     'Positive-mgmt charges outside package by default (95%); HIV LOS bands <code>HSP5020–5024</code>; isolation daily & additive; OT surcharge only where MOU explicitly says (final-insurance adjustment by default).']],
+   [CRIT,'Blocked — your own doc flagged these',[
+     'ICU isolation-care code + rates (only room <code>RNS0101</code> known). <span class="tag d">D8</span>',
+     '<code>MSC2816</code> ₹10,000/₹5,000 workbook vs ₹10 tariff — which is real, and does it replace <code>HSP5020–5024</code>? <span class="tag d">D8</span>',
+     'Is <code>RNS0116</code> still valid? Which Non-GIPSA MOUs carry 50%/100% OT uplift? Effective date + payer scope of the rates workbook? <span class="tag d">D8</span>']],
+  ]},
+
+ /* ============ NEW THIS ROUND ============ */
+ {id:'dnb', title:'Insurance — Do Not Bill items', group:'New this round',
+  decides:'12 items that must never make the patient liable — some still submitted to the insurer and waived if denied, others bundled / shown as ₹1 in the LAN bill.',
+  chips:[[OK,'Guideline validated'],[WARN,'conflicts PF spec'],[CRIT,'new line-model']],
+  blocks:[
+   [OK,'Safe / validated by history',[
+     '“Do Not Bill” really means <b>patient-payable ₹0</b>; SI exhaustion never transfers these to the patient. History confirms the ₹1 “non-show” behaviour (DMO 46.5%, monitor 43%, asst-intensivist 50%, OT-disinfection 44% at ₹1).',
+     'Submit-and-waive-if-denied: <b>assistant physician</b> (<code>DM163</code>, tariff not %) and <b>intensivist as Critical-Care Consultation</b> (<code>ICC0002</code>) — never two separate charges.',
+     'GIPSA exception: general instrument charges (<code>OTI0014/0101/0018</code>) are patient-payable NME; urology instruments (<code>OTI0058–60</code>) stay ₹0 for all insurance.']],
+   [WARN,'Could worsen verified logic — your call',[
+     '<b>Suppressing assistant-anaesthetist / DMO / monitor from the insurance estimate reduces insurance PF totals.</b> This directly conflicts with the PF spec (which allows 25% asst-anaesth for final-insurance). The DNB policy should override — confirm. <span class="tag d">D1</span>',
+     'Do not apply the cash DMO-per-day or drug-admin 12.5% rules to insurance patients.']],
+   [CRIT,'Decisions / new work',[
+     'This needs a <b>per-line four-value model</b> (gross / insurer-submitted / expected-approved / patient-payable + disposition) — a real schema change, not one covered/not-covered flag. Approve the model?',
+     'Confirm patient-facing estimate shows <b>only</b> <code>patient_payable</code>; insurer view may show claimable asst-physician / CCC.']],
+  ]},
+
+ {id:'newborn', title:'Newborn', group:'New this round',
+  decides:'Four newborn pathways — healthy-with-mother, well-baby-in-delivery-package, phototherapy, NICU — not one “newborn” estimate.',
+  chips:[[OK,'New pathway'],[WARN,'don’t auto-add bed'],[CRIT,'masters missing']],
+  blocks:[
+   [OK,'Safe / additive',[
+     'Healthy newborn with mother = <b>₹0 separate bed</b> + neonatologist PF (historical ₹8,000, then ₹4,000) + screening/investigations. 125/127 zero-room-charge cases confirm it.',
+     'Well-baby in a maternal delivery package: attach to mother, add only excluded items, don’t duplicate room or add a second base package; don’t multiply for twins if package says “single/twins”.',
+     'Phototherapy and NICU are <b>separate pathways</b> (day-based), not checkboxes on routine care.']],
+   [WARN,'Could worsen verified logic',[
+     'The word “newborn” must <b>never auto-add a bed</b> or PF — provisional select healthy, then confirm phototherapy/NICU/twins.',
+     'NICU days must come from NICU room-service codes, not the generic <code>icu_days</code> field (which doesn’t capture them).']],
+   [CRIT,'Blocked',[
+     'No governed standalone newborn/phototherapy/NICU <b>package master</b> — tariff-itemise until supplied; mark any “newborn package” remark <code>package_reference_unverified</code>.',
+     'No <b>cradle</b> service code (baby-warmer must not substitute); needs mother–baby IP linkage.']],
+  ]},
+
+ {id:'newborn2', title:'Newborn — mother-linked bed', group:'New this round',
+  decides:'Hospital confirms the newborn is a separate IP linked to the mother via a “dollar bed” (e.g. 522§1); the linked bed is a location, not a billable bed while rooming-in.',
+  chips:[[OK,'Clarifies model'],[WARN,'needs timestamps']],
+  blocks:[
+   [OK,'Safe / clarifies the model',[
+     'Store the linked bed as <code>MOTHER_LINKED_BABY_BED</code> with <code>parent_room</code>, <code>baby_sequence</code>, <code>separate_bed_charge_applicable:false</code>; room rate ₹0 while rooming-in.',
+     'Twins = separate baby admissions (522§1 / 522§2); never combine charges just because they share the mother’s room.',
+     'Separate bed billing begins only when baby moves to NICU/nursery <b>or</b> the mother is discharged while the baby stays.']],
+   [WARN,'Needs data before automation',[
+     'Requires mother admission no., linked dollar-bed number, mother discharge timestamp and baby room-transfer timestamp — model the stay in segments. Don’t read a missing baby-bed charge as “incomplete billing”.']],
+  ]},
+
+ {id:'pkg', title:'Package inclusion / exclusion', group:'New this round',
+  decides:'How the builder handles what a package absorbs vs what is billed extra — and whether a “hidden pharmacy/investigation threshold” exists (it doesn’t).',
+  chips:[[OK,'Aligns with engine'],[WARN,'don’t infer caps'],[CRIT,'data not ready']],
+  blocks:[
+   [OK,'Strongly aligns with our engine',[
+     '<b>Start from the governed package rate and add only source-supported extras</b> — never reconstruct the package by subtracting includes until you reach the price. This is already our approach.',
+     'The observed “threshold” is a reconciliation residual (<code>gross = package + defined-exc + undefined-exc + NME</code> reconciles to ₹0 in all 1,283 cash cases), not a contractual cap.',
+     'Keep four decisions independent per item: package-inclusion / outside-package-billable / insurer-admissible / patient-collectable. Explicit cash caps (CAG ₹5k, neonatal ₹2.5k) honoured.']],
+   [WARN,'Could worsen verified logic',[
+     'Do <b>not</b> invent a GIPSA/Non-GIPSA pharmacy or investigation cap from history; GIPSA default is all-inclusive.',
+     'Historical “excluded” lines must <b>not</b> auto-become patient-payable — they may be internal allocation, implant carve-outs or pending approvals.',
+     '“Above pharmacy limit” with no number → <code>cap_amount_missing</code> / <code>conditional_extra</code>, never an invented figure.']],
+   [CRIT,'Decisions / data readiness',[
+     'Big new contract: <code>rule_action</code> + <code>limit_bucket</code> per component rule. Approve the rule schema + resolution hierarchy?',
+     'Only <b>114 cash + 45 Non-GIPSA rows runtime-ready; 0 GIPSA</b> — can’t universally compile packages yet.']],
+  ]},
+
+ {id:'cross', title:'Cross consultation', group:'New this round',
+  decides:'Hybrid detect-and-confirm; a separate subtotal under Professional Charges; excluded from the surgeon-PF denominator; diet consult is NOT a cross-consult.',
+  chips:[[OK,'Matches our 18-Jul work'],[WARN,'don’t auto-charge'],[CRIT,'rate master gap']],
+  blocks:[
+   [OK,'Matches / safe',[
+     'Cross-consults already excluded from our surgeon-PF base (<b>shipped 18-Jul, D3</b>). Diet consult <code>DIE0001</code> stays a normal service, never a cross-consult, never in the PF cap.',
+     'Package rule: <b>excluded for GIPSA (96.5%) and Non-GIPSA (91.7%)</b> — charge separately at the visit tariff; open bills bill normally.',
+     'Group under Professional Charges as a separate component; visit tariffs, not PF %.']],
+   [WARN,'Could worsen verified logic',[
+     'Never auto-include a cross-consult (that would inflate estimates) — <b>suggest-and-confirm</b> unless the note/referral names it. One visit/consultant/day cap.',
+     'Don’t classify a different-department doctor as cross-consult if they’re asst-surgeon / anaesthetist / DMO / ER physician / co-manager.']],
+   [CRIT,'Blocked',[
+     'ICICI/<code>TR201</code> documents inclusion but bills mostly exclude — mark agreement-review exception, don’t assume inclusion.',
+     '<code>v_consultation_rates_current</code> has <b>tariff_code null for all 35,372 rows</b> — exact auto-pricing unsafe until mapped; use specialty ranges meanwhile.']],
+  ]},
+
+ {id:'los', title:'Outside package LOS', group:'New this round',
+  decides:'Beyond package LOS the package stays as the base; only incremental excess-day care is added at actuals — the package and its PF are never recalculated.',
+  chips:[[OK,'Endorsed / high support'],[WARN,'ward≠ICU ledger'],[CRIT,'743 pkgs no LOS']],
+  blocks:[
+   [OK,'Safe / strongly supported',[
+     'Package = base; add per excess day: room (ward/ICU), extra surgeon/physician visits, DMO (ward), intensivist (ICU), net IP pharmacy (range), medically-necessary investigations. 97% historical support.',
+     'Do <b>not</b> recompute the 20/25/35% package PF because the stay grew — add only excess-day visits. Aligns with our extended-LOS visit design (T1).',
+     '“Outside package ≠ collect from patient” — apply insurer eligibility / NME / do-not-collect afterward.']],
+   [WARN,'Could worsen verified logic',[
+     'Entitlement is per setting — unused ward days can’t offset excess ICU days. Needs a day-by-day ward/ICU ledger, not one <code>excess_days</code> number.',
+     'A new procedure during excess stay = separate treatment logic, not an auto excess-day charge; avoid double-charging existing package exclusions.']],
+   [CRIT,'Blocked',[
+     '<b>743 of 4,223</b> package admissions have no governed LOS — never default to the common 3-day; require a reviewed value first.']],
+  ]},
+
+ {id:'medmgmt', title:'Medical management', group:'New this round',
+  decides:'Not one generic medical estimate — a menu of ~15 clinical families × ward/ICU/daycare setting, with exact room+PF and ranged pharmacy/investigations; doctors’ stated high-value items auto-added.',
+  chips:[[OK,'Framework sound'],[WARN,'route procedures out'],[CRIT,'not yet certified']],
+  blocks:[
+   [OK,'Safe / additive',[
+     'Setting split is real: ward P50 ₹73k, ICU P50 ₹1.73L, daycare P50 ₹28k — model as families (fever/sepsis/respiratory/cardiac/neuro/GI/renal/endocrine/onco/paeds/neonatal…).',
+     'Exact room + governed PF; historical ranges for pharmacy/investigations; doctor-written tests/high-value items captured as structured input and confirmed.',
+     'Hybrid mapping: explicit diagnosis → auto-select+confirm; symptom-only → ranked suggestions; “medical management” only → department + wide range.']],
+   [WARN,'Could worsen verified logic',[
+     'Route chemotherapy / dialysis / endoscopy / transfusion / bronchoscopy <b>out</b> of generic medical management into their own pathways (they’re financially distinct).',
+     'The existing general-medical template is a 28-admission cash cohort — must <b>not</b> be the universal estimate.']],
+   [CRIT,'Reality check',[
+     'Of 1,071 medical scenarios only <b>7 are historically estimable, none certified</b> — present as policy-first with wide ranges + confidence, refresh after 24h / ICU transfer.']],
+  ]},
+
+ {id:'daycare', title:'Handling daycare', group:'New this round',
+  decides:'Keep the existing daycare foundation; daycare is a stay/billing modifier, not a generic estimate — the treatment/drug drives the cost.',
+  chips:[[OK,'Foundation kept'],[WARN,'classifier fixes'],['meta','5 refinements']],
+  blocks:[
+   [OK,'Safe / keep',[
+     'Positive daycare-charge classification (<code>ROM0010</code>, rare <code>RNS0075</code> — never both), short-stay non-daycare guard, treatment-family defaults, 15-case gate, separate package/open routing — all correct.',
+     'One generic daycare average is wrong: chemo P50 ₹25k vs immunotherapy P50 ₹151k — use exact treatment/regimen cohorts at current tariff.']],
+   [WARN,'Could worsen verified logic — fixes',[
+     '<code>same_day_daycare_style</code> wrongly includes 119 &gt;12h cases — add a real <code>strict_daycare_upto_12h</code> flag; split strict / extended / cross-midnight / converted.',
+     'Auto-daycare = <b>recommendation to confirm</b>, not silent (don’t infer from “infusion/endoscopy/Cat 1”). DMO excluded (3/1,954); nursing conditional; never mix package + open histories.',
+     'Add an inpatient-conversion contingency instead of continuing daycare logic.']],
+  ]},
+
+ {id:'chemo', title:'Chemotherapy', group:'New this round',
+  decides:'A dedicated systemic-therapy engine — the drug/dose/brand/vial count explains most of the bill; default open-bill daycare; price from exact regimen at current prices.',
+  chips:[[OK,'Design endorsed'],[WARN,'never generic total'],[CRIT,'54% prices missing']],
+  blocks:[
+   [OK,'Safe / important',[
+     'Default routine chemo to <b>open-bill daycare</b> (none of 1,210 cases were packages); five routes (cytotoxic / immunotherapy / supportive infusion / inpatient / high-dose-BMT).',
+     'Prior same-patient same-regimen cycle is the best anchor (median change 5.4%) — but <b>rebuild at current prices, never copy</b> the amount.',
+     'Pharmacy dominates (0.97–0.99 correlation with bill); collect regimen/dose/vial/brand/cycle as structured input — builder must not compute the dose.']],
+   [WARN,'Could worsen verified logic',[
+     'Never present a <b>generic “chemotherapy” total</b> — same label ranges ₹20k–several lakh; if drug/dose unknown show base + “drug cost pending”, low-confidence.']],
+   [CRIT,'Blocked',[
+     '<b>6,132 of 11,254 pharmacy items have no current price</b> (incl. high-value ENHERTU) — no silent zero; show last observed as provisional.',
+     'Needs a governed regimen master and the patient key for prior-cycle retrieval (absent from the current snapshot).']],
+  ]},
+
+ {id:'excel', title:'Billing training Excel', group:'New this round',
+  decides:'Whether the hospital’s 8-sheet billing checklist workbook is useful — yes, as a rule-enrichment source (billing units, OT slots), not a rate master.',
+  chips:[[OK,'Useful as rules'],[WARN,'final-insurance PF conflict'],[CRIT,'5 to resolve']],
+  blocks:[
+   [OK,'Safe use',[
+     '133/135 codes already in our tariff — join, don’t duplicate. Real value: billing-unit rules (per-event / 24h / half-day / per-eligible-day), OT half-hour slot ladder, ward/ICU companion-service candidates, cath-lab duration.',
+     'Confirms our LAN PF rules (open surgeon 25%, asst 15%, anaesth 25%, GIPSA pkg 20%, Non-GIPSA pkg 25%, corporate 16%).']],
+   [WARN,'Could worsen verified logic — do NOT import blindly',[
+     'Workbook final-insurance PF (<b>surgeon 35–40%, asst 35%, anaesth 45%</b>) <b>conflicts</b> with Policy 2.0 / our spec (35/25/35/25) and our LAN 25%. Do not activate the conflicting %. <span class="tag d">D1</span>',
+     'Monitor code error (<code>EME0019</code> = Per-Day, not Half-Day) — don’t import as alias; workbook has no dates/payer/package/rates.']],
+   [CRIT,'Resolve before executable',[
+     'Final-insurance PF %; emergency-OT timing & payer window (8PM–8AM vs MOU 6PM–7AM); DMO/intensivist/monitor collectibility; urology-instrument threshold base.']],
+  ]},
+
+ {id:'labour', title:'Labour room', group:'New this round',
+  decides:'Labour-room is a maternal location add-on billed by occupancy duration, in addition to (never replacing) the ward/room charge.',
+  chips:[[OK,'Additive / clear'],[WARN,'needs bed transfers']],
+  blocks:[
+   [OK,'Safe / additive',[
+     'The selected ward/room is still estimated normally; add a labour-room charge by duration slot (0–4 / 4–8 / 8–12h). &lt;4h → occupied-bed charge only; ≥4h → labour-room + ward charge.',
+     'Model as an optional maternal add-on with a duration input; apply package vs open handling afterward.']],
+   [WARN,'Needs data / confirm',[
+     'The “auto-bill at ≥4h” rule needs real-time bed transfer to/from the labour ward — at estimate time this is a projected input, not a live event. Confirm we take expected labour-room hours as an FC input.']],
+  ]},
+
+ {id:'tax', title:'Tax & attendant room', group:'New this round',
+  decides:'5% GST on non-ICU room rent above ₹5,000/day (on the full amount); ICU/CCU/NICU exempt; attendant room carries 18% GST but has no code yet.',
+  chips:[[OK,'Ready to implement now'],[CRIT,'attendant code missing']],
+  blocks:[
+   [OK,'Ready — highest-confidence tab',[
+     '5% GST on non-ICU room rent &gt;₹5,000/day on the <b>full</b> amount; exactly ₹5,000 → ₹0; ICU/CCU/ICCU/NICU exempt. <b>99.68% historical compliance</b> (15,092 lines). Statutory (CBIC, eff. 18-Jul-2022).',
+     'Tax by <b>service code, not ward name</b> (single-room code in an MICU ward still taxes). Line-level automatic GST; packages tax only the room component, never the whole package.']],
+   [CRIT,'Blocked',[
+     '<b>No attendant-room code/rate</b> in tariff (<code>RNS0077</code> is a pass charge, not a room) — attendant room stays a <b>manual, off-by-default</b> add-on at 18% until Finance supplies code/SAC/rate.',
+     'HDU (42 lines untaxed) — mark <code>critical_care_tax_exempt_pending_finance_confirmation</code>.']],
+  ]},
+
+ {id:'blood', title:'Blood bank', group:'New this round',
+  decides:'Three events — reserve→cross-match; issue→component charge (remove that cross-match); transfuse→per-unit charge. History does NOT show cross-match reversal being followed.',
+  chips:[[OK,'Rule endorsed'],[WARN,'history double-charges'],[CRIT,'no issue register']],
+  blocks:[
+   [OK,'Safe / follow the documented rule',[
+     'Bill components when issued (<code>BLD0024</code> PRBC etc.), transfusion per unit transfused, cross-match on reserve — revoked once the component is issued/billed.']],
+   [WARN,'Could worsen verified logic',[
+     'History keeps <b>both</b> component + cross-match in 99.6% of cases — do <b>not</b> reproduce this probable double-charge; follow the documented reversal and flag bills that keep both.']],
+   [CRIT,'Blocked',[
+     'Our data has bill lines but <b>no reservation/issue register</b> — unit-level state (reserved / issued / transfused) must be an FC input to drive the reversal rule.']],
+  ]},
+
+ {id:'equipment', title:'Equipment & manual add-ons', group:'New this round',
+  decides:'A governed manual add-on catalogue (OT/ward/ICU equipment, respiratory support, procedures, transport) with billing basis, valid locations, mutual exclusions and payer admissibility — not a free tariff search.',
+  chips:[[OK,'Architecture endorsed'],[CRIT,'many masters missing']],
+  blocks:[
+   [OK,'Safe / good architecture',[
+     'Each add-on defines billing basis (flat / per-hour / 12h / 24h / per-day / per-shock / editable), valid locations, mutually-exclusive codes, package class and payer admissibility; grouped UI (OT / respiratory / bedside / neonatal / transport / approval-based).',
+     'Four financial columns per line (gross / included-in-package / separately-claimable / patient-payable) — same model as the DNB tab; equipment history = staff-confirmed suggestions, not silent charges.']],
+   [CRIT,'Blocked — missing masters',[
+     'Cradle charge (baby-warmer must not substitute), arthroscopy major/minor, microscope &gt;3h, NIV duration variants, retropositive amount, external PF, hospitality — supply codes/rates before activation.',
+     'MRD appears as a <b>positive</b> charge in history, not a discount — reconcile before implementing as a negative amount.']],
+  ]},
+
+ /* ============ DECISIONS ============ */
+ {id:'decisions', title:'Decisions needed', group:'Act on this', custom:'decisions'},
+];
+
+/* ---------- decisions data ---------- */
+const DEC = [
+ ['D1','Insurer PF: rule-% vs our live historic-P50 override (also drives DNB suppression & the Excel-workbook conflict).','PF, DNB, Excel','HIGHEST'],
+ ['D2','Is the FC estimate the LAN surface (open surgeon 25%) or final-insurance (35%)?','PF, Excel','High'],
+ ['D3','Where do the rule/master tables live for our RDS runtime (not your local fc_curated)? Who seeds them?','PF, NME, +ve, Pkg','High'],
+ ['D4','Accept a planned same-sitting FC input as evidence for the 50/25 reduction (estimate is pre-OT)?','PF','Med'],
+ ['D5','Confirm factor-adjusted combo total becomes the headline (drops up to ~37%), 100% sum kept as reference.','PF','Med'],
+ ['D6','NME: run the new range parallel to the old during validation, or clean cut-over?','NME','Med'],
+ ['D7','Emergency defaults (ER-physician on only if arrived-via-ER; ER-assessment insurance-default-on) + who owns the public-holiday calendar?','Emergency','Med'],
+ ['D8','+ve cases blocked set: ICU-isolation code, MSC2816 rate/scope, RNS0116 validity, Non-GIPSA OT-uplift MOUs, workbook effective date.','+ve cases','Med'],
+ ['N1','Approve the per-line four-value model (gross / insurer-submitted / expected-approved / patient-payable + disposition) — needed by DNB and Equipment.','DNB, Equipment','High'],
+ ['N2','Approve the package rule schema (rule_action + limit_bucket) + resolution hierarchy; accept only 114 cash/45 Non-GIPSA/0 GIPSA rows are runtime-ready.','Pkg incl/excl','High'],
+ ['N3','Missing masters to supply: cradle code, attendant-room code+18% rate, ICU-isolation code, MSC2816 rate, chemo drug prices, emergency-OT codes.','Newborn, Tax, +ve, Chemo, Emergency','High'],
+ ['N4','Confirm cross-consult stays suggest-and-confirm (never auto-charged); ICICI/TR201 treated as review exception; consultation tariff_code mapping to be supplied.','Cross consult','Med'],
+ ['N5','Confirm "outside package ≠ collect from patient" as a global principle, and per-setting ward/ICU excess-LOS ledger; 743 packages need a governed LOS.','Outside LOS, Pkg','Med'],
+];
+
+/* ---------- render ---------- */
+const railEl=document.getElementById('rail'), mainEl=document.getElementById('main');
+let groups={};
+T.forEach(t=>{ (groups[t.group]=groups[t.group]||[]).push(t); });
+
+/* status dots per tab from chip severities */
+function tabDots(t){
+  if(!t.chips) return '';
+  const sev=new Set(t.chips.map(c=>c[0]));
+  let h='';
+  ['ok','warn','crit'].forEach(s=>{ if(sev.has(s)) h+=`<i style="background:var(--${s}-line)"></i>`; });
+  return `<span class="st">${h}</span>`;
+}
+let order=[];
+Object.keys(groups).forEach(g=>{
+  const gd=document.createElement('div'); gd.className='railgroup'; gd.textContent=g; railEl.appendChild(gd);
+  groups[g].forEach(t=>{
+    order.push(t.id);
+    const b=document.createElement('button'); b.className='tablink'; b.dataset.id=t.id;
+    const idx = t.tag ? t.tag : (t.custom ? '•' : String(order.length-0).padStart(2,'0'));
+    b.innerHTML=`<span class="idx">${t.tag||''}</span><span>${t.title}</span>${tabDots(t)}`;
+    b.addEventListener('click',()=>select(t.id));
+    railEl.appendChild(b);
+  });
+});
+
+function chipsHTML(chips){ return chips? `<div class="chips">${chips.map(c=>`<span class="chip ${c[0]}">${c[1]}</span>`).join('')}</div>`:''; }
+function blocksHTML(blocks){
+  const H={ok:'Safe / ready',warn:'Could worsen verified logic',crit:'Decisions / blocked',plain:''};
+  return blocks.map(([sev,title,items])=>`
+    <div class="block ${sev}">
+      <h3>${title}</h3>
+      <ul class="${sev==='crit'&&title.toLowerCase().includes('decision')?'':''}">
+        ${items.map(i=>`<li>${i}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+}
+
+function panelHTML(t){
+  if(t.custom==='overview') return overviewHTML();
+  if(t.custom==='decisions') return decisionsHTML();
+  const eb = t.tag? `Reviewed · ${t.tag}` : 'New this round';
+  return `<div class="eyebrow">${eb}</div>
+    <h1 class="tt">${t.title}</h1>
+    <p class="decides">${t.decides}</p>
+    ${chipsHTML(t.chips)}
+    ${blocksHTML(t.blocks)}`;
+}
+
+function overviewHTML(){
+  return `<div class="eyebrow">Phase-2 · input reviews</div>
+   <h1 class="tt">One review per tab of the manager’s doc</h1>
+   <p class="decides">Every tab in <code>newinps.docx</code> gets a review here. Each one separates <b>what already matches our engine</b>, <b>what could worsen currently-verified logic</b> (your call), and <b>what’s blocked pending your decision</b>. Nothing in these topics is implemented until the decisions are answered — that’s the whole point of this pass.</p>
+   <div class="overview-grid">
+     <div class="ocard"><div class="n">18</div><div class="l">topic tabs</div></div>
+     <div class="ocard"><div class="n">4</div><div class="l">reviewed this morning (T1–T4)</div></div>
+     <div class="ocard"><div class="n">14</div><div class="l">new this round</div></div>
+     <div class="ocard"><div class="n">13</div><div class="l">open decisions (see last tab)</div></div>
+   </div>
+   <div class="block plain"><h3>How to read each tab</h3>
+     <ul>
+       <li><b><span style="color:var(--ok)">Green</span></b> — already matches our engine or safe additive work we’ll just build.</li>
+       <li><b><span style="color:var(--warn)">Amber</span></b> — a suggestion that, if applied naively, would change estimates we’ve already verified. We stop and ask.</li>
+       <li><b><span style="color:var(--crit)">Red</span></b> — blocked on a decision, a missing master/code, or data that isn’t runtime-ready.</li>
+     </ul>
+   </div>
+   <div class="block plain"><h3>Cross-cutting themes across the new tabs</h3>
+     <ul>
+       <li><b>“Outside package ≠ collect from patient”</b> and <b>patient-payable is its own decision</b> — recurs in DNB, Package, Cross-consult, Outside-LOS. We endorse it; it needs a per-line four-value model.</li>
+       <li><b>LAN vs final-insurance PF %</b> (D1/D2) resurfaces in DNB and the Billing Excel — the workbook’s 35–40% conflicts with policy and our LAN 25%.</li>
+       <li><b>Missing masters/codes</b> block several tabs (attendant-room, ICU-isolation, cradle, MSC2816, chemo drug prices, emergency-OT).</li>
+       <li><b>Rule/master tables live in your project DB, not our RDS</b> (D3) — unresolved for every rule-driven topic.</li>
+     </ul>
+   </div>
+   <p class="note">Tip: the <a class="jump" href="#decisions" onclick="select('decisions');return false;">Decisions needed</a> tab consolidates every open question with the tabs it affects.</p>`;
+}
+
+function decisionsHTML(){
+  const rows=DEC.map(d=>`<tr><td>${d[0]}</td><td>${d[1]}</td><td>${d[2]}</td><td>${d[3]}</td></tr>`).join('');
+  return `<div class="eyebrow">Act on this</div>
+   <h1 class="tt">Decisions needed before we implement</h1>
+   <p class="decides">Each of these, if guessed wrong, would silently change estimates that are already verified — so nothing in Workstream A / the new topics ships until they’re answered. <code>D…</code> carry over from this morning’s review-00; <code>N…</code> are new from the leftover tabs.</p>
+   <div style="overflow-x:auto"><table class="dec">
+     <thead><tr><th>#</th><th>Decision</th><th>Affects</th><th>Priority</th></tr></thead>
+     <tbody>${rows}</tbody>
+   </table></div>
+   <div class="block plain"><h3>Suggested fast path</h3>
+     <ul>
+       <li><b>D1, D2, D3</b> unblock the biggest topic (PF) and cascade into DNB and the Billing Excel — answer these three first and we start T1 validation immediately.</li>
+       <li><b>N1 + N3</b> (four-value line model + the missing-masters list) unblock DNB, Equipment, Newborn, Tax and +ve cases together.</li>
+     </ul>
+   </div>`;
+}
+
+function select(id){
+  order.forEach(x=>{});
+  document.querySelectorAll('.tablink').forEach(b=>b.classList.toggle('active',b.dataset.id===id));
+  mainEl.innerHTML=`<section class="panel active">${panelHTML(T.find(t=>t.id===id))}</section>`;
+  if(location.hash.slice(1)!==id) history.replaceState(null,'',`#${id}`);
+  mainEl.scrollTop=0; window.scrollTo({top:0,behavior:'instant'in window?'instant':'auto'});
+}
+
+/* theme toggle */
+const tb=document.getElementById('themebtn');
+tb.addEventListener('click',()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark = cur? cur==='dark' : matchMedia('(prefers-color-scheme:dark)').matches;
+  document.documentElement.setAttribute('data-theme', isDark?'light':'dark');
+});
+
+/* init */
+const start = location.hash.slice(1);
+select(order.includes(start)?start:'overview');
+</script>

@@ -349,6 +349,16 @@ export async function rankPackageCandidates({ treatment, tariff_code, organizati
     const { masterNameCandidates } = await import('../packages/packages.service.js');
     candidates = await masterNameCandidates({ text: treatment, tariff_code, organization_cd, limit });
   }
+  // G2 (manager 18-Jul): the hospital's surgery master is the canonical
+  // wording→code corpus (it IS the FC's dropdown; G1: ~95% of surgical IP
+  // bills carry one of its codes). Union its matches in — exact canonical
+  // names surface packages the alias table misses (e.g. DJ stenting).
+  try {
+    const { surgeryMasterCandidates } = await import('../packages/packages.service.js');
+    const master = await surgeryMasterCandidates({ text: treatment, tariff_code, organization_cd, limit });
+    const have = new Set(candidates.map((c) => c.package_code));
+    for (const m of master) if (!have.has(m.package_code)) candidates.push(m);
+  } catch { /* fail open — alias/master-name candidates stand */ }
   let ranking = null;
   if (candidates.length > 1) {
     try {

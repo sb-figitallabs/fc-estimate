@@ -5,3 +5,4 @@ output/
 .rds-credentials
 *.pem
 rds-global-bundle.pem
+data/

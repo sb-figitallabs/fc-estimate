@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Treatment Directory — FC Estimate Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='3' width='20' height='18' rx='3' fill='%230033CC'/%3E%3Cpath d='M7 8h10M7 12h10M7 16h6' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{--brand:#0033CC;--brand-600:#0029a3;--brand-50:#eef2ff;--ink:#0f172a;--ink-2:#475569;--ink-3:#64748b;
+    --surface:#fff;--bg:#f4f6f8;--line:#e2e8f0;--radius:10px;--shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.05)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:var(--brand);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:18px;font-weight:600}
+  header .sub{font-size:13px;opacity:.85}
+  header .links{margin-left:auto;display:flex;gap:14px}
+  header a{color:#fff;opacity:.9;font-size:13px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.4);padding-bottom:1px}
+  .wrap{max-width:1360px;margin:0 auto;padding:20px 24px}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  #s{flex:1;min-width:240px;border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;font:inherit;background:var(--surface)}
+  select{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;font:inherit;background:var(--surface)}
+  .count{font-size:13px;color:var(--ink-3)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:1100px}
+  th{position:sticky;top:0;background:var(--surface);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+     color:var(--ink-3);padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none}
+  th.r,td.r{text-align:right}
+  th .dir{color:var(--brand)}
+  td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+  tr:hover td{background:var(--brand-50)}
+  .t{font-weight:600;color:var(--ink)}
+  .dept{font-size:11.5px;color:var(--ink-3)}
+  .chip{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11px;margin:1px 2px 1px 0;background:#f1f5f9;color:var(--ink-2)}
+  .kind-m{background:#dcfce7;color:#166534}
+  .kind-s{background:var(--brand-50);color:var(--brand-600)}
+  .pct{font-variant-numeric:tabular-nums}
+  .flow{color:var(--brand-600);text-decoration:none;font-weight:600;font-size:12.5px;white-space:nowrap}
+  .muted{color:#cbd5e1}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+</style>
+</head>
+<body>
+<header>
+  <svg width="26" height="26" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="3" fill="#fff" opacity=".18"/><path d="M7 8h10M7 12h10M7 16h6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+  <div>
+    <h1>Treatment Directory</h1>
+    <div class="sub">Every treatment in the hospital's history — cases, care type, stay &amp; theatre typicals. Click Flow 2 to drill into any one.</div>
+  </div>
+  <nav class="links">
+    <a href="/">estimate tester</a>
+    <a href="/ask">Ask the Project</a>
+    <a href="/flow2.html">Flow 2</a>
+  </nav>
+</header>
+<div class="wrap">
+  <div class="bar">
+    <input id="s" placeholder="Search treatments / departments…">
+    <select id="kind"><option value="">All types</option><option value="surgical">Surgical</option><option value="medical">Medical</option></select>
+    <select id="payor"><option value="">All payors</option><option>Cash</option><option>GIPSA Insurance</option><option>Non-GIPSA Insurance</option><option>Corporate</option><option>International</option></select>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr id="head">
+        <th data-k="template">Treatment</th>
+        <th data-k="cases" class="r">Cases</th>
+        <th data-k="payors">Per payor</th>
+        <th data-k="family_kind">Type</th>
+        <th data-k="daycare_pct" class="r">Daycare</th>
+        <th data-k="robotic_pct" class="r">Robotic</th>
+        <th data-k="emergency_pct" class="r">Emerg.</th>
+        <th data-k="los" class="r">LOS d (p25–75)</th>
+        <th data-k="icu_p50" class="r">ICU d</th>
+        <th data-k="ot_hours_p50" class="r">OT h</th>
+        <th data-k="cath_hours_p50" class="r">Cath h</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="tb"><tr><td colspan="12" style="padding:30px;text-align:center;color:#94a3b8">Loading the directory…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+<script>
+let data = [], sortK = 'cases', sortDir = -1;
+const tb = document.getElementById('tb');
+const fmtPct = (v)=> v > 0 ? v+'%' : '<span class="muted">—</span>';
+const num = (v)=> v == null ? '<span class="muted">—</span>' : v;
+const PAYOR_SHORT = {'Cash':'Cash','GIPSA Insurance':'GIPSA','Non-GIPSA Insurance':'Non-G','Corporate':'Corp','International':'Intl'};
+
+function rowsNow(){
+  const s = document.getElementById('s').value.trim().toLowerCase();
+  const kind = document.getElementById('kind').value;
+  const payor = document.getElementById('payor').value;
+  let rows = data.filter((r)=>
+    (!s || (r.template+' '+(r.department||'')).toLowerCase().includes(s)) &&
+    (!kind || r.family_kind === kind) &&
+    (!payor || (r.payor_counts?.[payor] > 0)));
+  const val = (r)=> sortK==='los' ? (r.los?.p50 ?? -1) : sortK==='payors' ? r.cases : (r[sortK] ?? -1);
+  rows.sort((a,b)=>{ const x=val(a), y=val(b); return (x<y?-1:x>y?1:0)*sortDir* (typeof x==='string'?-1:1); });
+  return rows;
+}
+function paint(){
+  const rows = rowsNow();
+  document.getElementById('count').textContent = rows.length + ' treatments · ' + rows.reduce((t,r)=>t+r.cases,0).toLocaleString('en-IN') + ' admissions';
+  tb.innerHTML = rows.map((r)=>{
+    const payors = Object.entries(r.payor_counts||{}).sort((a,b)=>b[1]-a[1])
+      .map(([k,v])=>'<span class="chip">'+(PAYOR_SHORT[k]||k)+' '+v+'</span>').join('');
+    const los = r.los?.p50 != null ? r.los.p50 + ' <span class="muted">('+r.los.p25+'–'+r.los.p75+')</span>' : '<span class="muted">—</span>';
+    const drill = '/flow2.html?treatment=' + encodeURIComponent(r.template);
+    return '<tr>'+
+      '<td><div class="t">'+r.template+'</div><div class="dept">'+(r.department||'')+'</div></td>'+
+      '<td class="r num">'+r.cases.toLocaleString('en-IN')+'</td>'+
+      '<td>'+payors+'</td>'+
+      '<td><span class="chip '+(r.family_kind==='medical'?'kind-m':'kind-s')+'">'+(r.family_kind||'?')+'</span></td>'+
+      '<td class="r num pct">'+fmtPct(r.daycare_pct)+'</td>'+
+      '<td class="r num pct">'+fmtPct(r.robotic_pct)+'</td>'+
+      '<td class="r num pct">'+fmtPct(r.emergency_pct)+'</td>'+
+      '<td class="r num">'+los+'</td>'+
+      '<td class="r num">'+num(r.icu_p50)+'</td>'+
+      '<td class="r num">'+num(r.ot_hours_p50)+'</td>'+
+      '<td class="r num">'+num(r.cath_hours_p50)+'</td>'+
+      '<td><a class="flow" href="'+drill+'">Flow 2 →</a></td>'+
+    '</tr>';
+  }).join('') || '<tr><td colspan="12" style="padding:30px;text-align:center;color:#94a3b8">No treatments match.</td></tr>';
+}
+document.getElementById('head').addEventListener('click', (e)=>{
+  const th = e.target.closest('th'); if(!th?.dataset.k) return;
+  if (sortK === th.dataset.k) sortDir *= -1; else { sortK = th.dataset.k; sortDir = -1; }
+  [...document.querySelectorAll('th')].forEach((h)=>h.innerHTML=h.innerHTML.replace(/ <span class="dir">.*<\/span>/,''));
+  th.innerHTML += ' <span class="dir">'+(sortDir<0?'↓':'↑')+'</span>';
+  paint();
+});
+['s','kind','payor'].forEach((id)=>document.getElementById(id).addEventListener('input', paint));
+fetch('/api/lookup/treatment-directory').then((r)=>r.json()).then((d)=>{ data = d; paint(); })
+  .catch(()=>{ tb.innerHTML = '<tr><td colspan="12" style="padding:30px;text-align:center;color:#b91c1c">Failed to load the directory.</td></tr>'; });
+</script>
+</body>
+</html>

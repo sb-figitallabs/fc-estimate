@@ -117,6 +117,7 @@
   </div>
   <nav class="links" aria-label="Documentation">
     <a href="/ask">Ask the Project</a>
+    <a href="/treatments.html">Treatments</a>
     <a href="/flow2.html">Flow 2</a>
     <a href="/docs" target="_blank" rel="noopener">API docs</a>
     <a href="/openapi.json" target="_blank" rel="noopener">OpenAPI</a>
@@ -241,6 +242,25 @@
         </div>
       </details>
 
+      <details>
+        <summary>Advanced add-ons (Tabs 2–20 controls)</summary>
+        <div style="padding:10px 0">
+          <div class="muted" style="font-size:12px;margin-bottom:6px">Raw <code>controls</code> JSON, merged into the request — drives the emergency / positive-case / newborn / cross-consult / medical-mgmt / daycare / chemo / labour-room / tax / blood-bank / manual-add-on / pharmacy overlays.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+            <button type="button" class="btn btn-ghost addonPreset" data-json='{"arrived_via_emergency_department":"Yes","emergency_bed_expected":"Yes","emergency_bed_hours":3}' style="min-height:30px;font-size:12px;padding:0 8px">Emergency</button>
+            <button type="button" class="btn btn-ghost addonPreset" data-json='{"positive_status":"HBSAG","surgery_context":"non_heart","confirmation_source":"lab"}' style="min-height:30px;font-size:12px;padding:0 8px">Positive case</button>
+            <button type="button" class="btn btn-ghost addonPreset" data-json='{"newborn_pathway":"nicu","nicu_days":5}' style="min-height:30px;font-size:12px;padding:0 8px">Newborn NICU</button>
+            <button type="button" class="btn btn-ghost addonPreset" data-json='{"cross_consults":[{"department":"CARDIOLOGY","visits":2}]}' style="min-height:30px;font-size:12px;padding:0 8px">Cross-consult</button>
+            <button type="button" class="btn btn-ghost addonPreset" data-json='{"labour_room_hours":6,"attendant_room":true}' style="min-height:30px;font-size:12px;padding:0 8px">Labour+attendant</button>
+            <button type="button" class="btn btn-ghost addonPreset" data-json='{"blood_transfusion":true,"medical_management":{"family":"respiratory","setting":"ward"}}' style="min-height:30px;font-size:12px;padding:0 8px">Blood+Medical</button>
+            <button type="button" class="btn btn-ghost addonPreset" data-json='{"chemo":{"route":"immunotherapy_targeted","regimen_items":[{"drug":"Atezolizumab","vials":1,"unit_price":63000}],"chemoport":true}}' style="min-height:30px;font-size:12px;padding:0 8px">Chemo</button>
+            <button type="button" class="btn btn-ghost" id="addonClear" style="min-height:30px;font-size:12px;padding:0 8px">Clear</button>
+          </div>
+          <textarea id="addonJson" rows="4" placeholder='{ "arrived_via_emergency_department": "Yes" }' style="width:100%;font-family:ui-monospace,monospace;font-size:12px"></textarea>
+          <div class="muted err" id="addonErr" style="display:none;font-size:12px;margin-top:4px"></div>
+        </div>
+      </details>
+
       <div class="alert err" id="formError" role="alert"></div>
 
       <div class="btn-row">
@@ -337,9 +357,25 @@ function payload() {
       icu_basis: $('icuBasis').value, ...($('icuBasis').value === 'Manual' && $('icuManual').value ? { icu_manual: +$('icuManual').value } : {}),
       ward_basis: $('wardBasis').value, ...($('wardBasis').value === 'Manual' && $('wardManual').value ? { ward_manual: +$('wardManual').value } : {}),
       ot_hours_basis: $('otBasis').value, ...($('otBasis').value === 'Manual' && $('otManual').value ? { ot_hours_manual: +$('otManual').value } : {}),
+      ...advancedControls(),
     },
   };
 }
+// merge the "Advanced add-ons" raw controls JSON (Tabs 2-20) into controls
+function advancedControls() {
+  const raw = ($('addonJson')?.value || '').trim();
+  if (!raw) { const e = $('addonErr'); if (e) e.style.display = 'none'; return {}; }
+  try { const obj = JSON.parse(raw); const e = $('addonErr'); if (e) e.style.display = 'none'; return (obj && typeof obj === 'object') ? obj : {}; }
+  catch (err) { const e = $('addonErr'); if (e) { e.textContent = 'Advanced add-ons JSON invalid: ' + err.message; e.style.display = 'block'; } return {}; }
+}
+for (const b of document.querySelectorAll('.addonPreset')) {
+  b.addEventListener('click', () => {
+    const ta = $('addonJson');
+    let cur = {}; try { cur = ta.value.trim() ? JSON.parse(ta.value) : {}; } catch {}
+    ta.value = JSON.stringify({ ...cur, ...JSON.parse(b.dataset.json) }, null, 2);
+  });
+}
+$('addonClear')?.addEventListener('click', () => { $('addonJson').value = ''; $('addonErr').style.display = 'none'; });
 function setBusy(btn, busy) { btn.classList.toggle('busy', busy); btn.disabled = busy; }
 function showError(msg) { const el = $('formError'); el.textContent = msg; el.classList.add('err'); el.style.display = 'block'; }
 function clearError() { $('formError').style.display = 'none'; }
@@ -485,6 +521,114 @@ $('copyJson').addEventListener('click', async () => {
 });
 
 /* ---------- formatted renderer ---------- */
+// ---- render the new estimate.* add-on overlays (Tabs 2-20) ----
+function renderOverlays(d, po) {
+  const cards = [];
+  const money = (v) => (v == null ? '—' : '₹ ' + inr(v));
+  const card = (title, tag, body) => `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper)">
+    <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px"><strong>${esc(title)}</strong>${tag ? `<span class="chip neutral">${esc(tag)}</span>` : ''}</div>${body}</div>`;
+  const rows = (arr) => arr.filter(Boolean).map((r) => `<div style="font-size:12.5px;display:flex;justify-content:space-between;gap:12px"><span>${r[0]}</span><span class="num">${r[1]}</span></div>`).join('');
+  const flags = (arr) => (arr && arr.length) ? `<div class="muted" style="font-size:11.5px;margin-top:5px">⚑ ${arr.map(esc).join(' · ')}</div>` : '';
+
+  // T2 — advisory expected NME
+  const nme = d.expected_nme;
+  if (nme && nme.expected_nme != null) cards.push(card('Expected NME (advisory)', `${Math.round((nme.positive_prob||0)*100)}% of comparable cases`,
+    `<div class="num" style="font-size:18px;font-weight:700">~ ${money(nme.expected_nme)}</div><div class="muted" style="font-size:11.5px">${esc(nme.basis||'')} · separate patient-payable, not in the settled split</div>`));
+
+  // T3 — emergency overlay
+  const em = d.emergency;
+  if (em) cards.push(card('Emergency overlay', 'billing overlay · explicit-input only',
+    rows((em.components||[]).map((c) => [`${esc(c.name)} <span class="muted">${esc(c.code||'')}${c.default_on?'':' · off'}</span>`, money(c.amount?.single ?? c.amount?.general)]))
+    + `<div style="font-weight:600;font-size:12.5px;margin-top:4px">Overlay total: ${money(em.total_selected)}</div>`
+    + (em.ot_policy ? flags([`Emergency-OT: ${em.ot_policy.status}`]) : '')));
+
+  // T4 — positive case
+  const pc = d.positive_case;
+  if (pc && !pc.route_out) cards.push(card('Positive-case layer', `${esc(pc.status)} · ${esc(pc.presentation)}`,
+    rows((pc.components||[]).map((c) => [`${esc(c.name)} <span class="muted">${esc(c.code||'')}</span>`, c.amount==null?`[${esc(c.status)}]`:money(c.amount)]))
+    + (pc.ot_surcharge ? `<div style="font-size:12.5px;margin-top:3px">OT surcharge +${(pc.ot_surcharge.pct*100)}%: ${money(pc.ot_surcharge.amount)}</div>` : '')
+    + `<div style="font-weight:600;font-size:12.5px;margin-top:4px">Total: ${money(pc.total)}</div>` + flags(pc.flags)));
+  else if (pc && pc.route_out) cards.push(card('Positive-case layer', 'route out', `<div class="muted" style="font-size:12px">${esc(pc.note)}</div>`));
+
+  // T6/7 — newborn
+  const nb = d.newborn;
+  if (nb) cards.push(card('Newborn', `${esc(nb.pathway)}${nb.twins?' · twins':''}`,
+    rows((nb.components||[]).map((c) => [esc(c.name), money(c.amount)]))
+    + (nb.package_ref ? `<div style="font-size:12.5px">${esc(nb.package_ref.package_code||nb.package_ref.status||'')}: ${money(nb.package_ref.amount)}</div>` : '')
+    + `<div style="font-weight:600;font-size:12.5px;margin-top:4px">Total: ${money(nb.total)}</div>`));
+
+  // T9 — cross-consultations
+  const cc = d.cross_consultations;
+  if (cc) cards.push(card('Cross-consultations', 'visit tariff · not PF %',
+    rows((cc.components||[]).map((c) => [`${esc(c.department)} <span class="muted">${esc(c.code)} · ${c.visits}v</span>`, c.amount==null?`[${esc(c.status)}]`:money(c.amount)]))
+    + `<div style="font-weight:600;font-size:12.5px;margin-top:4px">Total: ${money(cc.total)}</div>`));
+
+  // T10 — outside-package LOS (on the package offer)
+  const opl = po && po.outside_package_los;
+  if (opl) cards.push(card('Outside-package LOS', `${opl.excess_days} excess day(s) · PF not recomputed`,
+    rows((opl.components||[]).map((c) => [`${esc(c.name)}`, money(c.amount)]))
+    + `<div style="font-weight:600;font-size:12.5px;margin-top:4px">Add-on total: ${money(opl.total)}</div>`
+    + flags((opl.ranges||[]).map((r)=>`${r.key} (range)`))));
+
+  // T11 — medical management
+  const mm = d.medical_management;
+  if (mm && !mm.route_out) cards.push(card('Medical management', `${esc(mm.family)} · ${esc(mm.setting)} · ${esc(mm.confidence)}`,
+    (mm.setting_band ? `<div style="font-size:12.5px">Band P25–P75: ${money(mm.setting_band.p25)} – ${money(mm.setting_band.p75)} <span class="muted">(P50 ${money(mm.setting_band.p50)}, n=${mm.setting_band.sample})</span></div>` : '')
+    + `<div class="muted" style="font-size:11.5px">auto: ${(mm.calculable_fields||[]).map((f)=>f.field).join(', ')}${mm.semi_manual?` · manual: ${mm.semi_manual.manual_entry.join(', ')}`:''}</div>`));
+  else if (mm && mm.route_out) cards.push(card('Medical management', 'route out', `<div class="muted" style="font-size:12px">${esc(mm.reason)}</div>`));
+
+  // T12 — daycare
+  const dc = d.daycare;
+  if (dc) cards.push(card('Daycare', `${esc(dc.status)}${dc.strict_daycare_upto_12h?' · ≤12h':''}${dc.confirmed?'':' · confirm'}`,
+    `<div class="muted" style="font-size:12px">${esc(dc.components?.daycare_charge?.code||'')} · DMO ${dc.components?.dmo?.included?'on':'excluded'} · nursing ${esc(dc.components?.nursing?.mode||'')}${dc.inpatient_conversion?.active?' · conversion contingency':''}</div>`));
+
+  // T13 — chemo
+  const ch = d.chemo;
+  if (ch) cards.push(card('Chemotherapy', `${esc(ch.route)} · ${esc(ch.confidence)}`,
+    rows((ch.therapy_drugs||[]).map((x) => [`${esc(x.drug)} <span class="muted">${x.vials}v</span>`, x.amount==null?'[pending]':money(x.amount)]))
+    + `<div style="font-size:12.5px">Therapy total: ${money(ch.therapy_total)}${ch.chemoport?' · chemoport separate':''}</div>`
+    + flags([ch.drug_cost_status])));
+
+  // T15 — labour room
+  const lr = d.labour_room;
+  if (lr) cards.push(card('Labour room', `${esc(lr.slot)} · ${lr.projected_hours}h`,
+    `<div class="num" style="font-size:14px;font-weight:600">${lr.billed?money(lr.charge)+' <span class="muted">'+esc(lr.code||'')+'</span>':'occupied-bed only (₹0)'}</div><div class="muted" style="font-size:11.5px">additive to ward</div>`));
+
+  // T16 — tax (GST on room rent)
+  const tx = d.tax;
+  if (tx && tx.gst_on_room_rent > 0) cards.push(card('GST on room rent @ 5%', 'separate line',
+    `<div class="num" style="font-size:16px;font-weight:700">${money(tx.gst_on_room_rent)}</div>`
+    + rows((tx.lines||[]).map((l) => [esc(l.category), money(l.gst_amount)]))
+    + (tx.attendant_room ? flags(['Attendant room 18% — flag only, no code yet']) : '')));
+
+  // T17 — blood bank
+  const bb = d.blood_bank;
+  if (bb) cards.push(card('Blood bank', 'transfusion add-on',
+    rows((bb.components||[]).map((c) => [`${esc(c.name)} <span class="muted">${c.qty}×</span>`, money(c.amount)]))
+    + `<div style="font-weight:600;font-size:12.5px;margin-top:4px">Total: ${money(bb.total)}</div>`));
+
+  // T18 — manual add-ons (four-column)
+  const ma = d.manual_addons;
+  if (ma) cards.push(card('Equipment & manual add-ons', 'staff-confirmed',
+    rows((ma.add_ons||[]).map((a) => [`${esc(a.name)} <span class="muted">${esc(a.code)}</span>`, a.four_column?.expected_gross==null?`[${esc(a.status)}]`:money(a.four_column.expected_gross)]))
+    + `<div style="font-size:11.5px;margin-top:4px" class="muted">gross ${money(ma.totals.expected_gross)} · claimable ${money(ma.totals.separately_claimable)} · patient ${money(ma.totals.expected_patient_payable)}</div>`
+    + flags((ma.conflicts||[]).map((c)=>`conflict: ${c.mutex}`))));
+
+  // T20 — pharmacy exact selections
+  const ps = d.pharmacy_selections;
+  if (ps) cards.push(card('Pharmacy — high-value selections', 'source-mapped',
+    rows((ps.items||[]).map((i) => [`${esc((i.name||'').slice(0,26))} <span class="muted">${esc(i.rate_source||'')}</span>`, i.amount==null?'[pending]':money(i.amount)]))
+    + `<div style="font-weight:600;font-size:12.5px;margin-top:4px">Total: ${money(ps.total)}</div>`));
+
+  // T5 — DNB disposition summary (on the settlement)
+  const dnb = d.insurance_settlement && d.insurance_settlement.dnb;
+  if (dnb) cards.push(card('DNB (Do-Not-Bill)', 'four-value model', `<div class="muted" style="font-size:12px">${dnb.fc_hidden_rows} line(s) hidden from FC (patient ₹0) · UI shows covered/non-covered · four-value in metadata</div>`));
+
+  if (!cards.length) return '';
+  return `<details open style="margin-bottom:18px"><summary>Estimate add-ons &amp; overlays — ${cards.length} active</summary>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:12px 0">${cards.join('')}</div></details>`;
+}
+
 function renderFormatted(d) {
   const ctx = d.resolved_context || {};
   // machine key (daycare families display "Daycare (room N/A)" but compute on general)
@@ -615,6 +759,7 @@ function renderFormatted(d) {
     ${warnings}
     ${insHtml}
     ${pkgHtml}
+    ${renderOverlays(d, po)}
     <div class="kpi">
       <span class="amount num">₹ ${inr(d.final_estimate)}</span>
       <span class="muted">estimate band: ₹ ${inr(d.grand_total?.[roomKey]?.[0])} – ₹ ${inr(d.grand_total?.[roomKey]?.[2])}</span>
