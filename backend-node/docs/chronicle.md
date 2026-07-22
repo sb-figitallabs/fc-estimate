@@ -237,3 +237,11 @@ Doc T6: four DISTINCT newborn pathways (healthy-with-mother / well-baby-in-packa
 Verified: healthy ₹19,290; well-baby-2d ₹18,000; in-mother attach ₹0; phototherapy-3d ₹69,000+PF; NICU-5d ₹55,840; baseline byte-identical. No regression — sanity_insurance 24/0, sanity_family 12/0.
 
 Open: cradle code (asked hospital); Tab-7 mother-linked-bed is the companion; frontend to render the 4 pathways + provisional-then-confirm flow.
+
+---
+
+## 2026-07-22 — Tab-7 Newborn mother-linked bed (KB-only)
+
+Doc T7: newborn linked to mother via a "dollar bed" (522§1) — ₹0 while rooming-in, chargeable on NICU-transfer or mother-discharge. **Manager deprioritized for FC**: "linkage bed is not an FC-related thing… we can ignore that", handle with the right question when the FC selects newborn; optionally a knowledge-base item (secondary). The FC-relevant handling is already in Tab-6 (healthy-with-mother ₹0 bed, in-mother-package attach, twins flag, NICU pathway).
+
+**Built on `feat/newborn-mother-linked` (not pushed):** no automation — only a `mother_linked_kb` reference (scope knowledge_base_only) on estimate.newborn: 3 bed states (rooming_in ₹0 / moved_to_nicu ICU billing / mother_discharged ordinary bed). Metadata-only; no amount change; sanity_family 12/0. §4 note: 507 baby/neonatal clean admissions support the 3 states, but linkage fields (mother adm no., dollar-bed no., discharge/transfer timestamps) aren't in our data — validation base for later.
