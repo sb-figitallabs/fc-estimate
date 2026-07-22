@@ -29,6 +29,7 @@ import { parseCoverage, applyCoverage, dedupeVariants, splitVariants } from '../
 import { settle, settleWithPackage } from '../insurance/settlement.js';
 import { lookupExpectedNme } from '../insurance/nmeProfile.js';
 import { buildEmergencyOverlay } from './emergency.js';
+import { buildPositiveCaseOverlay } from './positiveCase.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1013,6 +1014,36 @@ export async function buildEstimate(input) {
       room: room.toLowerCase(),
     });
     if (emergency) estimate.emergency = emergency;
+  } catch { /* overlay is additive — never break the estimate */ }
+
+  // 17d. Positive-case (infective/seropositive) overlay (doc T4) — verified-status,
+  // explicit-toggle-only billing layer; additive, never mutates base totals.
+  // Positive-management charges sit OUTSIDE the package by default.
+  try {
+    if (controls.positive_status && controls.positive_status !== 'NONE') {
+      const roomKey = room.toLowerCase();
+      const otRow = lineItems.rows.find((r) => r.name === 'OT Charges');
+      const otBase = otRow ? (otRow.selectedCells?.[roomKey] ?? otRow.cells?.[roomKey]?.[1] ?? 0) : 0;
+      const positiveCase = buildPositiveCaseOverlay({
+        inputs: {
+          positiveStatus: controls.positive_status,
+          confirmationSource: controls.confirmation_source,
+          requiresIsolation: controls.requires_isolation,
+          isolationRoomDays: controls.isolation_room_days,
+          isolationIcuDays: controls.isolation_icu_days,
+          surgeryContext: controls.surgery_context,
+          losDays: drivers.los?.selected,
+          daycare: controls.setting === 'Daycare',
+          payerAgreementId: controls.payer_agreement_id,
+        },
+        rateOf: (code) => rates.get(code) || {},
+        payorBucket: input.payment.payor_bucket,
+        room: roomKey,
+        otChargesBase: otBase,
+        hasPackage: !!packageOffer?.package?.package_code,
+      });
+      if (positiveCase) estimate.positive_case = positiveCase;
+    }
   } catch { /* overlay is additive — never break the estimate */ }
 
   // Package tariff differs per room type: use the room's tier from
