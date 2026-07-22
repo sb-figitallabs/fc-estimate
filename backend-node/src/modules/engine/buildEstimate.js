@@ -40,6 +40,7 @@ import { buildChemo } from './chemo.js';
 import { buildLabourRoom } from './labourRoom.js';
 import { buildRoomTax } from './tax.js';
 import { buildBloodBank } from './bloodBank.js';
+import { buildManualAddons } from './manualAddons.js';
 import { round2 } from './stats.js';
 
 async function pharmacyMapping() {
@@ -1203,6 +1204,21 @@ export async function buildEstimate(input) {
         room: room.toLowerCase(),
       });
       if (blood) estimate.blood_bank = blood;
+    }
+  } catch { /* additive — never break the estimate */ }
+
+  // 17m. Equipment & manual add-ons (doc T18) — governed catalogue, staff-
+  // confirmed, four-column financial separation. Additive.
+  try {
+    if (Array.isArray(controls.manual_addons) && controls.manual_addons.length) {
+      const addons = buildManualAddons({
+        selections: controls.manual_addons,
+        rateOf: (code) => rates.get(code) || {},
+        payorBucket: input.payment.payor_bucket,
+        hasPackage: !!packageOffer?.package?.package_code,
+        room: room.toLowerCase(),
+      });
+      if (addons) estimate.manual_addons = addons;
     }
   } catch { /* additive — never break the estimate */ }
 
