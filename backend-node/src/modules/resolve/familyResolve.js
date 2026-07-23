@@ -53,6 +53,14 @@ known procedure families for cost estimation.
 Known procedure families (use the exact key):
 ${families.map((f) => `- ${f.family}: ${f.label}`).join('\n')}
 
+An admission-context / urgency word — emergency, emergent, elective, planned,
+scheduled, urgent, stat, routine — describes WHEN care happens, not WHAT the
+procedure is. Match the underlying procedure and disregard that word:
+e.g. "emergency craniectomy" -> craniotomy_craniectomy_and_brain_tumor_surgery,
+"elective LSCS" -> the caesarean family. Only map to emergency_trauma_stabilization
+when the wording itself is about trauma / resuscitation stabilization — never
+merely because the word "emergency" appears.
+
 Return STRICT JSON: { "matches": [{ "family": "<exact key from the list>",
 "confidence": "high"|"medium"|"low", "reason": "<one line why it matches>" }] }.
 Return at most the top 3 matches ordered best-first; fewer if fewer plausibly fit,
