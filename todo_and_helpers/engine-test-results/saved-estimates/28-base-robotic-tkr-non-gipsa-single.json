@@ -1,0 +1,6820 @@
+{
+  "scenario": "Base · Robotic-TKR · Non-GIPSA · Single",
+  "category": "base",
+  "input": {
+    "clinical": {
+      "procedure": "robotic_tkr_unilateral_right",
+      "department_name": "ORTHOPAEDICS"
+    },
+    "payment": {
+      "payor_bucket": "Non-GIPSA Insurance",
+      "organization_cd": "ORG1199"
+    },
+    "controls": {
+      "room_type": "Single",
+      "estimate_mode": "Typical"
+    },
+    "insurance": {
+      "base_sum_insured": 500000,
+      "consumed": 0,
+      "ncb": 0,
+      "room_rent_cap": {
+        "type": "none"
+      }
+    }
+  },
+  "new_engine": {
+    "resolved_context": {
+      "payor_bucket": "Non-GIPSA Insurance",
+      "pricing_mode": "Insurance / Org Tariff",
+      "tariff": {
+        "tariff_cd": "TR202",
+        "tariff_name": "SSG_CARE",
+        "organization_name": "CARE HEALTH INSURANCE LIMITED",
+        "priority_type": "IPPRIORITY1",
+        "source": "organization_tariff_mapping",
+        "warnings": []
+      },
+      "flow": {
+        "treatment": {
+          "family": "robotic_tkr_unilateral_right",
+          "label": "Robotic TKR Unilateral - Right",
+          "family_kind": "surgical"
+        },
+        "payer": {
+          "payor_bucket": "Non-GIPSA Insurance",
+          "organization_cd": "ORG1199",
+          "organization_name": "CARE HEALTH INSURANCE LIMITED"
+        },
+        "tariff": {
+          "tariff_cd": "TR202",
+          "tariff_name": "SSG_CARE",
+          "source": "organization_tariff_mapping",
+          "pricing_mode": "Insurance / Org Tariff"
+        },
+        "rates": {
+          "service_rates_tariff": "TR202",
+          "tr1_fallback_item_count": 10121,
+          "ot_slot_ladder_tariff": "TR202",
+          "ot_slot_ladder_tr1_fallback": false
+        },
+        "cohort": {
+          "scope": "clinical_family_all_payors",
+          "case_count": 26,
+          "payor_mix": {
+            "Cash": 26
+          },
+          "care_filtered": false
+        },
+        "component_basis": {
+          "mode": "auto",
+          "services": {
+            "basis": "All Payers",
+            "status": "recommended_fallback_all_payers",
+            "confidence": "medium",
+            "case_count": 26,
+            "reason": "Exact Non-GIPSA Insurance too small (0 < 15); All Payers has 26 cases"
+          },
+          "pharmacy": {
+            "basis": "All Payers",
+            "status": "recommended_fallback_all_payers",
+            "confidence": "medium",
+            "case_count": 26,
+            "reason": "Exact Non-GIPSA Insurance too small (0 < 15); All Payers has 26 cases"
+          },
+          "professional_fees": {
+            "basis": "All Payers",
+            "status": "recommended_fallback_all_payers",
+            "confidence": "medium",
+            "case_count": 26,
+            "reason": "Exact Non-GIPSA Insurance too small (0 < 15); All Payers has 26 cases"
+          },
+          "drivers": {
+            "basis": "All Payers",
+            "note": "LOS / ICU / ward / OT-hour / cath-hour percentiles ride the service basis",
+            "los_source": "cohort_p50"
+          }
+        },
+        "template": {
+          "layout": "fixed_workbook_parity",
+          "row_flags": {}
+        },
+        "billing_route": {
+          "itemized": true,
+          "package_status": "no_package_exists",
+          "package_source": "cohort_dominant",
+          "package_code": null,
+          "package_tariff": null
+        },
+        "robotic": {
+          "selection": "Yes",
+          "redirect_suggested": true,
+          "base_family": "total_knee_replacement_unilateral"
+        }
+      },
+      "family": "robotic_tkr_unilateral_right",
+      "family_kind": "surgical",
+      "cohort_case_count": 26,
+      "payer_bases": {
+        "service_basis": {
+          "selected_basis": "All Payers",
+          "case_count": 26,
+          "status": "recommended_fallback_all_payers",
+          "confidence": "medium",
+          "reason": "Exact Non-GIPSA Insurance too small (0 < 15); All Payers has 26 cases"
+        },
+        "pharmacy_basis": {
+          "selected_basis": "All Payers",
+          "case_count": 26,
+          "status": "recommended_fallback_all_payers",
+          "confidence": "medium",
+          "reason": "Exact Non-GIPSA Insurance too small (0 < 15); All Payers has 26 cases"
+        },
+        "pf_basis": {
+          "selected_basis": "All Payers",
+          "case_count": 26,
+          "status": "recommended_fallback_all_payers",
+          "confidence": "medium",
+          "reason": "Exact Non-GIPSA Insurance too small (0 < 15); All Payers has 26 cases"
+        }
+      },
+      "estimate_mode": "Typical",
+      "room_type": "Single",
+      "room_key": "single",
+      "daycare": false,
+      "robotic": {
+        "selection": "Yes",
+        "presence_rate": 100,
+        "cases_with_robotic": 26,
+        "basis_case_count": 26,
+        "basis": "All Payers",
+        "addon": null
+      },
+      "ot_slot": {
+        "hours": 3,
+        "code": "OTC0010",
+        "label": "OT - 3 HOURS",
+        "type": "Normal"
+      },
+      "cath_lab": null
+    },
+    "drivers": {
+      "los": {
+        "p25": 2,
+        "p50": 3,
+        "p75": 5,
+        "selected": 3
+      },
+      "icu": {
+        "p25": 2,
+        "p50": 2,
+        "p75": 3,
+        "selected": 2
+      },
+      "ward": {
+        "p25": 0,
+        "p50": 1,
+        "p75": 2,
+        "selected": 1
+      },
+      "ot": {
+        "p25": 2.5,
+        "p50": 3,
+        "p75": 3,
+        "selected": 3
+      },
+      "cath": {
+        "p25": 0,
+        "p50": 0,
+        "p75": 0,
+        "selected": 0,
+        "basis": "P50",
+        "manual": null
+      }
+    },
+    "line_items": [
+      {
+        "name": "X-RAY KNEE JOINT AP & LATERAL VIEW (BEDSIDE)",
+        "bucket": "Investigations",
+        "sub": "Investigations",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "XRY5090",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 910,
+          "twin": 1045,
+          "single": 1045
+        },
+        "cells": {
+          "general": [
+            910,
+            910,
+            910
+          ],
+          "twin": [
+            1045,
+            1045,
+            1045
+          ],
+          "single": [
+            1045,
+            1045,
+            1045
+          ]
+        },
+        "index": 0,
+        "selected": {
+          "general": 910,
+          "twin": 1045,
+          "single": 1045
+        }
+      },
+      {
+        "name": "Nursing - Room",
+        "bucket": "Room Charges",
+        "sub": "Ward Care",
+        "source": "Logic",
+        "how": "Ward days x rate",
+        "code": "ROM5189",
+        "qty": {
+          "selected": 1,
+          "low": 0,
+          "typ": 1,
+          "high": 2
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            0,
+            1,
+            2
+          ],
+          "twin": [
+            0,
+            1,
+            2
+          ],
+          "single": [
+            0,
+            1,
+            2
+          ]
+        },
+        "index": 1,
+        "selected": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        }
+      },
+      {
+        "name": "Nursing - ICU",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "ROM5189",
+        "qty": {
+          "selected": 2,
+          "low": 2,
+          "typ": 2,
+          "high": 3
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            2,
+            2,
+            3
+          ],
+          "twin": [
+            2,
+            2,
+            3
+          ],
+          "single": [
+            2,
+            2,
+            3
+          ]
+        },
+        "index": 2,
+        "selected": {
+          "general": 2,
+          "twin": 2,
+          "single": 2
+        }
+      },
+      {
+        "name": "DMO",
+        "bucket": "Room Charges",
+        "sub": "Ward Care",
+        "source": "Logic",
+        "how": "Ward days x rate",
+        "code": "ROM0093",
+        "qty": {
+          "selected": 1,
+          "low": 0,
+          "typ": 1,
+          "high": 2
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            0,
+            1,
+            2
+          ],
+          "twin": [
+            0,
+            1,
+            2
+          ],
+          "single": [
+            0,
+            1,
+            2
+          ]
+        },
+        "index": 3,
+        "selected": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        }
+      },
+      {
+        "name": "ICU - Surgical",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "ROM5009",
+        "qty": {
+          "selected": 2,
+          "low": 2,
+          "typ": 2,
+          "high": 3
+        },
+        "rate": {
+          "general": 8000,
+          "twin": 8000,
+          "single": 8000
+        },
+        "cells": {
+          "general": [
+            16000,
+            16000,
+            24000
+          ],
+          "twin": [
+            16000,
+            16000,
+            24000
+          ],
+          "single": [
+            16000,
+            16000,
+            24000
+          ]
+        },
+        "index": 4,
+        "selected": {
+          "general": 16000,
+          "twin": 16000,
+          "single": 16000
+        }
+      },
+      {
+        "name": "Bed Charges - Ward",
+        "bucket": "Room Charges",
+        "sub": "Ward Care",
+        "source": "Logic",
+        "how": "Ward days x room rate",
+        "code": "ROOM_BED",
+        "qty": {
+          "selected": 1,
+          "low": 0,
+          "typ": 1,
+          "high": 2
+        },
+        "rate": {
+          "general": 1750,
+          "twin": 3000,
+          "single": 5000
+        },
+        "cells": {
+          "general": [
+            0,
+            1750,
+            3500
+          ],
+          "twin": [
+            0,
+            3000,
+            6000
+          ],
+          "single": [
+            0,
+            5000,
+            10000
+          ]
+        },
+        "index": 5,
+        "selected": {
+          "general": 1750,
+          "twin": 3000,
+          "single": 5000
+        }
+      },
+      {
+        "name": "CSSD CHARGES FOR GA",
+        "bucket": "Procedure / OT Charges",
+        "sub": "OT Charges",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "RNS5005",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            1,
+            1,
+            1
+          ],
+          "twin": [
+            1,
+            1,
+            1
+          ],
+          "single": [
+            1,
+            1,
+            1
+          ]
+        },
+        "index": 6,
+        "selected": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        }
+      },
+      {
+        "name": "Medical Records",
+        "bucket": "Bedside Services",
+        "sub": "Administrative",
+        "source": "Logic",
+        "how": "Fixed 1",
+        "code": "RNS0120",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1510,
+          "twin": 1510,
+          "single": 1510
+        },
+        "cells": {
+          "general": [
+            1510,
+            1510,
+            1510
+          ],
+          "twin": [
+            1510,
+            1510,
+            1510
+          ],
+          "single": [
+            1510,
+            1510,
+            1510
+          ]
+        },
+        "index": 7,
+        "selected": {
+          "general": 1510,
+          "twin": 1510,
+          "single": 1510
+        }
+      },
+      {
+        "name": "PHYSIOTHERAPY PACKAGE 5 VISITS",
+        "bucket": "Procedure / OT Charges",
+        "sub": "Physiotherapy",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "PHY5082",
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2030,
+          "twin": 2210,
+          "single": 2380
+        },
+        "cells": {
+          "general": [
+            2030,
+            2030,
+            2030
+          ],
+          "twin": [
+            2210,
+            2210,
+            2210
+          ],
+          "single": [
+            2380,
+            2380,
+            2380
+          ]
+        },
+        "index": 8,
+        "selected": {
+          "general": 2030,
+          "twin": 2210,
+          "single": 2380
+        }
+      },
+      {
+        "name": "HAEMOGLOBIN",
+        "bucket": "Investigations",
+        "sub": "Investigations",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "PAT0045",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 210,
+          "twin": 240,
+          "single": 240
+        },
+        "cells": {
+          "general": [
+            210,
+            210,
+            210
+          ],
+          "twin": [
+            240,
+            240,
+            240
+          ],
+          "single": [
+            240,
+            240,
+            240
+          ]
+        },
+        "index": 9,
+        "selected": {
+          "general": 210,
+          "twin": 240,
+          "single": 240
+        }
+      },
+      {
+        "name": "CBP (COMPLETE BLOOD PICTURE)",
+        "bucket": "Investigations",
+        "sub": "Investigations",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "PAT0042",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 415,
+          "twin": 475,
+          "single": 475
+        },
+        "cells": {
+          "general": [
+            415,
+            415,
+            415
+          ],
+          "twin": [
+            475,
+            475,
+            475
+          ],
+          "single": [
+            475,
+            475,
+            475
+          ]
+        },
+        "index": 10,
+        "selected": {
+          "general": 415,
+          "twin": 475,
+          "single": 475
+        }
+      },
+      {
+        "name": "ROBO (TKR) - UNILATERAL",
+        "bucket": "Procedure / OT Charges",
+        "sub": "OT Charges",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "OTI0098",
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 100000,
+          "twin": 100000,
+          "single": 100000
+        },
+        "cells": {
+          "general": [
+            100000,
+            100000,
+            100000
+          ],
+          "twin": [
+            100000,
+            100000,
+            100000
+          ],
+          "single": [
+            100000,
+            100000,
+            100000
+          ]
+        },
+        "index": 11,
+        "selected": {
+          "general": 100000,
+          "twin": 100000,
+          "single": 100000
+        }
+      },
+      {
+        "name": "Instrument Charges (Major)",
+        "bucket": "Procedure / OT Charges",
+        "sub": "OT Charges",
+        "source": "Logic",
+        "how": "Fixed 1",
+        "code": "OTI0018",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            1,
+            1,
+            1
+          ],
+          "twin": [
+            1,
+            1,
+            1
+          ],
+          "single": [
+            1,
+            1,
+            1
+          ]
+        },
+        "index": 12,
+        "selected": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        }
+      },
+      {
+        "name": "OT Disinfection Charges",
+        "bucket": "Procedure / OT Charges",
+        "sub": "OT Charges",
+        "source": "Logic",
+        "how": "Fixed 1",
+        "code": "OTI0015",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            1,
+            1,
+            1
+          ],
+          "twin": [
+            1,
+            1,
+            1
+          ],
+          "single": [
+            1,
+            1,
+            1
+          ]
+        },
+        "index": 13,
+        "selected": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        }
+      },
+      {
+        "name": "Post Surgery Recovery Charges",
+        "bucket": "Procedure / OT Charges",
+        "sub": "OT Charges",
+        "source": "Logic",
+        "how": "Fixed 1",
+        "code": "OTC5005",
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 3020,
+          "twin": 3020,
+          "single": 3020
+        },
+        "cells": {
+          "general": [
+            3020,
+            3020,
+            3020
+          ],
+          "twin": [
+            3020,
+            3020,
+            3020
+          ],
+          "single": [
+            3020,
+            3020,
+            3020
+          ]
+        },
+        "index": 14,
+        "selected": {
+          "general": 3020,
+          "twin": 3020,
+          "single": 3020
+        }
+      },
+      {
+        "name": "OT Charges",
+        "bucket": "Procedure / OT Charges",
+        "sub": "OT Charges",
+        "source": "Logic",
+        "how": "Selected OT duration snapped to the nearest supported tariff OT slot using the normal or emergency ladder",
+        "code": "OTC0010",
+        "otSlot": {
+          "hours": 3,
+          "code": "OTC0010",
+          "label": "OT - 3 HOURS",
+          "type": "Normal"
+        },
+        "qty": {
+          "selected": 3,
+          "low": 2.5,
+          "typ": 3,
+          "high": 3
+        },
+        "rate": {
+          "general": 22000,
+          "twin": 22000,
+          "single": 22000
+        },
+        "cells": {
+          "general": [
+            22000,
+            22000,
+            22000
+          ],
+          "twin": [
+            22000,
+            22000,
+            22000
+          ],
+          "single": [
+            22000,
+            22000,
+            22000
+          ]
+        },
+        "index": 15,
+        "selected": {
+          "general": 22000,
+          "twin": 22000,
+          "single": 22000
+        }
+      },
+      {
+        "name": "Cath Lab Charges",
+        "bucket": "Procedure / OT Charges",
+        "sub": "Cath Lab Hours",
+        "source": "Historical Cath Lab Family",
+        "how": "Actual billed cath-lab slot-family P25 / P50 / P75 from the selected historical payer basis.",
+        "code": null,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {},
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 16,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Intensivist Per Day",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "ICC0002",
+        "qty": {
+          "selected": 2,
+          "low": 2,
+          "typ": 2,
+          "high": 3
+        },
+        "rate": {
+          "general": 1000,
+          "twin": 1000,
+          "single": 1000
+        },
+        "cells": {
+          "general": [
+            2000,
+            2000,
+            3000
+          ],
+          "twin": [
+            2000,
+            2000,
+            3000
+          ],
+          "single": [
+            2000,
+            2000,
+            3000
+          ]
+        },
+        "index": 17,
+        "selected": {
+          "general": 2000,
+          "twin": 2000,
+          "single": 2000
+        }
+      },
+      {
+        "name": "Assistant Intensivist Per Day",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "ICC0001",
+        "qty": {
+          "selected": 2,
+          "low": 2,
+          "typ": 2,
+          "high": 3
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            2,
+            2,
+            3
+          ],
+          "twin": [
+            2,
+            2,
+            3
+          ],
+          "single": [
+            2,
+            2,
+            3
+          ]
+        },
+        "index": 18,
+        "selected": {
+          "general": 2,
+          "twin": 2,
+          "single": 2
+        }
+      },
+      {
+        "name": "Ward Consumables",
+        "bucket": "Room Charges",
+        "sub": "Ward Care",
+        "source": "Logic",
+        "how": "LOS days x rate",
+        "code": "HSP5013",
+        "tr1_rate": true,
+        "qty": {
+          "selected": 3,
+          "low": 2,
+          "typ": 3,
+          "high": 5
+        },
+        "rate": {
+          "general": 350,
+          "twin": 350,
+          "single": 350
+        },
+        "cells": {
+          "general": [
+            700,
+            1050,
+            1750
+          ],
+          "twin": [
+            700,
+            1050,
+            1750
+          ],
+          "single": [
+            700,
+            1050,
+            1750
+          ]
+        },
+        "index": 19,
+        "selected": {
+          "general": 1050,
+          "twin": 1050,
+          "single": 1050
+        }
+      },
+      {
+        "name": "Warmer",
+        "bucket": "Bedside Services",
+        "sub": "Bedside",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "EME0087",
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 930,
+          "twin": 930,
+          "single": 930
+        },
+        "cells": {
+          "general": [
+            930,
+            930,
+            930
+          ],
+          "twin": [
+            930,
+            930,
+            930
+          ],
+          "single": [
+            930,
+            930,
+            930
+          ]
+        },
+        "index": 20,
+        "selected": {
+          "general": 930,
+          "twin": 930,
+          "single": 930
+        }
+      },
+      {
+        "name": "Monitor Per Day",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "EME0019",
+        "qty": {
+          "selected": 2,
+          "low": 2,
+          "typ": 2,
+          "high": 3
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            2,
+            2,
+            3
+          ],
+          "twin": [
+            2,
+            2,
+            3
+          ],
+          "single": [
+            2,
+            2,
+            3
+          ]
+        },
+        "index": 21,
+        "selected": {
+          "general": 2,
+          "twin": 2,
+          "single": 2
+        }
+      },
+      {
+        "name": "Oxygen Per Hour",
+        "bucket": "Bedside Services",
+        "sub": "Bedside",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "EME0017",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 280,
+          "twin": 280,
+          "single": 280
+        },
+        "cells": {
+          "general": [
+            280,
+            280,
+            280
+          ],
+          "twin": [
+            280,
+            280,
+            280
+          ],
+          "single": [
+            280,
+            280,
+            280
+          ]
+        },
+        "index": 22,
+        "selected": {
+          "general": 280,
+          "twin": 280,
+          "single": 280
+        }
+      },
+      {
+        "name": "Diet Consultation",
+        "bucket": "Bedside Services",
+        "sub": "Consultation",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "DIE0001",
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 740,
+          "twin": 820,
+          "single": 880
+        },
+        "cells": {
+          "general": [
+            740,
+            740,
+            740
+          ],
+          "twin": [
+            820,
+            820,
+            820
+          ],
+          "single": [
+            880,
+            880,
+            880
+          ]
+        },
+        "index": 23,
+        "selected": {
+          "general": 740,
+          "twin": 820,
+          "single": 880
+        }
+      },
+      {
+        "name": "Dressing - Minor",
+        "bucket": "Bedside Services",
+        "sub": "Bedside",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "CAS0007",
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 980,
+          "twin": 1080,
+          "single": 1170
+        },
+        "cells": {
+          "general": [
+            980,
+            980,
+            980
+          ],
+          "twin": [
+            1080,
+            1080,
+            1080
+          ],
+          "single": [
+            1170,
+            1170,
+            1170
+          ]
+        },
+        "index": 24,
+        "selected": {
+          "general": 980,
+          "twin": 1080,
+          "single": 1170
+        }
+      },
+      {
+        "name": "Bedside ECG",
+        "bucket": "Bedside Services",
+        "sub": "Bedside",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "CAR5341",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 415,
+          "twin": 475,
+          "single": 475
+        },
+        "cells": {
+          "general": [
+            415,
+            415,
+            415
+          ],
+          "twin": [
+            475,
+            475,
+            475
+          ],
+          "single": [
+            475,
+            475,
+            475
+          ]
+        },
+        "index": 25,
+        "selected": {
+          "general": 415,
+          "twin": 475,
+          "single": 475
+        }
+      },
+      {
+        "name": "Albumin",
+        "bucket": "Investigations",
+        "sub": "Investigations",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "BIO0162",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 175,
+          "twin": 200,
+          "single": 200
+        },
+        "cells": {
+          "general": [
+            175,
+            175,
+            175
+          ],
+          "twin": [
+            200,
+            200,
+            200
+          ],
+          "single": [
+            200,
+            200,
+            200
+          ]
+        },
+        "index": 26,
+        "selected": {
+          "general": 175,
+          "twin": 200,
+          "single": 200
+        }
+      },
+      {
+        "name": "Sodium",
+        "bucket": "Investigations",
+        "sub": "Investigations",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "BIO0004",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 330,
+          "twin": 380,
+          "single": 380
+        },
+        "cells": {
+          "general": [
+            330,
+            330,
+            330
+          ],
+          "twin": [
+            380,
+            380,
+            380
+          ],
+          "single": [
+            380,
+            380,
+            380
+          ]
+        },
+        "index": 27,
+        "selected": {
+          "general": 330,
+          "twin": 380,
+          "single": 380
+        }
+      },
+      {
+        "name": "Electrolytes",
+        "bucket": "Investigations",
+        "sub": "Investigations",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "BIO0003",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 820,
+          "twin": 945,
+          "single": 945
+        },
+        "cells": {
+          "general": [
+            820,
+            820,
+            820
+          ],
+          "twin": [
+            945,
+            945,
+            945
+          ],
+          "single": [
+            945,
+            945,
+            945
+          ]
+        },
+        "index": 28,
+        "selected": {
+          "general": 820,
+          "twin": 945,
+          "single": 945
+        }
+      },
+      {
+        "name": "Creatinine",
+        "bucket": "Investigations",
+        "sub": "Investigations",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "BIO0002",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 250,
+          "twin": 290,
+          "single": 290
+        },
+        "cells": {
+          "general": [
+            250,
+            250,
+            250
+          ],
+          "twin": [
+            290,
+            290,
+            290
+          ],
+          "single": [
+            290,
+            290,
+            290
+          ]
+        },
+        "index": 29,
+        "selected": {
+          "general": 250,
+          "twin": 290,
+          "single": 290
+        }
+      },
+      {
+        "name": "Urea",
+        "bucket": "Investigations",
+        "sub": "Investigations",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "BIO0001",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 290,
+          "twin": 335,
+          "single": 335
+        },
+        "cells": {
+          "general": [
+            290,
+            290,
+            290
+          ],
+          "twin": [
+            335,
+            335,
+            335
+          ],
+          "single": [
+            335,
+            335,
+            335
+          ]
+        },
+        "index": 30,
+        "selected": {
+          "general": 290,
+          "twin": 335,
+          "single": 335
+        }
+      },
+      {
+        "name": "MLC Charges",
+        "bucket": "Bedside Services",
+        "sub": "Administrative",
+        "source": "Logic",
+        "how": "Applied only when MLC input is Yes",
+        "code": "HSP0047",
+        "qty": {
+          "selected": 0,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 1200,
+          "twin": 1200,
+          "single": 1200
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 31,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Drug Administration Charges",
+        "bucket": "Drug Administration Charges",
+        "sub": "Pharmacy Related",
+        "source": "Logic",
+        "how": "12.5% of pharmacy total",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 32,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Surgeon",
+        "bucket": "Professional Fees",
+        "sub": "Professional Fees",
+        "source": "Logic",
+        "how": "Cash PF % of pre-PF subtotal",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            116891.49521874999,
+            121201.86268749999,
+            142118.9994
+          ],
+          "twin": [
+            117216.99521874999,
+            121964.86268749999,
+            143319.4994
+          ],
+          "single": [
+            117328.99521874999,
+            122776.86268749999,
+            144831.4994
+          ]
+        },
+        "index": 33,
+        "selected": {
+          "general": 121201.86268749999,
+          "twin": 121964.86268749999,
+          "single": 122776.86268749999
+        }
+      },
+      {
+        "name": "Assistant Surgeon",
+        "bucket": "Professional Fees",
+        "sub": "Professional Fees",
+        "source": "Logic",
+        "how": "Cash PF % of surgeon fee",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            29222.873804687497,
+            30300.465671874997,
+            35529.74985
+          ],
+          "twin": [
+            29304.248804687497,
+            30491.215671874997,
+            35829.87485
+          ],
+          "single": [
+            29332.248804687497,
+            30694.215671874997,
+            36207.87485
+          ]
+        },
+        "index": 34,
+        "selected": {
+          "general": 30300.465671874997,
+          "twin": 30491.215671874997,
+          "single": 30694.215671874997
+        }
+      },
+      {
+        "name": "Anesthetist",
+        "bucket": "Professional Fees",
+        "sub": "Professional Fees",
+        "source": "Logic",
+        "how": "Cash PF % of surgeon fee",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            40912.02332656249,
+            42420.65194062499,
+            49741.649789999996
+          ],
+          "twin": [
+            41025.948326562495,
+            42687.701940625,
+            50161.82479
+          ],
+          "single": [
+            41065.14832656249,
+            42971.90194062499,
+            50691.024789999996
+          ]
+        },
+        "index": 35,
+        "selected": {
+          "general": 42420.65194062499,
+          "twin": 42687.701940625,
+          "single": 42971.90194062499
+        }
+      },
+      {
+        "name": "Assistant Anesthetist",
+        "bucket": "Professional Fees",
+        "sub": "Professional Fees",
+        "source": "Logic",
+        "how": "Cash PF % of anesthetist fee",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            10228.005831640623,
+            10605.162985156248,
+            12435.412447499999
+          ],
+          "twin": [
+            10256.487081640624,
+            10671.92548515625,
+            12540.4561975
+          ],
+          "single": [
+            10266.287081640623,
+            10742.975485156248,
+            12672.756197499999
+          ]
+        },
+        "index": 36,
+        "selected": {
+          "general": 10605.162985156248,
+          "twin": 10671.92548515625,
+          "single": 10742.975485156248
+        }
+      },
+      {
+        "name": "IP Drugs & Medications",
+        "bucket": "Pharmacy",
+        "sub": "IP Pharmacy",
+        "source": "History",
+        "how": "Historic per-LOS-day percentile x selected LOS",
+        "code": null,
+        "qty": {
+          "selected": 3,
+          "low": 2,
+          "typ": 3,
+          "high": 5
+        },
+        "rate": {
+          "general": 2855.3187500000004,
+          "twin": 2855.3187500000004,
+          "single": 2855.3187500000004
+        },
+        "cells": {
+          "general": [
+            7142.830625,
+            8565.956250000001,
+            9594.774
+          ],
+          "twin": [
+            7142.830625,
+            8565.956250000001,
+            9594.774
+          ],
+          "single": [
+            7142.830625,
+            8565.956250000001,
+            9594.774
+          ]
+        },
+        "index": 37,
+        "selected": {
+          "general": 8565.956250000001,
+          "twin": 8565.956250000001,
+          "single": 8565.956250000001
+        }
+      },
+      {
+        "name": "IP Consumables",
+        "bucket": "Pharmacy",
+        "sub": "IP Pharmacy",
+        "source": "History",
+        "how": "Historic per-LOS-day percentile x selected LOS",
+        "code": null,
+        "qty": {
+          "selected": 3,
+          "low": 2,
+          "typ": 3,
+          "high": 5
+        },
+        "rate": {
+          "general": 3428.828333333333,
+          "twin": 3428.828333333333,
+          "single": 3428.828333333333
+        },
+        "cells": {
+          "general": [
+            9179.400000000001,
+            10286.484999999999,
+            10853.130000000001
+          ],
+          "twin": [
+            9179.400000000001,
+            10286.484999999999,
+            10853.130000000001
+          ],
+          "single": [
+            9179.400000000001,
+            10286.484999999999,
+            10853.130000000001
+          ]
+        },
+        "index": 38,
+        "selected": {
+          "general": 10286.484999999999,
+          "twin": 10286.484999999999,
+          "single": 10286.484999999999
+        }
+      },
+      {
+        "name": "OT Drugs & Medications",
+        "bucket": "Pharmacy",
+        "sub": "OT Pharmacy",
+        "source": "History",
+        "how": "Bucket quartiles",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            8468.852499999999,
+            9439.535,
+            11143.7
+          ],
+          "twin": [
+            8468.852499999999,
+            9439.535,
+            11143.7
+          ],
+          "single": [
+            8468.852499999999,
+            9439.535,
+            11143.7
+          ]
+        },
+        "index": 39,
+        "selected": {
+          "general": 9439.535,
+          "twin": 9439.535,
+          "single": 9439.535
+        }
+      },
+      {
+        "name": "OT Consumables",
+        "bucket": "Pharmacy",
+        "sub": "OT Pharmacy",
+        "source": "Advanced",
+        "how": "OT consumables variance controls",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            66040.54,
+            72382.9,
+            107563.63
+          ],
+          "twin": [
+            66040.54,
+            72382.9,
+            107563.63
+          ],
+          "single": [
+            66040.54,
+            72382.9,
+            107563.63
+          ]
+        },
+        "index": 40,
+        "selected": {
+          "general": 72382.9,
+          "twin": 72382.9,
+          "single": 72382.9
+        }
+      },
+      {
+        "name": "Implants",
+        "bucket": "Pharmacy",
+        "sub": "Implants",
+        "source": "Advanced",
+        "how": "Implant variance controls",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            89130.07750000001,
+            89130.16,
+            98838.05
+          ],
+          "twin": [
+            89130.07750000001,
+            89130.16,
+            98838.05
+          ],
+          "single": [
+            89130.07750000001,
+            89130.16,
+            98838.05
+          ]
+        },
+        "index": 41,
+        "selected": {
+          "general": 89130.16,
+          "twin": 89130.16,
+          "single": 89130.16
+        }
+      },
+      {
+        "name": "FIBRINOGEN",
+        "bucket": "Optional Add-Ons",
+        "sub": "Coagulation Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0106",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 2,
+          "low": 1.75,
+          "typ": 2,
+          "high": 2
+        },
+        "rate": {
+          "general": 1320,
+          "twin": 1520,
+          "single": 1520
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 42,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "GRBS",
+        "bucket": "Optional Add-Ons",
+        "sub": "GRBS Monitoring",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME0020",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 5,
+          "low": 5,
+          "typ": 5,
+          "high": 7
+        },
+        "rate": {
+          "general": 270,
+          "twin": 300,
+          "single": 330
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 43,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CORTISOL",
+        "bucket": "Optional Add-Ons",
+        "sub": "Hormone Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0181",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 2.75
+        },
+        "rate": {
+          "general": 1315,
+          "twin": 1510,
+          "single": 1510
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 44,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "PACKED RED BLOOD CELLS",
+        "bucket": "Optional Add-Ons",
+        "sub": "Blood Bank Services",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BLD0024",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2650,
+          "twin": 2650,
+          "single": 2650
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 45,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CRP",
+        "bucket": "Optional Add-Ons",
+        "sub": "Inflammatory Marker Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0121",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 630,
+          "twin": 725,
+          "single": 725
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 46,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "OXYGEN PER DAY",
+        "bucket": "Optional Add-Ons",
+        "sub": "Oxygen / HFNT Charges",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME0016",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 2,
+          "low": 2,
+          "typ": 2,
+          "high": 2
+        },
+        "rate": {
+          "general": 4130,
+          "twin": 4130,
+          "single": 4130
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 47,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "EVMS - ENHANCED VITALS MONITORING SYSTEM (DOZEE)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Patient Monitoring",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME5045",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1250,
+          "twin": 1250,
+          "single": 1250
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 48,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "SYRINGE PUMP PER DAY",
+        "bucket": "Optional Add-Ons",
+        "sub": "Syringe Pump Charges",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME0018",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 890,
+          "twin": 890,
+          "single": 890
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 49,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "FOLEY'S CATHETERIZATION",
+        "bucket": "Optional Add-Ons",
+        "sub": "Catheterization / Cannulation",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME0080",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 980,
+          "twin": 1080,
+          "single": 1170
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 50,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "ESR",
+        "bucket": "Optional Add-Ons",
+        "sub": "Haematology Counts",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0007",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 210,
+          "twin": 240,
+          "single": 240
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 51,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "PRE ANAESTHETIST CHECK",
+        "bucket": "Optional Add-Ons",
+        "sub": "Pre-Anaesthesia Check",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "ANS0003",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 680,
+          "twin": 750,
+          "single": 810
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 52,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "THYROID PROFILE",
+        "bucket": "Optional Add-Ons",
+        "sub": "Thyroid Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0097",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1920,
+          "twin": 2120,
+          "single": 2290
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 53,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "TROPONIN-I",
+        "bucket": "Optional Add-Ons",
+        "sub": "Cardiac Marker Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0098",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1890,
+          "twin": 2175,
+          "single": 2175
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 54,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CROSS MATCHING",
+        "bucket": "Optional Add-Ons",
+        "sub": "Blood Bank Services",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BLD0009",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 280,
+          "twin": 280,
+          "single": 280
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 55,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "X-RAY SCANOGRAM (ACADEMIC CASES)",
+        "bucket": "Optional Add-Ons",
+        "sub": "X-Ray / Fluoroscopy",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "XRY5133",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 820,
+          "twin": 820,
+          "single": 820
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 56,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "ABG (ARTERIAL BLOOD GASES)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Blood Gas Analysis",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0064",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1070,
+          "twin": 1230,
+          "single": 1230
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 57,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "NEBULIZATION PER DAY",
+        "bucket": "Optional Add-Ons",
+        "sub": "Nebulization Charges",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME0052",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1.5,
+          "low": 1,
+          "typ": 1.5,
+          "high": 2.25
+        },
+        "rate": {
+          "general": 170,
+          "twin": 195,
+          "single": 195
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 58,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "PHYSIOTHERAPY CONSULTATION",
+        "bucket": "Optional Add-Ons",
+        "sub": "Consultation Charges",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PHY5076",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 930,
+          "twin": 1030,
+          "single": 1110
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 59,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CBC (COMPLETE BLOOD COUNT)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Haematology Counts",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0078",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 415,
+          "twin": 475,
+          "single": 475
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 60,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "X-RAY AP VIEW (BEDSIDE)",
+        "bucket": "Optional Add-Ons",
+        "sub": "X-Ray / Fluoroscopy",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "XRY044",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 380,
+          "twin": 435,
+          "single": 435
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 61,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "FBS (FASTING PLASMA GLUCOSE)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Diabetes / Glucose Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0075",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 165,
+          "twin": 190,
+          "single": 190
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 62,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "POTASSIUM",
+        "bucket": "Optional Add-Ons",
+        "sub": "Renal Function / Electrolytes",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0005",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 330,
+          "twin": 380,
+          "single": 380
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 63,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "PSYCHOLOGIST COUNSELLING",
+        "bucket": "Optional Add-Ons",
+        "sub": "Psychology / Counselling",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PSY0036",
+        "addOn": true,
+        "included": false,
+        "tr1_rate": true,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 150,
+          "twin": 150,
+          "single": 150
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 64,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "BLOOD GROUP AND RH (D) TYPING",
+        "bucket": "Optional Add-Ons",
+        "sub": "Blood Bank Services",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BLD0001",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 250,
+          "twin": 290,
+          "single": 290
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 65,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CUE (COMPLETE URINE EXAMINATION)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Urine Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0041",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 235,
+          "twin": 270,
+          "single": 270
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 66,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "ECG",
+        "bucket": "Optional Add-Ons",
+        "sub": "ECG",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "CAR0080",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 220,
+          "twin": 255,
+          "single": 255
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 67,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "TRANSFUSION",
+        "bucket": "Optional Add-Ons",
+        "sub": "Blood Transfusion",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME0088",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1,
+          "twin": 1,
+          "single": 1
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 68,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Coagulation Tests Residual",
+        "bucket": "Investigations",
+        "sub": "Coagulation Tests",
+        "source": "Grouped Residual",
+        "how": "Mode-aware grouped residual net of selected child add-ons from same grouping",
+        "code": null,
+        "groupedResidual": true,
+        "included": false,
+        "netResidual": [
+          4722.5,
+          5590,
+          5800
+        ],
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 69,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Inflammatory Marker Tests Residual",
+        "bucket": "Investigations",
+        "sub": "Inflammatory Marker Tests",
+        "source": "Grouped Residual",
+        "how": "Mode-aware grouped residual net of selected child add-ons from same grouping",
+        "code": null,
+        "groupedResidual": true,
+        "included": false,
+        "netResidual": [
+          1320,
+          1320,
+          1540
+        ],
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 70,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Haematology Counts Residual",
+        "bucket": "Investigations",
+        "sub": "Haematology Counts",
+        "source": "Grouped Residual",
+        "how": "Mode-aware grouped residual net of selected child add-ons from same grouping",
+        "code": null,
+        "groupedResidual": true,
+        "included": true,
+        "netResidual": [
+          0,
+          370,
+          490
+        ],
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            0,
+            370,
+            490
+          ],
+          "twin": [
+            0,
+            370,
+            490
+          ],
+          "single": [
+            0,
+            370,
+            490
+          ]
+        },
+        "index": 71,
+        "selected": {
+          "general": 370,
+          "twin": 370,
+          "single": 370
+        }
+      }
+    ],
+    "subtotal": {
+      "general": [
+        333975.700625,
+        346291.03625,
+        406054.28400000004
+      ],
+      "twin": [
+        334905.700625,
+        348471.03625,
+        409484.28400000004
+      ],
+      "single": [
+        335225.700625,
+        350791.03625,
+        413804.28400000004
+      ],
+      "selected": {
+        "general": 346291.03625,
+        "twin": 348471.03625,
+        "single": 350791.03625
+      }
+    },
+    "grand_total": {
+      "general": [
+        531230.0988066406,
+        550819.1795351562,
+        645880.0954875001
+      ],
+      "twin": [
+        532709.3800566406,
+        554286.7420351562,
+        651335.9392375001
+      ],
+      "single": [
+        533218.3800566406,
+        557976.9920351562,
+        658207.4392375001
+      ],
+      "selected": {
+        "general": 550819.1795351562,
+        "twin": 554286.7420351562,
+        "single": 557976.9920351562
+      }
+    },
+    "final_estimate": 557976.9920351562,
+    "bucket_totals": {
+      "Investigations": 4280,
+      "Room Charges": 24058,
+      "Procedure / OT Charges": 127403,
+      "Bedside Services": 5245,
+      "Drug Administration Charges": 0,
+      "Professional Fees": 207185.95578515623,
+      "Pharmacy": 189805.03625,
+      "Optional Add-Ons": 0
+    },
+    "package_offer": {
+      "status": "no_package_exists",
+      "source": "cohort_dominant",
+      "package": null
+    },
+    "add_ons": [
+      {
+        "code": "BIO0106",
+        "name": "FIBRINOGEN",
+        "grouping": "Coagulation Tests",
+        "bucket": "Investigations",
+        "presence": 61.53846153846154,
+        "q25": 1.75,
+        "q50": 2,
+        "q75": 2,
+        "amount": 5590,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME0020",
+        "name": "GRBS",
+        "grouping": "GRBS Monitoring",
+        "bucket": "Bedside Services",
+        "presence": 57.692307692307686,
+        "q25": 5,
+        "q50": 5,
+        "q75": 7,
+        "amount": 1690,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0181",
+        "name": "CORTISOL",
+        "grouping": "Hormone Tests",
+        "bucket": "Investigations",
+        "presence": 38.46153846153847,
+        "q25": 1,
+        "q50": 1,
+        "q75": 2.75,
+        "amount": 3260,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BLD0024",
+        "name": "PACKED RED BLOOD CELLS",
+        "grouping": "Blood Bank Services",
+        "bucket": "Investigations",
+        "presence": 19.230769230769234,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 2650,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0121",
+        "name": "CRP",
+        "grouping": "Inflammatory Marker Tests",
+        "bucket": "Investigations",
+        "presence": 53.84615384615385,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1320,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME0016",
+        "name": "OXYGEN PER DAY",
+        "grouping": "Oxygen / HFNT Charges",
+        "bucket": "Bedside Services",
+        "presence": 3.8461538461538463,
+        "q25": 2,
+        "q50": 2,
+        "q75": 2,
+        "amount": 7240,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME5045",
+        "name": "EVMS - ENHANCED VITALS MONITORING SYSTEM (DOZEE)",
+        "grouping": "Patient Monitoring",
+        "bucket": "Bedside Services",
+        "presence": 19.230769230769234,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1250,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME0018",
+        "name": "SYRINGE PUMP PER DAY",
+        "grouping": "Syringe Pump Charges",
+        "bucket": "Bedside Services",
+        "presence": 15.384615384615385,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 890,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME0080",
+        "name": "FOLEY'S CATHETERIZATION",
+        "grouping": "Catheterization / Cannulation",
+        "bucket": "Bedside Services",
+        "presence": 11.538461538461538,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 980,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0007",
+        "name": "ESR",
+        "grouping": "Haematology Counts",
+        "bucket": "Investigations",
+        "presence": 53.84615384615385,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 370,
+        "selected": "Exclude"
+      },
+      {
+        "code": "ANS0003",
+        "name": "PRE ANAESTHETIST CHECK",
+        "grouping": "Pre-Anaesthesia Check",
+        "bucket": "Professional Fees",
+        "presence": 11.538461538461538,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 810,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0097",
+        "name": "THYROID PROFILE",
+        "grouping": "Thyroid Tests",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 2290,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0098",
+        "name": "TROPONIN-I",
+        "grouping": "Cardiac Marker Tests",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 3470,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BLD0009",
+        "name": "CROSS MATCHING",
+        "grouping": "Blood Bank Services",
+        "bucket": "Investigations",
+        "presence": 26.923076923076923,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 280,
+        "selected": "Exclude"
+      },
+      {
+        "code": "XRY5133",
+        "name": "X-RAY SCANOGRAM (ACADEMIC CASES)",
+        "grouping": "X-Ray / Fluoroscopy",
+        "bucket": "Investigations",
+        "presence": 7.6923076923076925,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 410.5,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0064",
+        "name": "ABG (ARTERIAL BLOOD GASES)",
+        "grouping": "Blood Gas Analysis",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1710,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME0052",
+        "name": "NEBULIZATION PER DAY",
+        "grouping": "Nebulization Charges",
+        "bucket": "Bedside Services",
+        "presence": 15.384615384615385,
+        "q25": 1,
+        "q50": 1.5,
+        "q75": 2.25,
+        "amount": 1305,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PHY5076",
+        "name": "PHYSIOTHERAPY CONSULTATION",
+        "grouping": "Consultation Charges",
+        "bucket": "Procedure / OT Charges",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1110,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0078",
+        "name": "CBC (COMPLETE BLOOD COUNT)",
+        "grouping": "Haematology Counts",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 545,
+        "selected": "Exclude"
+      },
+      {
+        "code": "XRY044",
+        "name": "X-RAY AP VIEW (BEDSIDE)",
+        "grouping": "X-Ray / Fluoroscopy",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1200,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0075",
+        "name": "FBS (FASTING PLASMA GLUCOSE)",
+        "grouping": "Diabetes / Glucose Tests",
+        "bucket": "Investigations",
+        "presence": 7.6923076923076925,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 415,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0005",
+        "name": "POTASSIUM",
+        "grouping": "Renal Function / Electrolytes",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 940,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PSY0036",
+        "name": "PSYCHOLOGIST COUNSELLING",
+        "grouping": "Psychology / Counselling",
+        "bucket": "Procedure / OT Charges",
+        "presence": 7.6923076923076925,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 150,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BLD0001",
+        "name": "BLOOD GROUP AND RH (D) TYPING",
+        "grouping": "Blood Bank Services",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 580,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0041",
+        "name": "CUE (COMPLETE URINE EXAMINATION)",
+        "grouping": "Urine Tests",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 460,
+        "selected": "Exclude"
+      },
+      {
+        "code": "CAR0080",
+        "name": "ECG",
+        "grouping": "ECG",
+        "bucket": "Investigations",
+        "presence": 3.8461538461538463,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 500,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME0088",
+        "name": "TRANSFUSION",
+        "grouping": "Blood Transfusion",
+        "bucket": "Procedure / OT Charges",
+        "presence": 11.538461538461538,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1020,
+        "selected": "Exclude"
+      }
+    ],
+    "grouped_adjustments": [
+      {
+        "grouping": "Coagulation Tests",
+        "bucket": "Investigations",
+        "presence": 61.53846153846154,
+        "p25Exact": 4722.5,
+        "p50Exact": 5590,
+        "p75Exact": 5800,
+        "captured": 0,
+        "leftOut": 5590,
+        "residualP50": 5590,
+        "optionalChildCount": 1,
+        "status": "ok",
+        "band": "optional",
+        "selected": "Exclude",
+        "why": "Investigation residual (presence 62% < 90% — review before including)",
+        "insuranceExcluded": false
+      },
+      {
+        "grouping": "Inflammatory Marker Tests",
+        "bucket": "Investigations",
+        "presence": 53.84615384615385,
+        "p25Exact": 1320,
+        "p50Exact": 1320,
+        "p75Exact": 1540,
+        "captured": 0,
+        "leftOut": 1320,
+        "residualP50": 1320,
+        "optionalChildCount": 1,
+        "status": "ok",
+        "band": "optional",
+        "selected": "Exclude",
+        "why": "Investigation residual (presence 54% < 90% — review before including)",
+        "insuranceExcluded": false
+      },
+      {
+        "grouping": "Haematology Counts",
+        "bucket": "Investigations",
+        "presence": 100,
+        "p25Exact": 1710,
+        "p50Exact": 2080,
+        "p75Exact": 2200,
+        "captured": 1710,
+        "leftOut": 370,
+        "residualP50": 370,
+        "optionalChildCount": 2,
+        "status": "material_gap",
+        "band": "auto",
+        "selected": "Include",
+        "why": "Auto common-case residual",
+        "insuranceExcluded": false
+      }
+    ],
+    "advanced_controls": {
+      "ot_consumables": {
+        "shortlist": [
+          {
+            "key": "All Payers|PURU02|PURESIGHT ARRAY SET KNEE(4515-70-011-DEPUY)",
+            "name_key": "All Payers|PURESIGHT ARRAY SET KNEE(4515-70-011-DEPUY)",
+            "basis_label": "All Payers",
+            "item_code": "PURU02",
+            "item_name": "PURESIGHT ARRAY SET KNEE(4515-70-011-DEPUY)",
+            "case_presence_rate": 38.46153846153847,
+            "ot_quantity_typical": 2,
+            "ot_amount_typical": 53250,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 2,
+            "overall_amount_typical": 53250,
+            "expected_contribution": 20479.95,
+            "cumulative_share": 0.285957341668451,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|MAKU03|MAKO DRAPE KIT(PRYMAX)",
+            "name_key": "All Payers|MAKO DRAPE KIT(PRYMAX)",
+            "basis_label": "All Payers",
+            "item_code": "MAKU03",
+            "item_name": "MAKO DRAPE KIT(PRYMAX)",
+            "case_presence_rate": 61.53846153846154,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 21618.59,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 21618.59,
+            "expected_contribution": 13304.080286,
+            "cumulative_share": 0.47171948620143106,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|STEU256|STERILE DRAPE KIT(4515-70-018-DEPUY)",
+            "name_key": "All Payers|STERILE DRAPE KIT(4515-70-018-DEPUY)",
+            "basis_label": "All Payers",
+            "item_code": "STEU256",
+            "item_name": "STERILE DRAPE KIT(4515-70-018-DEPUY)",
+            "case_presence_rate": 23.076923076923077,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 28040,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 28040,
+            "expected_contribution": 6471.632,
+            "cumulative_share": 0.5620815565666654,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|STEU194|STERILE DRAPE KIT(4515-70-008-DEPUY)",
+            "name_key": "All Payers|STERILE DRAPE KIT(4515-70-008-DEPUY)",
+            "basis_label": "All Payers",
+            "item_code": "STEU194",
+            "item_name": "STERILE DRAPE KIT(4515-70-008-DEPUY)",
+            "case_presence_rate": 15.384615384615385,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 28040,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 28040,
+            "expected_contribution": 4312.552,
+            "cumulative_share": 0.6222968356921985,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|OSCU03|OSCILLATING SAW BLADE 85MMX19X2MM(4515-70-000-DEPUY)",
+            "name_key": "All Payers|OSCILLATING SAW BLADE 85MMX19X2MM(4515-70-000-DEPUY)",
+            "basis_label": "All Payers",
+            "item_code": "OSCU03",
+            "item_name": "OSCILLATING SAW BLADE 85MMX19X2MM(4515-70-000-DEPUY)",
+            "case_presence_rate": 11.538461538461538,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 30093,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 30093,
+            "expected_contribution": 3472.7322,
+            "cumulative_share": 0.6707858831868668,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|MICU137|MICS SAGITTAL BLADE STANDARD(116170-STRYKER)",
+            "name_key": "All Payers|MICS SAGITTAL BLADE STANDARD(116170-STRYKER)",
+            "basis_label": "All Payers",
+            "item_code": "MICU137",
+            "item_name": "MICS SAGITTAL BLADE STANDARD(116170-STRYKER)",
+            "case_presence_rate": 26.923076923076923,
+            "ot_quantity_typical": 3,
+            "ot_amount_typical": 10578,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 3,
+            "overall_amount_typical": 10578,
+            "expected_contribution": 2847.5976,
+            "cumulative_share": 0.7105463044690213,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|STRR18|STRATAFIX 1 SXPP1A203(ETHICON)",
+            "name_key": "All Payers|STRATAFIX 1 SXPP1A203(ETHICON)",
+            "basis_label": "All Payers",
+            "item_code": "STRR18",
+            "item_name": "STRATAFIX 1 SXPP1A203(ETHICON)",
+            "case_presence_rate": 61.53846153846154,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 3760,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 3760,
+            "expected_contribution": 2313.904,
+            "cumulative_share": 0.742854871468257,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|SAGM13|116171 MICS SAGITTAL BLADE NARROW",
+            "name_key": "All Payers|116171 MICS SAGITTAL BLADE NARROW",
+            "basis_label": "All Payers",
+            "item_code": "SAGM13",
+            "item_name": "116171 MICS SAGITTAL BLADE NARROW",
+            "case_presence_rate": 15.384615384615385,
+            "ot_quantity_typical": 3,
+            "ot_amount_typical": 10000,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 3,
+            "overall_amount_typical": 10000,
+            "expected_contribution": 1538,
+            "cumulative_share": 0.7643296500436968,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|MAKM01|107120 MAKO VIZADISCS",
+            "name_key": "All Payers|107120 MAKO VIZADISCS",
+            "basis_label": "All Payers",
+            "item_code": "MAKM01",
+            "item_name": "107120 MAKO VIZADISCS",
+            "case_presence_rate": 26.923076923076923,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 4218.6,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 4218.6,
+            "expected_contribution": 1135.64712,
+            "cumulative_share": 0.7801864578732389,
+            "selected": "Exclude"
+          },
+          {
+            "key": "All Payers|CORM10400|CORK SCREW FT-2 5.5MM WITH NEEDLE 16.3MM(AR-1928SNF-2-ARTHREX)",
+            "name_key": "All Payers|CORK SCREW FT-2 5.5MM WITH NEEDLE 16.3MM(AR-1928SNF-2-ARTHREX)",
+            "basis_label": "All Payers",
+            "item_code": "CORM10400",
+            "item_name": "CORK SCREW FT-2 5.5MM WITH NEEDLE 16.3MM(AR-1928SNF-2-ARTHREX)",
+            "case_presence_rate": 3.8461538461538463,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 27280,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 27280,
+            "expected_contribution": 1050.28,
+            "cumulative_share": 0.7948513021139495,
+            "selected": "Exclude"
+          }
+        ],
+        "applied": 72382.9,
+        "p25": 66040.54,
+        "p50": 72382.9,
+        "p75": 107563.63
+      },
+      "implants": {
+        "hierarchy": {
+          "families": [
+            {
+              "key": "Femoral Component",
+              "presence_rate": 92.31,
+              "distinct_ip_count": 24,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36136,
+              "amount_p50": 36130
+            },
+            {
+              "key": "Tibial Insert / Bearing",
+              "presence_rate": 88.46,
+              "distinct_ip_count": 23,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13344.01,
+              "amount_p50": 13340.05
+            },
+            {
+              "key": "Bone Cement",
+              "presence_rate": 96.15,
+              "distinct_ip_count": 25,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.1,
+              "rate_p50": 0.1,
+              "rate_p75": 5730,
+              "amount_p50": 0.1
+            },
+            {
+              "key": "Tibial Baseplate",
+              "presence_rate": 84.62,
+              "distinct_ip_count": 22,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 33925,
+              "rate_p50": 39660,
+              "rate_p75": 43628,
+              "amount_p50": 39660
+            },
+            {
+              "key": "Stem / Extension",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.04,
+              "rate_p50": 0.06,
+              "rate_p75": 0.08,
+              "amount_p50": 0.06
+            },
+            {
+              "key": "Screw",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 312.26250000000005,
+              "rate_p50": 396.625,
+              "rate_p75": 480.98750000000007,
+              "amount_p50": 396.625
+            },
+            {
+              "key": "Pin",
+              "presence_rate": 30.77,
+              "distinct_ip_count": 8,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 1406.25,
+              "rate_p50": 1453.125,
+              "rate_p75": 1500,
+              "amount_p50": 1453.125
+            }
+          ],
+          "brands": [
+            {
+              "key": "Femoral Component|ATTUNE",
+              "presence_rate": 38.46,
+              "distinct_ip_count": 10,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36136,
+              "rate_p50": 36136,
+              "rate_p75": 36136,
+              "amount_p50": 36136,
+              "family": "Femoral Component",
+              "brand": "ATTUNE"
+            },
+            {
+              "key": "Femoral Component|RESTORIS MCK",
+              "presence_rate": 15.38,
+              "distinct_ip_count": 4,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "family": "Femoral Component",
+              "brand": "RESTORIS MCK"
+            },
+            {
+              "key": "Femoral Component|TRIATHLON",
+              "presence_rate": 38.46,
+              "distinct_ip_count": 10,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "family": "Femoral Component",
+              "brand": "TRIATHLON"
+            },
+            {
+              "key": "Tibial Insert / Bearing|ATTUNE",
+              "presence_rate": 38.46,
+              "distinct_ip_count": 10,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344.0025,
+              "rate_p50": 13344.01,
+              "rate_p75": 13344.05,
+              "amount_p50": 13344.01,
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE"
+            },
+            {
+              "key": "Tibial Insert / Bearing|Other",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13339.6375,
+              "rate_p50": 13339.775,
+              "rate_p75": 13339.912499999999,
+              "amount_p50": 13339.775,
+              "family": "Tibial Insert / Bearing",
+              "brand": "Other"
+            },
+            {
+              "key": "Tibial Insert / Bearing|RESTORIS MCK",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 2,
+              "quantity_p50": 2,
+              "quantity_p75": 2,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 26680.1,
+              "family": "Tibial Insert / Bearing",
+              "brand": "RESTORIS MCK"
+            },
+            {
+              "key": "Tibial Insert / Bearing|TRIATHLON",
+              "presence_rate": 38.46,
+              "distinct_ip_count": 10,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 13340.05,
+              "family": "Tibial Insert / Bearing",
+              "brand": "TRIATHLON"
+            },
+            {
+              "key": "Bone Cement|SIMPLEX",
+              "presence_rate": 61.54,
+              "distinct_ip_count": 16,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.1,
+              "rate_p50": 0.1,
+              "rate_p75": 0.1,
+              "amount_p50": 0.1,
+              "family": "Bone Cement",
+              "brand": "SIMPLEX"
+            },
+            {
+              "key": "Bone Cement|SMARTSET",
+              "presence_rate": 34.62,
+              "distinct_ip_count": 9,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 5730,
+              "rate_p50": 5730,
+              "rate_p75": 5730,
+              "amount_p50": 5730,
+              "family": "Bone Cement",
+              "brand": "SMARTSET"
+            },
+            {
+              "key": "Bone Cement|TRIATHLON",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "family": "Bone Cement",
+              "brand": "TRIATHLON"
+            },
+            {
+              "key": "Tibial Baseplate|ATTUNE",
+              "presence_rate": 34.62,
+              "distinct_ip_count": 9,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 43628,
+              "rate_p50": 43628,
+              "rate_p75": 43628,
+              "amount_p50": 43628,
+              "family": "Tibial Baseplate",
+              "brand": "ATTUNE"
+            },
+            {
+              "key": "Tibial Baseplate|Other",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 43628,
+              "rate_p50": 43628,
+              "rate_p75": 43628,
+              "amount_p50": 43628,
+              "family": "Tibial Baseplate",
+              "brand": "Other"
+            },
+            {
+              "key": "Tibial Baseplate|RESTORIS MCK",
+              "presence_rate": 15.38,
+              "distinct_ip_count": 4,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 33924.995,
+              "rate_p50": 33925,
+              "rate_p75": 33925,
+              "amount_p50": 33925,
+              "family": "Tibial Baseplate",
+              "brand": "RESTORIS MCK"
+            },
+            {
+              "key": "Tibial Baseplate|TRIATHLON",
+              "presence_rate": 30.77,
+              "distinct_ip_count": 8,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 35678.7625,
+              "rate_p50": 39660,
+              "rate_p75": 39660,
+              "amount_p50": 39660,
+              "family": "Tibial Baseplate",
+              "brand": "TRIATHLON"
+            },
+            {
+              "key": "Stem / Extension|TRIATHLON",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.04,
+              "rate_p50": 0.06,
+              "rate_p75": 0.08,
+              "amount_p50": 0.06,
+              "family": "Stem / Extension",
+              "brand": "TRIATHLON"
+            },
+            {
+              "key": "Screw|Accessory Hardware",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 312.26250000000005,
+              "rate_p50": 396.625,
+              "rate_p75": 480.98750000000007,
+              "amount_p50": 396.625,
+              "family": "Screw",
+              "brand": "Accessory Hardware"
+            },
+            {
+              "key": "Pin|Accessory Hardware",
+              "presence_rate": 30.77,
+              "distinct_ip_count": 8,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 1406.25,
+              "rate_p50": 1453.125,
+              "rate_p75": 1500,
+              "amount_p50": 1453.125,
+              "family": "Pin",
+              "brand": "Accessory Hardware"
+            }
+          ],
+          "items": [
+            {
+              "key": "ATTM161",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36136,
+              "rate_p50": 36136,
+              "rate_p75": 36136,
+              "amount_p50": 36136,
+              "name": "ATTUNE FEMORAL COMPONENT CEMENTED CRUCIATE RETAINING RIGHT 2(1504-00-202-DEPUY SYNTHES)",
+              "family": "Femoral Component",
+              "brand": "ATTUNE",
+              "code": "ATTM161"
+            },
+            {
+              "key": "ATTM83",
+              "presence_rate": 11.54,
+              "distinct_ip_count": 3,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36136,
+              "rate_p50": 36136,
+              "rate_p75": 36136,
+              "amount_p50": 36136,
+              "name": "ATTUNE FEMORAL C/R CEMENTED RIGHT SEZE 3(1504-00-203-DEPUY)",
+              "family": "Femoral Component",
+              "brand": "ATTUNE",
+              "code": "ATTM83"
+            },
+            {
+              "key": "ATTM84",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36136,
+              "rate_p50": 36136,
+              "rate_p75": 36136,
+              "amount_p50": 36136,
+              "name": "ATTUNE FEMORAL COMPONENT CEMENTED CRUCIATE RETAINING RIGHT 4(1504-00-204-DEPUY SYNTHES)",
+              "family": "Femoral Component",
+              "brand": "ATTUNE",
+              "code": "ATTM84"
+            },
+            {
+              "key": "ATTM85",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36136,
+              "rate_p50": 36136,
+              "rate_p75": 36136,
+              "amount_p50": 36136,
+              "name": "ATTUNE FEMORAL COMPONENT CEMENTED CRUCIATE RETAINING RIGHT 5(1504-00-205-DEPUY SYNTHES)",
+              "family": "Femoral Component",
+              "brand": "ATTUNE",
+              "code": "ATTM85"
+            },
+            {
+              "key": "ATTM86",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36136,
+              "rate_p50": 36136,
+              "rate_p75": 36136,
+              "amount_p50": 36136,
+              "name": "ATTUNE FEMORAL COMPONENT CEMENTED CRUCIATE RETAINING RIGHT 6(1504-00-206-DEPUY SYNTHES)",
+              "family": "Femoral Component",
+              "brand": "ATTUNE",
+              "code": "ATTM86"
+            },
+            {
+              "key": "ATTM97",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36136,
+              "rate_p50": 36136,
+              "rate_p75": 36136,
+              "amount_p50": 36136,
+              "name": "ATTUNE FEMORAL COMPONENT CEMENTED CRUCIATE RETAINING RIGHT 4 NARROW(1504-00-224-DEPUY SYNTHES)",
+              "family": "Femoral Component",
+              "brand": "ATTUNE",
+              "code": "ATTM97"
+            },
+            {
+              "key": "RESM68",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "RESTORIS MCK FEMORAL COMPONET RM/LL SIZE-1(180511-STRYKER)",
+              "family": "Femoral Component",
+              "brand": "RESTORIS MCK",
+              "code": "RESM68"
+            },
+            {
+              "key": "RESM69",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "RESTORIS MCK FEMORAL COMPONET RM/LL SIZE-2(180512-STRYKER)",
+              "family": "Femoral Component",
+              "brand": "RESTORIS MCK",
+              "code": "RESM69"
+            },
+            {
+              "key": "RESM70",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "RESTORIS MCK FEMORAL COMPONET RM/LL SIZE-3(180513-STRYKER)",
+              "family": "Femoral Component",
+              "brand": "RESTORIS MCK",
+              "code": "RESM70"
+            },
+            {
+              "key": "RESM71",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "RESTORIS MCK FEMORAL COMPONENT RIGHT MEDIAL LEFT LATERAL KNEE 4(180514-STRYKER CORP)",
+              "family": "Femoral Component",
+              "brand": "RESTORIS MCK",
+              "code": "RESM71"
+            },
+            {
+              "key": "TRIM108",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "TRIATHLON FEMORAL COMPONENT CRUCIATE RETAINING CEMENTED PRIMARY REFERENCING RIGHT KNEE TRITANIUM 3(5510F302-STRYKER CORP)",
+              "family": "Femoral Component",
+              "brand": "TRIATHLON",
+              "code": "TRIM108"
+            },
+            {
+              "key": "TRIM122",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "TRIATHLON CR FEMORAL CEMENT RIGHT-3(5510F302-STRYKER)",
+              "family": "Femoral Component",
+              "brand": "TRIATHLON",
+              "code": "TRIM122"
+            },
+            {
+              "key": "TRIM132",
+              "presence_rate": 15.38,
+              "distinct_ip_count": 4,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "5510F402 TRIATHLON CR FEMORAL CEMENT RIGHT 4",
+              "family": "Femoral Component",
+              "brand": "TRIATHLON",
+              "code": "TRIM132"
+            },
+            {
+              "key": "TRIM133",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "TRIATHLON FEMORAL COMPONENT CEMENTED CRUCIATE RETAINING RIGHT TRITANIUM 5(5510-F-502-STRYKER CORP)",
+              "family": "Femoral Component",
+              "brand": "TRIATHLON",
+              "code": "TRIM133"
+            },
+            {
+              "key": "TRIM196",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.1,
+              "rate_p50": 0.1,
+              "rate_p75": 0.1,
+              "amount_p50": 0.1,
+              "name": "TRIATHLON TS FEMORAL STEM CEMENTED KNEE TITANIUM 12X100MM(5560-S-212-STRYKER CORP)",
+              "family": "Femoral Component",
+              "brand": "TRIATHLON",
+              "code": "TRIM196"
+            },
+            {
+              "key": "ATTM101",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344.05,
+              "rate_p50": 13344.05,
+              "rate_p75": 13344.05,
+              "amount_p50": 13344.05,
+              "name": "ATTUNE TIBIAL INSERT FIXED BEARING CRUCIATE RETAINING AOX 2 6MM(1516-20-206-DEPUY SYNTHES)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM101"
+            },
+            {
+              "key": "ATTM106",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344,
+              "rate_p50": 13344,
+              "rate_p75": 13344,
+              "amount_p50": 13344,
+              "name": "ATTUNE TIBIAL INSERT F/B CRUCIATE RETAINING 3MM*6MM(1516-20-306-DEPUY)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM106"
+            },
+            {
+              "key": "ATTM108",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344,
+              "rate_p50": 13344,
+              "rate_p75": 13344,
+              "amount_p50": 13344,
+              "name": "ATTUNE TIBIAL INSERT FIXED BEARING CRUCIATE RETAINING AOX 3 8MM(1516-20-308-DEPUY SYNTHES)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM108"
+            },
+            {
+              "key": "ATTM110",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344.01,
+              "rate_p50": 13344.01,
+              "rate_p75": 13344.01,
+              "amount_p50": 13344.01,
+              "name": "ATTUNE TIBIAL INSERT FIXED BEARING CRUCIATE RETAINING AOX 4 5MM(1516-20-405-DEPUY SYNTHES)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM110"
+            },
+            {
+              "key": "ATTM111",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344.01,
+              "rate_p50": 13344.01,
+              "rate_p75": 13344.01,
+              "amount_p50": 13344.01,
+              "name": "ATTUNE TIBIAL INSERT FIXED BEARING CRUCIATE RETAINING AOX 4 6MM(1516-20-406-DEPUY SYNTHES)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM111"
+            },
+            {
+              "key": "ATTM115",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344,
+              "rate_p50": 13344,
+              "rate_p75": 13344,
+              "amount_p50": 13344,
+              "name": "ATTUNE TIBIAL INSERT FIXED BEARING CRUCIATE RETAINING AOX 5 5MM(1516-20-505-DEPUY SYNTHES)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM115"
+            },
+            {
+              "key": "ATTM208",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344.01,
+              "rate_p50": 13344.01,
+              "rate_p75": 13344.01,
+              "amount_p50": 13344.01,
+              "name": "ATTUNE KNEE SYSTEM TIBIAL INSERT FIXED BEARING MEDIAL STABILIZED RIGHT SIZE AOX 6MM*6MM(1520-20-606-DEPUY)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM208"
+            },
+            {
+              "key": "ATTM221",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344.09,
+              "rate_p50": 13344.09,
+              "rate_p75": 13344.09,
+              "amount_p50": 13344.09,
+              "name": "ATTUNE KNEE SYSTEM TIBIAL INSERT FIXED BEARING MEDIAL STABILIZED RIGHTSIZE 5MM X 10MM(1520-20-510-DEPUY)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM221"
+            },
+            {
+              "key": "ATTM223",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344.05,
+              "rate_p50": 13344.05,
+              "rate_p75": 13344.05,
+              "amount_p50": 13344.05,
+              "name": "ATTUNE KNEE SYSTEM TIBIAL INSERT FIXED BEARING MEDIAL STABILIZED RIGHT SIZE 4MM*6MM(1520-20-406-DEPUY)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM223"
+            },
+            {
+              "key": "ATTM232",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13344.05,
+              "rate_p50": 13344.05,
+              "rate_p75": 13344.05,
+              "amount_p50": 13344.05,
+              "name": "ATTUNE KNEE SYSTEM TIBIAL INSERT FIXED BEARING MEDIAL STABILIZED RIGHTSIZE 3MM X 7MM(1520-20-307-DEPUY)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "ATTUNE",
+              "code": "ATTM232"
+            },
+            {
+              "key": "MCKM01",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 13340.05,
+              "name": "MCK ONLAY TIBIAL INSERT SIZE 1MM*9MM(180701-2-STRYKER)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "Other",
+              "code": "MCKM01"
+            },
+            {
+              "key": "RESM87",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 2,
+              "quantity_p50": 2,
+              "quantity_p75": 2,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 26680.1,
+              "name": "RESTORIS MCK TIBIAL INSERT 3 X 8MM",
+              "family": "Tibial Insert / Bearing",
+              "brand": "RESTORIS MCK",
+              "code": "RESM87"
+            },
+            {
+              "key": "RESM88",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13339.5,
+              "rate_p50": 13339.5,
+              "rate_p75": 13339.5,
+              "amount_p50": 13339.5,
+              "name": "RESTORIS TIBIAL INSERT MULTI COMPARTMENTAL ONLAY KNEE 4 9MM(180704-2-STRYKER CORP)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "Other",
+              "code": "RESM88"
+            },
+            {
+              "key": "TRIM110",
+              "presence_rate": 11.54,
+              "distinct_ip_count": 3,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.045,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 13340.05,
+              "name": "TRIATHLON X3 TIBIAL BEARING INSERT CS SIZE-3*9MM(5531G309E-STRYKER)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "TRIATHLON",
+              "code": "TRIM110"
+            },
+            {
+              "key": "TRIM114",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 13340.05,
+              "name": "TRIATHLON TIBIAL INSERT CRUCIATE SUBSTITUTING BEARING KNEE X3 2 9MM(5531-G-209-E-STRYKER CORP)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "TRIATHLON",
+              "code": "TRIM114"
+            },
+            {
+              "key": "TRIM153",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 13340.05,
+              "name": "TRIATHLON TIBIAL INSERT CRUCIATE SUBSTITUTING BEARING KNEE X3 2 11MM(5531-G-211-STRYKER CORP)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "TRIATHLON",
+              "code": "TRIM153"
+            },
+            {
+              "key": "TRIM157",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 13340.05,
+              "name": "5531G409E TRIATHLON X3 TIBIAL BEARING INSERT CS 4 X 9 MM",
+              "family": "Tibial Insert / Bearing",
+              "brand": "TRIATHLON",
+              "code": "TRIM157"
+            },
+            {
+              "key": "TRIM158",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 13340.05,
+              "name": "TRIATHLON TIBIAL INSERT CRUCIATE SUBSTITUTING BEARING KNEE X3 4 11MM(5531-G-411-E-STRYKER CORP)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "TRIATHLON",
+              "code": "TRIM158"
+            },
+            {
+              "key": "TRIM355",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340,
+              "rate_p50": 13340,
+              "rate_p75": 13340,
+              "amount_p50": 13340,
+              "name": "TRIATHLON TIBIAL INSERT CRUCIATE STABILIZED BEARING KNEE X3 3 10MM(5531-G-310-E-STRYKER CORP)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "TRIATHLON",
+              "code": "TRIM355"
+            },
+            {
+              "key": "TRIM358",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 13340.05,
+              "rate_p50": 13340.05,
+              "rate_p75": 13340.05,
+              "amount_p50": 13340.05,
+              "name": "TRIATHLON TIBIAL INSERT CRUCIATE STABILIZED BEARING KNEE X3 5 10MM(5531-G-510-E-STRYKER CORP)",
+              "family": "Tibial Insert / Bearing",
+              "brand": "TRIATHLON",
+              "code": "TRIM358"
+            },
+            {
+              "key": "BONM151",
+              "presence_rate": 23.08,
+              "distinct_ip_count": 6,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.04,
+              "rate_p50": 0.1,
+              "rate_p75": 0.1,
+              "amount_p50": 0.1,
+              "name": "SIMPLEX P BONE CEMENT 40GM(6191-0-001-STRYKER CORP)",
+              "family": "Bone Cement",
+              "brand": "SIMPLEX",
+              "code": "BONM151"
+            },
+            {
+              "key": "SIMM01",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.02,
+              "rate_p50": 0.02,
+              "rate_p75": 0.02,
+              "amount_p50": 0.02,
+              "name": "SIMPLEX BONE CEMENT 40 GR [6191-0-001]",
+              "family": "Bone Cement",
+              "brand": "SIMPLEX",
+              "code": "SIMM01"
+            },
+            {
+              "key": "SIMM30",
+              "presence_rate": 34.62,
+              "distinct_ip_count": 9,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.1,
+              "rate_p50": 0.1,
+              "rate_p75": 0.1,
+              "amount_p50": 0.1,
+              "name": "SIMPLEX PALCOS BONE CEMENT(61910001-STRYKER)",
+              "family": "Bone Cement",
+              "brand": "SIMPLEX",
+              "code": "SIMM30"
+            },
+            {
+              "key": "SMAM40",
+              "presence_rate": 34.62,
+              "distinct_ip_count": 9,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 5730,
+              "rate_p50": 5730,
+              "rate_p75": 5730,
+              "amount_p50": 5730,
+              "name": "SMARTSET GHV BONE CEMENT GENTAMICIN 40GM(3095-040-DEPUY SYNTHES)",
+              "family": "Bone Cement",
+              "brand": "SMARTSET",
+              "code": "SMAM40"
+            },
+            {
+              "key": "TRIM131",
+              "presence_rate": 15.38,
+              "distinct_ip_count": 4,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 36130,
+              "rate_p50": 36130,
+              "rate_p75": 36130,
+              "amount_p50": 36130,
+              "name": "5510F202 TRIATHLON -CR FEM CEMENT RIGHT 2",
+              "family": "Bone Cement",
+              "brand": "TRIATHLON",
+              "code": "TRIM131"
+            },
+            {
+              "key": "ATTM138",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 23742,
+              "rate_p50": 23742,
+              "rate_p75": 23742,
+              "amount_p50": 23742,
+              "name": "ATTUNE TIBIAL BASEPLATE FIXED BEARING CEMENTED 4MM(1506-70-004-JOHNSON & JOHNSON)",
+              "family": "Tibial Baseplate",
+              "brand": "ATTUNE",
+              "code": "ATTM138"
+            },
+            {
+              "key": "ATTM164",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 43628,
+              "rate_p50": 43628,
+              "rate_p75": 43628,
+              "amount_p50": 43628,
+              "name": "ATTUNE TIBIAL BASEPLATE STEMMABLE CEMENTED KNEE 4MM(1506-40-004-DEPUY SYNTHES)",
+              "family": "Tibial Baseplate",
+              "brand": "ATTUNE",
+              "code": "ATTM164"
+            },
+            {
+              "key": "ATTM168",
+              "presence_rate": 15.38,
+              "distinct_ip_count": 4,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 43628,
+              "rate_p50": 43628,
+              "rate_p75": 43628,
+              "amount_p50": 43628,
+              "name": "ATTUNE TIBIAL BASEPLATE FIXED BEARING REVISION CEMENTED CONSTRAINED KNEE 3(1506-40-003-DEPUY SYNTHES)",
+              "family": "Tibial Baseplate",
+              "brand": "ATTUNE",
+              "code": "ATTM168"
+            },
+            {
+              "key": "ATTM169",
+              "presence_rate": 7.69,
+              "distinct_ip_count": 2,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 43628,
+              "rate_p50": 43628,
+              "rate_p75": 43628,
+              "amount_p50": 43628,
+              "name": "ATTUNE KNEE SYSTEM REVISION TIBIAL BASE FIXED BEARING CEMENTED SIZE 2MM(1506-40-002-DEPUY)",
+              "family": "Tibial Baseplate",
+              "brand": "ATTUNE",
+              "code": "ATTM169"
+            },
+            {
+              "key": "ATTM176",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 43628,
+              "rate_p50": 43628,
+              "rate_p75": 43628,
+              "amount_p50": 43628,
+              "name": "ORTHOPAEDIC BEARING TIBIAL BASE FIXED CEMENTED KNEE SYSTEM REVISION 6MM(1506-40-006-DEPUY SYNTHES)",
+              "family": "Tibial Baseplate",
+              "brand": "Other",
+              "code": "ATTM176"
+            },
+            {
+              "key": "ATTM27",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 23742,
+              "rate_p50": 23742,
+              "rate_p75": 23742,
+              "amount_p50": 23742,
+              "name": "ATTUNE TIBIAL BASEPLATE FIXED BEARING CEMENTED 5MM(1506-70-005-DEPUY SYNTHES)",
+              "family": "Tibial Baseplate",
+              "brand": "ATTUNE",
+              "code": "ATTM27"
+            },
+            {
+              "key": "RESM79",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 33924.98,
+              "rate_p50": 33924.98,
+              "rate_p75": 33924.98,
+              "amount_p50": 33924.98,
+              "name": "RESTORIS MCK TIBIAL BASE PLATE RM/LL SIZE-1(180611-STRYKER)",
+              "family": "Tibial Baseplate",
+              "brand": "RESTORIS MCK",
+              "code": "RESM79"
+            },
+            {
+              "key": "RESM80",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 33925,
+              "rate_p50": 33925,
+              "rate_p75": 33925,
+              "amount_p50": 33925,
+              "name": "RESTORIS MCK TIBIAL BASE PLATE RM/LL SIZE-2(180612-STRYKER)",
+              "family": "Tibial Baseplate",
+              "brand": "RESTORIS MCK",
+              "code": "RESM80"
+            },
+            {
+              "key": "RESM81",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 33925,
+              "rate_p50": 33925,
+              "rate_p75": 33925,
+              "amount_p50": 33925,
+              "name": "RESTORIS MCK TIBIAL BASE PLATE RM/LL SIZE-3(180613-STRYKER)",
+              "family": "Tibial Baseplate",
+              "brand": "RESTORIS MCK",
+              "code": "RESM81"
+            },
+            {
+              "key": "RESM82",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 33925,
+              "rate_p50": 33925,
+              "rate_p75": 33925,
+              "amount_p50": 33925,
+              "name": "RESTORIS MCK TIBIAL BASEPLATE ONLAY RIGHT MEDIAL LEFT LATERAL 4(180614-STRYKER CORP)",
+              "family": "Tibial Baseplate",
+              "brand": "RESTORIS MCK",
+              "code": "RESM82"
+            },
+            {
+              "key": "TRIM184",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 23735.05,
+              "rate_p50": 23735.05,
+              "rate_p75": 23735.05,
+              "amount_p50": 23735.05,
+              "name": "5520B400 TRIATHLON TIBIA BP CEMENTED SIZE 4",
+              "family": "Tibial Baseplate",
+              "brand": "TRIATHLON",
+              "code": "TRIM184"
+            },
+            {
+              "key": "TRIM185",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 39660,
+              "rate_p50": 39660,
+              "rate_p75": 39660,
+              "amount_p50": 39660,
+              "name": "5521B100 TRIATHLON TOT KNEE UNIVERSAL TIB BASE PLATE (STRYKER)",
+              "family": "Tibial Baseplate",
+              "brand": "TRIATHLON",
+              "code": "TRIM185"
+            },
+            {
+              "key": "TRIM187",
+              "presence_rate": 11.54,
+              "distinct_ip_count": 3,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 39660,
+              "rate_p50": 39660,
+              "rate_p75": 39660,
+              "amount_p50": 39660,
+              "name": "TRIATHLON TIBIAL BASEPLATE CEMENTED 2 UNIVERSAL(5521-B-200-STRYKER CORP)",
+              "family": "Tibial Baseplate",
+              "brand": "TRIATHLON",
+              "code": "TRIM187"
+            },
+            {
+              "key": "TRIM188",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 39660,
+              "rate_p50": 39660,
+              "rate_p75": 39660,
+              "amount_p50": 39660,
+              "name": "TRIATHLON TIBIAL BASEPLATE CEMENTED 3 UNIVERSAL(5521-B-300-STRYKER CORP)",
+              "family": "Tibial Baseplate",
+              "brand": "TRIATHLON",
+              "code": "TRIM188"
+            },
+            {
+              "key": "TRIM189",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 39660,
+              "rate_p50": 39660,
+              "rate_p75": 39660,
+              "amount_p50": 39660,
+              "name": "TRIATHLON TIBIAL BASEPLATE CEMENTED TOTAL KNEE UNIVERSAL 4(5521-B-400-STRYKER CORP)",
+              "family": "Tibial Baseplate",
+              "brand": "TRIATHLON",
+              "code": "TRIM189"
+            },
+            {
+              "key": "TRIM191",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 23735,
+              "rate_p50": 23735,
+              "rate_p75": 23735,
+              "amount_p50": 23735,
+              "name": "TRIATHLON TIBIAL BASEPLATE PRIMARY CEMENTED STERILE 5(5520-B-500-STRYKER CORP)",
+              "family": "Tibial Baseplate",
+              "brand": "TRIATHLON",
+              "code": "TRIM191"
+            },
+            {
+              "key": "TRIM197",
+              "presence_rate": 11.54,
+              "distinct_ip_count": 3,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 0.02,
+              "rate_p50": 0.02,
+              "rate_p75": 0.06,
+              "amount_p50": 0.02,
+              "name": "5560S112 TRIATHLON TOTAL KNEE CEMENTED STEM 12MM X 50 MM",
+              "family": "Stem / Extension",
+              "brand": "TRIATHLON",
+              "code": "TRIM197"
+            },
+            {
+              "key": "CORM9076",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 227.9,
+              "rate_p50": 227.9,
+              "rate_p75": 227.9,
+              "amount_p50": 227.9,
+              "name": "CORTICAL SCREW SLF TAPP 3.5MM*20MM 20TPI(A458000020-PITKAR)",
+              "family": "Screw",
+              "brand": "Accessory Hardware",
+              "code": "CORM9076"
+            },
+            {
+              "key": "LOCM2609",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 565.35,
+              "rate_p50": 565.35,
+              "rate_p75": 565.35,
+              "amount_p50": 565.35,
+              "name": "LOCKING SCREW SELF-TAPPING 3.5X26MM(AI07100026-PITKAR ORTHOTOOLS PVT LTD)",
+              "family": "Screw",
+              "brand": "Accessory Hardware",
+              "code": "LOCM2609"
+            },
+            {
+              "key": "ARRU07",
+              "presence_rate": 26.92,
+              "distinct_ip_count": 7,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 1406.25,
+              "rate_p50": 1406.25,
+              "rate_p75": 1500,
+              "amount_p50": 1406.25,
+              "name": "ARRAY DRILL PIN 175MM*4MM(4515-70-006-DEPUY)",
+              "family": "Pin",
+              "brand": "Accessory Hardware",
+              "code": "ARRU07"
+            },
+            {
+              "key": "BONM229",
+              "presence_rate": 3.85,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 30768.75,
+              "rate_p50": 30768.75,
+              "rate_p75": 30768.75,
+              "amount_p50": 30768.75,
+              "name": "BONE PIN 3.2MM*140MM(143140/213527-STRYKER)",
+              "family": "Pin",
+              "brand": "Accessory Hardware",
+              "code": "BONM229"
+            }
+          ]
+        },
+        "resolved": 89130.16,
+        "controls": {
+          "mode": "Default P50"
+        },
+        "p25": 89130.07750000001,
+        "p50": 89130.16,
+        "p75": 98838.05
+      }
+    },
+    "service_line_count": {
+      "p25": 36.25,
+      "p50": 39,
+      "p75": 41,
+      "base": 37,
+      "selectedAddOns": 0,
+      "current": 37,
+      "status": "within historical range"
+    },
+    "historic_metrics": {
+      "basis": "All Payers",
+      "basis_confidence": "medium",
+      "case_count": 26,
+      "buckets": {
+        "total_amount_excluding_food_and_beverage_and_returns_plus_drug_admin": {
+          "label": "Gross total",
+          "p25": 520489.6525,
+          "p50": 539491.3400000001,
+          "p75": 596680.1275
+        },
+        "pharmacy_total": {
+          "label": "Pharmacy (total)",
+          "p25": 182949.10499999998,
+          "p50": 189217.605,
+          "p75": 231144.73249999998
+        },
+        "ip_drugs": {
+          "label": "IP Drugs",
+          "p25": 7802.504999999999,
+          "p50": 9060.435,
+          "p75": 10629.0975
+        },
+        "ip_consumables": {
+          "label": "IP Consumables",
+          "p25": 9677.2125,
+          "p50": 10711.305,
+          "p75": 11936.6175
+        },
+        "ot_drugs": {
+          "label": "OT Drugs",
+          "p25": 8468.852499999999,
+          "p50": 9439.535,
+          "p75": 11143.7
+        },
+        "ot_consumables": {
+          "label": "OT Consumables",
+          "p25": 66040.54,
+          "p50": 72382.9,
+          "p75": 107563.63
+        },
+        "implants": {
+          "label": "Implants",
+          "p25": 89130.07750000001,
+          "p50": 89130.16,
+          "p75": 98838.05
+        },
+        "professional_fees": {
+          "label": "Professional Fees",
+          "p25": 96442,
+          "p50": 98192,
+          "p75": 99817
+        },
+        "investigations": {
+          "label": "Investigations",
+          "p25": 9027.5,
+          "p50": 15370,
+          "p75": 18402.5
+        },
+        "procedure_ot_charges": {
+          "label": "Procedure / OT Charges",
+          "p25": 154880,
+          "p50": 159090,
+          "p75": 160140
+        },
+        "room_charges": {
+          "label": "Room Charges",
+          "p25": 41910,
+          "p50": 45064,
+          "p75": 54051
+        },
+        "bedside_services": {
+          "label": "Bedside Services",
+          "p25": 4050,
+          "p50": 5090,
+          "p75": 6150
+        },
+        "ot_hours": {
+          "label": "OT hours",
+          "p25": 2.5,
+          "p50": 3,
+          "p75": 3
+        },
+        "los_days": {
+          "label": "Length of stay (days)",
+          "p25": 3,
+          "p50": 3,
+          "p75": 3.75
+        }
+      }
+    },
+    "pf_analysis": {
+      "applicable": true,
+      "logic_pf": 207185.96,
+      "historic_p50": 98192,
+      "historic_p25": 96442,
+      "historic_p75": 99817,
+      "basis": "All Payers",
+      "deviation_pct": 111,
+      "significantly_different": true,
+      "recommended": "room_matched_pf",
+      "final_estimate_with_historic_pf": 448983.04,
+      "room_matched_fallback": {
+        "pf_p50": 98347,
+        "pf_p25": 96442,
+        "pf_p75": 99942,
+        "cases": 20,
+        "sample_ips": [
+          "IPGB2526007170",
+          "IPGB2526007396",
+          "IPGB2526007541",
+          "IPGB2526007640",
+          "IPGB2526007738",
+          "IPGB2526008255",
+          "IPGB2526008483",
+          "IPGB2526008520",
+          "IPGB2526008624",
+          "IPGB2526009297"
+        ],
+        "criteria": {
+          "room_type": "single",
+          "band_pct": 15,
+          "standard_only": true,
+          "cohort_gross_p50": 539491,
+          "cohort_cases": 26
+        },
+        "basis": "All Payers",
+        "reason": "PF from 20 same-room standard cases billing near P50"
+      },
+      "final_estimate_with_room_matched_pf": 449138.04,
+      "recommendation_reason": "PF from 20 same-room standard cases billing near P50"
+    },
+    "warnings": [],
+    "unresolved_items": [],
+    "suggestions": [
+      {
+        "type": "robotic_redirect",
+        "base_family": "total_knee_replacement_unilateral",
+        "base_label": "Total Knee Replacement (TKR) — Unilateral (Conventional)",
+        "payor_bucket": "Non-GIPSA Insurance",
+        "message": "Non-GIPSA Insurance historically prices this as Total Knee Replacement (TKR) — Unilateral (Conventional) + robotic add-on",
+        "robotic_cases": 0,
+        "base_cases": 376
+      }
+    ],
+    "insurance_settlement": {
+      "room": "single",
+      "gross": 557976.99,
+      "caps": {
+        "ward_cap_per_day": null,
+        "icu_cap_per_day": null,
+        "bed_rate_per_day": 5000,
+        "icu_rate_per_day": 8000,
+        "ward_ratio": 1,
+        "icu_ratio": 1,
+        "ward_shortfall": 0,
+        "icu_shortfall": 0,
+        "eligible_tier_rate": null
+      },
+      "gross_admissible": 552436.99,
+      "sub_limits": [],
+      "copay": 0,
+      "tpa_before_cap": 552436.99,
+      "base_available": 500000,
+      "tpa_approval": 500000,
+      "top_up_claim": 0,
+      "insurer_total": 500000,
+      "patient": {
+        "nme": 5540,
+        "copay": 0,
+        "proportionate_deduction": 0,
+        "sub_limit_overflow": 0,
+        "room_upgrade_excess": 0,
+        "beyond_cover": 52436.99,
+        "total": 57976.99
+      },
+      "check": {
+        "insurer_plus_patient": 557976.99,
+        "gross_plus_upgrade": 557976.99
+      },
+      "rows": [
+        {
+          "index": 0,
+          "name": "X-RAY KNEE JOINT AP & LATERAL VIEW (BEDSIDE)",
+          "bucket": "Investigations",
+          "amount": 1045,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 1045,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 1045,
+            "expected_insurer_approved": 1045,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 1,
+          "name": "Nursing - Room",
+          "bucket": "Room Charges",
+          "amount": 1,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 1,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 1,
+            "expected_insurer_approved": 1,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 2,
+          "name": "Nursing - ICU",
+          "bucket": "Room Charges",
+          "amount": 2,
+          "class": "icu",
+          "ratio": 1,
+          "admissible": 2,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 2,
+            "expected_insurer_approved": 2,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 3,
+          "name": "DMO",
+          "bucket": "Room Charges",
+          "amount": 1,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 1,
+          "group": null,
+          "billing_disposition": "LAN_NON_SHOW_RUPEE_ONE",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 1,
+            "expected_insurer_approved": 1,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 4,
+          "name": "ICU - Surgical",
+          "bucket": "Room Charges",
+          "amount": 16000,
+          "class": "icu",
+          "ratio": 1,
+          "admissible": 16000,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 16000,
+            "expected_insurer_approved": 16000,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 5,
+          "name": "Bed Charges - Ward",
+          "bucket": "Room Charges",
+          "amount": 5000,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 5000,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 5000,
+            "expected_insurer_approved": 5000,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 6,
+          "name": "CSSD CHARGES FOR GA",
+          "bucket": "Procedure / OT Charges",
+          "amount": 1,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 1,
+          "group": "procedure",
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 1,
+            "expected_insurer_approved": 1,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 7,
+          "name": "Medical Records",
+          "bucket": "Bedside Services",
+          "amount": 1510,
+          "class": "nme",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "PATIENT_PAYABLE",
+          "fc_hidden": false,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": null,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 8,
+          "name": "PHYSIOTHERAPY PACKAGE 5 VISITS",
+          "bucket": "Procedure / OT Charges",
+          "amount": 2380,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 2380,
+          "group": "procedure",
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 2380,
+            "expected_insurer_approved": 2380,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 9,
+          "name": "HAEMOGLOBIN",
+          "bucket": "Investigations",
+          "amount": 240,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 240,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 240,
+            "expected_insurer_approved": 240,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 10,
+          "name": "CBP (COMPLETE BLOOD PICTURE)",
+          "bucket": "Investigations",
+          "amount": 475,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 475,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 475,
+            "expected_insurer_approved": 475,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 11,
+          "name": "ROBO (TKR) - UNILATERAL",
+          "bucket": "Procedure / OT Charges",
+          "amount": 100000,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 100000,
+          "group": "procedure",
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 100000,
+            "expected_insurer_approved": 100000,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 12,
+          "name": "Instrument Charges (Major)",
+          "bucket": "Procedure / OT Charges",
+          "amount": 1,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 1,
+          "group": "procedure",
+          "billing_disposition": "LAN_NON_SHOW_RUPEE_ONE",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 1,
+            "expected_insurer_approved": 1,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 13,
+          "name": "OT Disinfection Charges",
+          "bucket": "Procedure / OT Charges",
+          "amount": 1,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 1,
+          "group": "procedure",
+          "billing_disposition": "LAN_NON_SHOW_RUPEE_ONE",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 1,
+            "expected_insurer_approved": 1,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 14,
+          "name": "Post Surgery Recovery Charges",
+          "bucket": "Procedure / OT Charges",
+          "amount": 3020,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 3020,
+          "group": "procedure",
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 3020,
+            "expected_insurer_approved": 3020,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 15,
+          "name": "OT Charges",
+          "bucket": "Procedure / OT Charges",
+          "amount": 22000,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 22000,
+          "group": "procedure",
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 22000,
+            "expected_insurer_approved": 22000,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 16,
+          "name": "Cath Lab Charges",
+          "bucket": "Procedure / OT Charges",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": "procedure",
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 17,
+          "name": "Intensivist Per Day",
+          "bucket": "Room Charges",
+          "amount": 2000,
+          "class": "icu",
+          "ratio": 1,
+          "admissible": 2000,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 2000,
+            "expected_insurer_approved": 2000,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 18,
+          "name": "Assistant Intensivist Per Day",
+          "bucket": "Room Charges",
+          "amount": 2,
+          "class": "icu",
+          "ratio": 1,
+          "admissible": 2,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 2,
+            "expected_insurer_approved": 2,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 19,
+          "name": "Ward Consumables",
+          "bucket": "Room Charges",
+          "amount": 1050,
+          "class": "nme",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "PATIENT_PAYABLE",
+          "fc_hidden": false,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": null,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 20,
+          "name": "Warmer",
+          "bucket": "Bedside Services",
+          "amount": 930,
+          "class": "nme",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "PATIENT_PAYABLE",
+          "fc_hidden": false,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": null,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 21,
+          "name": "Monitor Per Day",
+          "bucket": "Room Charges",
+          "amount": 2,
+          "class": "icu",
+          "ratio": 1,
+          "admissible": 2,
+          "group": null,
+          "billing_disposition": "LAN_NON_SHOW_RUPEE_ONE",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 2,
+            "expected_insurer_approved": 2,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 22,
+          "name": "Oxygen Per Hour",
+          "bucket": "Bedside Services",
+          "amount": 280,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 280,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 280,
+            "expected_insurer_approved": 280,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 23,
+          "name": "Diet Consultation",
+          "bucket": "Bedside Services",
+          "amount": 880,
+          "class": "nme",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "PATIENT_PAYABLE",
+          "fc_hidden": false,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": null,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 24,
+          "name": "Dressing - Minor",
+          "bucket": "Bedside Services",
+          "amount": 1170,
+          "class": "nme",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "PATIENT_PAYABLE",
+          "fc_hidden": false,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": null,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 25,
+          "name": "Bedside ECG",
+          "bucket": "Bedside Services",
+          "amount": 475,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 475,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 475,
+            "expected_insurer_approved": 475,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 26,
+          "name": "Albumin",
+          "bucket": "Investigations",
+          "amount": 200,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 200,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 200,
+            "expected_insurer_approved": 200,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 27,
+          "name": "Sodium",
+          "bucket": "Investigations",
+          "amount": 380,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 380,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 380,
+            "expected_insurer_approved": 380,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 28,
+          "name": "Electrolytes",
+          "bucket": "Investigations",
+          "amount": 945,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 945,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 945,
+            "expected_insurer_approved": 945,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 29,
+          "name": "Creatinine",
+          "bucket": "Investigations",
+          "amount": 290,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 290,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 290,
+            "expected_insurer_approved": 290,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 30,
+          "name": "Urea",
+          "bucket": "Investigations",
+          "amount": 335,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 335,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 335,
+            "expected_insurer_approved": 335,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 31,
+          "name": "MLC Charges",
+          "bucket": "Bedside Services",
+          "amount": 0,
+          "class": "nme",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "PATIENT_PAYABLE",
+          "fc_hidden": false,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": null,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 32,
+          "name": "Drug Administration Charges",
+          "bucket": "Drug Administration Charges",
+          "amount": 0,
+          "class": "nme",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "PATIENT_PAYABLE",
+          "fc_hidden": false,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": null,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 33,
+          "name": "Surgeon",
+          "bucket": "Professional Fees",
+          "amount": 122776.86,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 122776.86,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 122776.86,
+            "expected_insurer_approved": 122776.86,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 34,
+          "name": "Assistant Surgeon",
+          "bucket": "Professional Fees",
+          "amount": 30694.22,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 30694.22,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 30694.22,
+            "expected_insurer_approved": 30694.22,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 35,
+          "name": "Anesthetist",
+          "bucket": "Professional Fees",
+          "amount": 42971.9,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 42971.9,
+          "group": null,
+          "billing_disposition": "CLAIM_AND_WAIVE_IF_DENIED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 42971.9,
+            "expected_insurer_approved": 42971.9,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": true
+          }
+        },
+        {
+          "index": 36,
+          "name": "Assistant Anesthetist",
+          "bucket": "Professional Fees",
+          "amount": 10742.98,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 10742.98,
+          "group": null,
+          "billing_disposition": "SUPPRESS_DO_NOT_BILL",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 10742.98,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 37,
+          "name": "IP Drugs & Medications",
+          "bucket": "Pharmacy",
+          "amount": 8565.96,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 8565.96,
+          "group": "pharmacy",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 8565.96,
+            "expected_insurer_approved": 8565.96,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 38,
+          "name": "IP Consumables",
+          "bucket": "Pharmacy",
+          "amount": 10286.48,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 10286.48,
+          "group": "pharmacy",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 10286.48,
+            "expected_insurer_approved": 10286.48,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 39,
+          "name": "OT Drugs & Medications",
+          "bucket": "Pharmacy",
+          "amount": 9439.54,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 9439.54,
+          "group": "pharmacy",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 9439.54,
+            "expected_insurer_approved": 9439.54,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 40,
+          "name": "OT Consumables",
+          "bucket": "Pharmacy",
+          "amount": 72382.9,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 72382.9,
+          "group": "pharmacy",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 72382.9,
+            "expected_insurer_approved": 72382.9,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 41,
+          "name": "Implants",
+          "bucket": "Pharmacy",
+          "amount": 89130.16,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 89130.16,
+          "group": "implants",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 89130.16,
+            "expected_insurer_approved": 89130.16,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 42,
+          "name": "FIBRINOGEN",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 43,
+          "name": "GRBS",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 44,
+          "name": "CORTISOL",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 45,
+          "name": "PACKED RED BLOOD CELLS",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 46,
+          "name": "CRP",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 47,
+          "name": "OXYGEN PER DAY",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 48,
+          "name": "EVMS - ENHANCED VITALS MONITORING SYSTEM (DOZEE)",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 49,
+          "name": "SYRINGE PUMP PER DAY",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 50,
+          "name": "FOLEY'S CATHETERIZATION",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 51,
+          "name": "ESR",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 52,
+          "name": "PRE ANAESTHETIST CHECK",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 53,
+          "name": "THYROID PROFILE",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 54,
+          "name": "TROPONIN-I",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 55,
+          "name": "CROSS MATCHING",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 56,
+          "name": "X-RAY SCANOGRAM (ACADEMIC CASES)",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 57,
+          "name": "ABG (ARTERIAL BLOOD GASES)",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 58,
+          "name": "NEBULIZATION PER DAY",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 59,
+          "name": "PHYSIOTHERAPY CONSULTATION",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 60,
+          "name": "CBC (COMPLETE BLOOD COUNT)",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 61,
+          "name": "X-RAY AP VIEW (BEDSIDE)",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 62,
+          "name": "FBS (FASTING PLASMA GLUCOSE)",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 63,
+          "name": "POTASSIUM",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 64,
+          "name": "PSYCHOLOGIST COUNSELLING",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 65,
+          "name": "BLOOD GROUP AND RH (D) TYPING",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 66,
+          "name": "CUE (COMPLETE URINE EXAMINATION)",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 67,
+          "name": "ECG",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 68,
+          "name": "TRANSFUSION",
+          "bucket": "Optional Add-Ons",
+          "amount": 0,
+          "class": "associated",
+          "ratio": 1,
+          "admissible": 0,
+          "group": null,
+          "billing_disposition": "INCLUDED_IN_PARENT_TARIFF",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 69,
+          "name": "Coagulation Tests Residual",
+          "bucket": "Investigations",
+          "amount": 0,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 0,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 70,
+          "name": "Inflammatory Marker Tests Residual",
+          "bucket": "Investigations",
+          "amount": 0,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 0,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 0,
+            "expected_insurer_approved": 0,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        },
+        {
+          "index": 71,
+          "name": "Haematology Counts Residual",
+          "bucket": "Investigations",
+          "amount": 370,
+          "class": "exempt",
+          "ratio": 1,
+          "admissible": 370,
+          "group": "investigations",
+          "billing_disposition": "COVERED",
+          "fc_hidden": true,
+          "four_value": {
+            "gross_tariff": null,
+            "insurer_submitted": 370,
+            "expected_insurer_approved": 370,
+            "patient_payable": 0,
+            "hospital_waiver_if_denied": false
+          }
+        }
+      ],
+      "notes": [],
+      "dnb": {
+        "model": "four_value_line",
+        "ui": "covered_or_not_covered",
+        "fc_hidden_rows": 65,
+        "rule": "follow_final_bill_logic",
+        "note": "FC estimate shows only patient_payable. DNB items (patient ₹0) are hidden from FC; billing_disposition + four_value are metadata for the insurer/audit view."
+      }
+    },
+    "expected_nme": {
+      "expected_nme": 12156.48,
+      "positive_prob": 0.8571,
+      "p50": 12156.48,
+      "p75": 16356,
+      "p80": 16436.38,
+      "cohort_level": 1,
+      "sample": 35,
+      "blended": false,
+      "basis": "HIMS NME history · Non-GIPSA Insurance · Open Bill · ORTHOPAEDICS · LOS 3-5 · ICU 1-2 (n=35)"
+    },
+    "tax": {
+      "applies_to": "room_rent_only",
+      "basis": "by_service_code_not_ward_name",
+      "statutory": "CBIC 5% (2.5% CGST + 2.5% SGST), eff. 18-Jul-2022",
+      "all_payers_same_math": true,
+      "lines": [
+        {
+          "component": "patient_room_rent",
+          "code": "ROM0036",
+          "per_day": 5000,
+          "days": 1,
+          "base": 5000,
+          "category": "below_threshold_no_gst",
+          "gst_rate": 0,
+          "gst_amount": 0,
+          "note": "No GST — room rent ₹5000/day ≤ ₹5,000."
+        },
+        {
+          "component": "critical_care_room",
+          "days": 2,
+          "category": "CRITICAL_CARE_ROOM_EXEMPT",
+          "gst_rate": 0,
+          "gst_amount": 0,
+          "note": "ICU/CCU/ICCU/NICU/HDU room rent is GST-exempt even above ₹5,000."
+        }
+      ],
+      "gst_on_room_rent": 0,
+      "attendant_room": null,
+      "package_rule": "tax_identifiable_room_component_only",
+      "categories": [
+        "PATIENT_ROOM_5_ABOVE_5000",
+        "CRITICAL_CARE_ROOM_EXEMPT",
+        "ATTENDANT_ACCOMMODATION_18"
+      ],
+      "note": "GST is a separate line, additive to the base estimate (not folded into the parity-pinned total)."
+    },
+    "by_room": {
+      "general": {
+        "final_estimate": 550819.18,
+        "settlement": {
+          "insurer_total": 500000,
+          "patient_total": 50819.18,
+          "top_up_claim": 0,
+          "patient": {
+            "nme": 5210,
+            "copay": 0,
+            "proportionate_deduction": 0,
+            "sub_limit_overflow": 0,
+            "room_upgrade_excess": 0,
+            "beyond_cover": 45609.18,
+            "total": 50819.18
+          }
+        }
+      },
+      "twin": {
+        "final_estimate": 554286.74,
+        "settlement": {
+          "insurer_total": 500000,
+          "patient_total": 54286.74,
+          "top_up_claim": 0,
+          "patient": {
+            "nme": 5390,
+            "copay": 0,
+            "proportionate_deduction": 0,
+            "sub_limit_overflow": 0,
+            "room_upgrade_excess": 0,
+            "beyond_cover": 48896.74,
+            "total": 54286.74
+          }
+        }
+      },
+      "single": {
+        "final_estimate": 557976.99,
+        "settlement": {
+          "insurer_total": 500000,
+          "patient_total": 57976.99,
+          "top_up_claim": 0,
+          "patient": {
+            "nme": 5540,
+            "copay": 0,
+            "proportionate_deduction": 0,
+            "sub_limit_overflow": 0,
+            "room_upgrade_excess": 0,
+            "beyond_cover": 52436.99,
+            "total": 57976.99
+          }
+        }
+      }
+    }
+  },
+  "old_engine_final": 557976.9920351562
+}

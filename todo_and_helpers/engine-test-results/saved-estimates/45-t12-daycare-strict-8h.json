@@ -1,0 +1,5062 @@
+{
+  "scenario": "T12 Daycare · strict 8h",
+  "category": "overlay",
+  "input": {
+    "clinical": {
+      "procedure": "coronary_angio_cag_cat_1_daycare",
+      "department_name": "CARDIOLOGY"
+    },
+    "payment": {
+      "payor_bucket": "Cash"
+    },
+    "controls": {
+      "room_type": "Single",
+      "estimate_mode": "Typical",
+      "setting": "Daycare",
+      "daycare_expected_hours": 8
+    },
+    "insurance": {
+      "base_sum_insured": 500000,
+      "consumed": 0,
+      "ncb": 0,
+      "room_rent_cap": {
+        "type": "none"
+      }
+    }
+  },
+  "new_engine": {
+    "resolved_context": {
+      "payor_bucket": "Cash",
+      "pricing_mode": "Cash / TR1",
+      "tariff": {
+        "tariff_cd": "TR1",
+        "tariff_name": "KIMS",
+        "source": "cash_default",
+        "warnings": []
+      },
+      "flow": {
+        "treatment": {
+          "family": "coronary_angio_cag_cat_1_daycare",
+          "label": "Coronary Angiogram (CAG) CAT-1 — Daycare",
+          "family_kind": "daycare"
+        },
+        "payer": {
+          "payor_bucket": "Cash",
+          "organization_cd": null,
+          "organization_name": null
+        },
+        "tariff": {
+          "tariff_cd": "TR1",
+          "tariff_name": "KIMS",
+          "source": "cash_default",
+          "pricing_mode": "Cash / TR1"
+        },
+        "rates": {
+          "service_rates_tariff": "TR1",
+          "tr1_fallback_item_count": 0,
+          "ot_slot_ladder_tariff": "TR1",
+          "ot_slot_ladder_tr1_fallback": false
+        },
+        "cohort": {
+          "scope": "clinical_family_all_payors",
+          "case_count": 107,
+          "payor_mix": {
+            "Cash": 96,
+            "Corporate": 1,
+            "GIPSA Insurance": 2,
+            "Non-GIPSA Insurance": 8
+          },
+          "care_filtered": true
+        },
+        "component_basis": {
+          "mode": "auto",
+          "services": {
+            "basis": "Cash",
+            "status": "recommended_exact",
+            "confidence": "high",
+            "case_count": 96,
+            "reason": "Exact Cash cohort has 96 cases (threshold 15)"
+          },
+          "pharmacy": {
+            "basis": "Cash",
+            "status": "recommended_exact",
+            "confidence": "high",
+            "case_count": 96,
+            "reason": "Exact Cash cohort has 96 cases (threshold 15)"
+          },
+          "professional_fees": {
+            "basis": "Cash",
+            "status": "recommended_exact",
+            "confidence": "high",
+            "case_count": 96,
+            "reason": "Exact Cash cohort has 96 cases (threshold 15)"
+          },
+          "drivers": {
+            "basis": "Cash",
+            "note": "LOS / ICU / ward / OT-hour / cath-hour percentiles ride the service basis",
+            "los_source": "package_master",
+            "package_los": 1,
+            "package_pre_days": 0,
+            "package_post_days": 1
+          }
+        },
+        "template": {
+          "layout": "auto_from_cohort",
+          "derived_from_basis": "Cash",
+          "row_flags": {
+            "ot": false,
+            "cathLab": true,
+            "surgical": false,
+            "medicalRecords": "MSC10"
+          }
+        },
+        "billing_route": {
+          "itemized": true,
+          "package_status": "resolved",
+          "package_source": "gate_match_family_label",
+          "package_code": "CAR0122",
+          "package_tariff": "TR1"
+        },
+        "robotic": {
+          "selection": "",
+          "redirect_suggested": false
+        }
+      },
+      "family": "coronary_angio_cag_cat_1_daycare",
+      "family_kind": "daycare",
+      "cohort_case_count": 107,
+      "payer_bases": {
+        "service_basis": {
+          "selected_basis": "Cash",
+          "case_count": 96,
+          "status": "recommended_exact",
+          "confidence": "high",
+          "reason": "Exact Cash cohort has 96 cases (threshold 15)"
+        },
+        "pharmacy_basis": {
+          "selected_basis": "Cash",
+          "case_count": 96,
+          "status": "recommended_exact",
+          "confidence": "high",
+          "reason": "Exact Cash cohort has 96 cases (threshold 15)"
+        },
+        "pf_basis": {
+          "selected_basis": "Cash",
+          "case_count": 96,
+          "status": "recommended_exact",
+          "confidence": "high",
+          "reason": "Exact Cash cohort has 96 cases (threshold 15)"
+        }
+      },
+      "estimate_mode": "Typical",
+      "room_type": "Daycare (room N/A)",
+      "room_key": "general",
+      "daycare": true,
+      "robotic": {
+        "selection": "",
+        "presence_rate": 0,
+        "cases_with_robotic": null,
+        "basis_case_count": 96,
+        "basis": "Cash",
+        "addon": null
+      },
+      "cath_lab": {
+        "hours": 0.5,
+        "p25": 0.5,
+        "p50": 0.5,
+        "p75": 0.5,
+        "manual": null,
+        "rate_per_hour": 11000
+      }
+    },
+    "drivers": {
+      "los": {
+        "p25": 0,
+        "p50": 0,
+        "p75": 0,
+        "selected": 1
+      },
+      "icu": {
+        "p25": 0,
+        "p50": 0,
+        "p75": 0,
+        "selected": 0
+      },
+      "ward": {
+        "p25": 0,
+        "p50": 0,
+        "p75": 0,
+        "selected": 1
+      },
+      "ot": {
+        "p25": 0,
+        "p50": 0,
+        "p75": 0,
+        "selected": 0
+      },
+      "cath": {
+        "p25": 0.5,
+        "p50": 0.5,
+        "p75": 0.5,
+        "selected": 0.5,
+        "basis": "P50",
+        "manual": null
+      }
+    },
+    "line_items": [
+      {
+        "name": "BED CHARGES - DAYCARE",
+        "bucket": "Room Charges",
+        "sub": "Bed Charges",
+        "source": "Template",
+        "how": "Auto-Included",
+        "code": "ROM0010",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2870,
+          "twin": 2870,
+          "single": 2870
+        },
+        "cells": {
+          "general": [
+            2870,
+            2870,
+            2870
+          ],
+          "twin": [
+            2870,
+            2870,
+            2870
+          ],
+          "single": [
+            2870,
+            2870,
+            2870
+          ]
+        },
+        "index": 0,
+        "selected": {
+          "general": 2870,
+          "twin": 2870,
+          "single": 2870
+        }
+      },
+      {
+        "name": "Nursing - Room",
+        "bucket": "Room Charges",
+        "sub": "Ward Care",
+        "source": "Logic",
+        "how": "Ward days x rate",
+        "code": "ROM5189",
+        "qty": {
+          "selected": 1,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 550,
+          "twin": 850,
+          "single": 1200
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 1,
+        "selected": {
+          "general": 550,
+          "twin": 850,
+          "single": 1200
+        }
+      },
+      {
+        "name": "Nursing - ICU",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "ROM5189",
+        "qty": {
+          "selected": 0,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 1200,
+          "twin": 1200,
+          "single": 1200
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 2,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "DMO",
+        "bucket": "Room Charges",
+        "sub": "Ward Care",
+        "source": "Logic",
+        "how": "Ward days x rate",
+        "code": "ROM0093",
+        "qty": {
+          "selected": 1,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 1250,
+          "twin": 1250,
+          "single": 1250
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 3,
+        "selected": {
+          "general": 1250,
+          "twin": 1250,
+          "single": 1250
+        }
+      },
+      {
+        "name": "ICU - Surgical",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "ROM5009",
+        "qty": {
+          "selected": 0,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 10500,
+          "twin": 10500,
+          "single": 10500
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 4,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Bed Charges - Ward",
+        "bucket": "Room Charges",
+        "sub": "Ward Care",
+        "source": "Logic",
+        "how": "Ward days x room rate",
+        "code": "ROOM_BED",
+        "qty": {
+          "selected": 1,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 3320,
+          "twin": 4660,
+          "single": 7680
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 5,
+        "selected": {
+          "general": 3320,
+          "twin": 4660,
+          "single": 7680
+        }
+      },
+      {
+        "name": "Medical Records - 1 Day",
+        "bucket": "Bedside Services",
+        "sub": "Administrative",
+        "source": "Logic",
+        "how": "Fixed 1",
+        "code": "MSC10",
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 360,
+          "twin": 360,
+          "single": 360
+        },
+        "cells": {
+          "general": [
+            360,
+            360,
+            360
+          ],
+          "twin": [
+            360,
+            360,
+            360
+          ],
+          "single": [
+            360,
+            360,
+            360
+          ]
+        },
+        "index": 6,
+        "selected": {
+          "general": 360,
+          "twin": 360,
+          "single": 360
+        }
+      },
+      {
+        "name": "Cath Lab Charges",
+        "bucket": "Procedure / OT Charges",
+        "sub": "Cath Lab Hours",
+        "source": "Historical Cath Lab Family",
+        "how": "Actual billed cath-lab slot-family P25 / P50 / P75 from the selected historical payer basis.",
+        "code": null,
+        "cathHours": {
+          "hours": 0.5,
+          "p25": 0.5,
+          "p50": 0.5,
+          "p75": 0.5,
+          "manual": null,
+          "rate_per_hour": 11000
+        },
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {},
+        "cells": {
+          "general": [
+            5000,
+            5500,
+            5500
+          ],
+          "twin": [
+            5000,
+            5500,
+            5500
+          ],
+          "single": [
+            5000,
+            5500,
+            5500
+          ]
+        },
+        "index": 7,
+        "selected": {
+          "general": 5500,
+          "twin": 5500,
+          "single": 5500
+        }
+      },
+      {
+        "name": "Intensivist Per Day",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "ICC0002",
+        "qty": {
+          "selected": 0,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 3000,
+          "twin": 3000,
+          "single": 3000
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 8,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Assistant Intensivist Per Day",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "ICC0001",
+        "qty": {
+          "selected": 0,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 1500,
+          "twin": 1500,
+          "single": 1500
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 9,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Ward Consumables",
+        "bucket": "Room Charges",
+        "sub": "Ward Care",
+        "source": "Logic",
+        "how": "LOS days x rate",
+        "code": "HSP5013",
+        "qty": {
+          "selected": 1,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 350,
+          "twin": 350,
+          "single": 350
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 10,
+        "selected": {
+          "general": 350,
+          "twin": 350,
+          "single": 350
+        }
+      },
+      {
+        "name": "Monitor Per Day",
+        "bucket": "Room Charges",
+        "sub": "Critical Care",
+        "source": "Logic",
+        "how": "ICU days x rate",
+        "code": "EME0019",
+        "qty": {
+          "selected": 0,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 850,
+          "twin": 850,
+          "single": 850
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 11,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "MLC Charges",
+        "bucket": "Bedside Services",
+        "sub": "Administrative",
+        "source": "Logic",
+        "how": "Applied only when MLC input is Yes",
+        "code": "HSP0047",
+        "qty": {
+          "selected": 0,
+          "low": 0,
+          "typ": 0,
+          "high": 0
+        },
+        "rate": {
+          "general": 1200,
+          "twin": 1200,
+          "single": 1200
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 12,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Drug Administration Charges",
+        "bucket": "Drug Administration Charges",
+        "sub": "Pharmacy Related",
+        "source": "Logic",
+        "how": "12.5% of pharmacy total",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            229.108125,
+            496.27250000000004,
+            718.6440625
+          ],
+          "twin": [
+            229.108125,
+            496.27250000000004,
+            718.6440625
+          ],
+          "single": [
+            229.108125,
+            496.27250000000004,
+            718.6440625
+          ]
+        },
+        "index": 13,
+        "selected": {
+          "general": 496.27250000000004,
+          "twin": 496.27250000000004,
+          "single": 496.27250000000004
+        }
+      },
+      {
+        "name": "Physician Fees — Daily Visits",
+        "bucket": "Professional Fees",
+        "sub": "Professional Fees",
+        "source": "History",
+        "how": "Medical management PF — priced from this cohort's billed PF (visit-based); visit-fee rule sheet pending",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            3600,
+            3600,
+            3600
+          ],
+          "twin": [
+            3600,
+            3600,
+            3600
+          ],
+          "single": [
+            3600,
+            3600,
+            3600
+          ]
+        },
+        "index": 14,
+        "selected": {
+          "general": 3600,
+          "twin": 3600,
+          "single": 3600
+        },
+        "historic_pf": true
+      },
+      {
+        "name": "IP Drugs & Medications",
+        "bucket": "Pharmacy",
+        "sub": "IP Pharmacy",
+        "source": "History",
+        "how": "Bucket quartiles",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            87.615,
+            981.0550000000001,
+            1509.1775
+          ],
+          "twin": [
+            87.615,
+            981.0550000000001,
+            1509.1775
+          ],
+          "single": [
+            87.615,
+            981.0550000000001,
+            1509.1775
+          ]
+        },
+        "index": 15,
+        "selected": {
+          "general": 981.0550000000001,
+          "twin": 981.0550000000001,
+          "single": 981.0550000000001
+        }
+      },
+      {
+        "name": "IP Consumables",
+        "bucket": "Pharmacy",
+        "sub": "IP Pharmacy",
+        "source": "History",
+        "how": "Bucket quartiles",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            1745.25,
+            2989.125,
+            4239.975
+          ],
+          "twin": [
+            1745.25,
+            2989.125,
+            4239.975
+          ],
+          "single": [
+            1745.25,
+            2989.125,
+            4239.975
+          ]
+        },
+        "index": 16,
+        "selected": {
+          "general": 2989.125,
+          "twin": 2989.125,
+          "single": 2989.125
+        }
+      },
+      {
+        "name": "Implants",
+        "bucket": "Pharmacy",
+        "sub": "Implants",
+        "source": "Advanced",
+        "how": "Implant variance controls",
+        "code": null,
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 17,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "BED CHARGES - ICU",
+        "bucket": "Optional Add-Ons",
+        "sub": "Bed Charges",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "ROM5043",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 10500,
+          "twin": 10500,
+          "single": 10500
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 18,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "HCV",
+        "bucket": "Optional Add-Ons",
+        "sub": "Viral Serology",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "MIC0006",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2300,
+          "twin": 2540,
+          "single": 2750
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 19,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "HBSAG",
+        "bucket": "Optional Add-Ons",
+        "sub": "Viral Serology",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "MIC0066",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1850,
+          "twin": 2040,
+          "single": 2210
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 20,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "HIV I & II ANTIBODY",
+        "bucket": "Optional Add-Ons",
+        "sub": "Viral Serology",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "MIC0081",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1850,
+          "twin": 2040,
+          "single": 2210
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 21,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "VIRAL SCREENING",
+        "bucket": "Optional Add-Ons",
+        "sub": "Viral Serology",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "MIC5004",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2410,
+          "twin": 2650,
+          "single": 2870
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 22,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "MINOR SURGICAL PROFILE",
+        "bucket": "Optional Add-Ons",
+        "sub": "Diagnostic Profiles",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PRO0004",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 4160,
+          "twin": 4560,
+          "single": 4980
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 23,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "MONITOR HALF DAY",
+        "bucket": "Optional Add-Ons",
+        "sub": "Patient Monitoring",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME5047",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 450,
+          "twin": 450,
+          "single": 450
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 24,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "2D - ECHO CARDIOGRAPH",
+        "bucket": "Optional Add-Ons",
+        "sub": "2D Echo",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "CAR0017",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2910,
+          "twin": 3220,
+          "single": 3470
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 25,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "TROPONIN-I",
+        "bucket": "Optional Add-Ons",
+        "sub": "Cardiac Marker Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0098",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2910,
+          "twin": 3220,
+          "single": 3470
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 26,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CAROTID DOPPLER / NECK VESSELS",
+        "bucket": "Optional Add-Ons",
+        "sub": "Ultrasound / Doppler",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "ULS007",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 5270,
+          "twin": 5820,
+          "single": 6290
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 27,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CBP (COMPLETE BLOOD PICTURE)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Haematology Counts",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0042",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1050,
+          "twin": 1160,
+          "single": 1250
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 28,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "U/S OF WHOLE ABDOMEN",
+        "bucket": "Optional Add-Ons",
+        "sub": "Ultrasound / Doppler",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "ULS018",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2220,
+          "twin": 2450,
+          "single": 2650
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 29,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "LFT (LIVER FUNCTION TEST WITH PROTEINS)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Liver Function Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0119",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 2170,
+          "twin": 2400,
+          "single": 2590
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 30,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "BEDSIDE ECG",
+        "bucket": "Optional Add-Ons",
+        "sub": "ECG",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "CAR5341",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 480,
+          "twin": 530,
+          "single": 570
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 31,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "GRBS",
+        "bucket": "Optional Add-Ons",
+        "sub": "GRBS Monitoring",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME0020",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 270,
+          "twin": 300,
+          "single": 330
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 32,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "OXYGEN PER HOUR",
+        "bucket": "Optional Add-Ons",
+        "sub": "Oxygen / HFNT Charges",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME0017",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 5,
+          "low": 5,
+          "typ": 5,
+          "high": 5
+        },
+        "rate": {
+          "general": 350,
+          "twin": 350,
+          "single": 350
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 33,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "BLOOD GROUP AND RH (D) TYPING",
+        "bucket": "Optional Add-Ons",
+        "sub": "Blood Bank Services",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BLD0001",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 450,
+          "twin": 530,
+          "single": 580
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 34,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CREATININE",
+        "bucket": "Optional Add-Ons",
+        "sub": "Renal Function / Electrolytes",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0002",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 580,
+          "twin": 660,
+          "single": 760
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 35,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "ECG",
+        "bucket": "Optional Add-Ons",
+        "sub": "ECG",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "CAR0080",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 420,
+          "twin": 460,
+          "single": 500
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 36,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "ELECTROLYTES",
+        "bucket": "Optional Add-Ons",
+        "sub": "Renal Function / Electrolytes",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0003",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1230,
+          "twin": 1360,
+          "single": 1470
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 37,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "TSH (THYROID STIMULATING HORMONE)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Thyroid Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0096",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1230,
+          "twin": 1360,
+          "single": 1470
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 38,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "RBS (RANDOM PLASMA GLUCOSE)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Diabetes / Glucose Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0010",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 360,
+          "twin": 400,
+          "single": 430
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 39,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "UREA",
+        "bucket": "Optional Add-Ons",
+        "sub": "Renal Function / Electrolytes",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "BIO0001",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 360,
+          "twin": 400,
+          "single": 430
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 40,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "APTT (ACTIVATED PARTIAL THROMBOPLASTIN TIME)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Coagulation Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0119",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1050,
+          "twin": 1160,
+          "single": 1250
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 41,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "EVMS - ENHANCED VITALS MONITORING SYSTEM (DOZEE)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Patient Monitoring",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "EME5045",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 1250,
+          "twin": 1250,
+          "single": 1250
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 42,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "CUE (COMPLETE URINE EXAMINATION)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Urine Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0041",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 330,
+          "twin": 370,
+          "single": 400
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 43,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "BT & CT (BLEEDING & CLOTTING TIME)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Coagulation Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0100",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 430,
+          "twin": 480,
+          "single": 510
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 44,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "PT (PROTHROMBIN TIME)",
+        "bucket": "Optional Add-Ons",
+        "sub": "Coagulation Tests",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0118",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 760,
+          "twin": 840,
+          "single": 910
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 45,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "DIET CONSULTATION",
+        "bucket": "Optional Add-Ons",
+        "sub": "Consultation Charges",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "DIE0001",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 740,
+          "twin": 820,
+          "single": 880
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 46,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "X-RAY CHEST PA VIEW",
+        "bucket": "Optional Add-Ons",
+        "sub": "X-Ray / Fluoroscopy",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "XRY058",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 730,
+          "twin": 800,
+          "single": 870
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 47,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "ESR",
+        "bucket": "Optional Add-Ons",
+        "sub": "Haematology Counts",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "PAT0007",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 310,
+          "twin": 340,
+          "single": 370
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 48,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "REGISTRATION",
+        "bucket": "Optional Add-Ons",
+        "sub": "Registration Charges",
+        "source": "Advanced",
+        "how": "Include / Exclude selection",
+        "code": "REG00001",
+        "addOn": true,
+        "included": false,
+        "qty": {
+          "selected": 1,
+          "low": 1,
+          "typ": 1,
+          "high": 1
+        },
+        "rate": {
+          "general": 160,
+          "twin": 160,
+          "single": 160
+        },
+        "cells": {
+          "general": [
+            0,
+            0,
+            0
+          ],
+          "twin": [
+            0,
+            0,
+            0
+          ],
+          "single": [
+            0,
+            0,
+            0
+          ]
+        },
+        "index": 49,
+        "selected": {
+          "general": 0,
+          "twin": 0,
+          "single": 0
+        }
+      },
+      {
+        "name": "Cath Lab Hours Residual",
+        "bucket": "Procedure / OT Charges",
+        "sub": "Cath Lab Hours",
+        "source": "Grouped Residual",
+        "how": "Mode-aware grouped residual net of selected child add-ons from same grouping",
+        "code": null,
+        "groupedResidual": true,
+        "included": true,
+        "netResidual": [
+          5000,
+          5500,
+          5500
+        ],
+        "qty": {},
+        "rate": {},
+        "cells": {
+          "general": [
+            5000,
+            5500,
+            5500
+          ],
+          "twin": [
+            5000,
+            5500,
+            5500
+          ],
+          "single": [
+            5000,
+            5500,
+            5500
+          ]
+        },
+        "index": 50,
+        "selected": {
+          "general": 5500,
+          "twin": 5500,
+          "single": 5500
+        }
+      }
+    ],
+    "subtotal": {
+      "general": [
+        15291.973125,
+        18696.4525,
+        20697.7965625
+      ],
+      "twin": [
+        15291.973125,
+        18696.4525,
+        20697.7965625
+      ],
+      "single": [
+        15291.973125,
+        18696.4525,
+        20697.7965625
+      ],
+      "selected": {
+        "general": 24166.4525,
+        "twin": 25806.4525,
+        "single": 29176.4525
+      }
+    },
+    "grand_total": {
+      "general": [
+        18891.97,
+        22296.45,
+        24297.8
+      ],
+      "twin": [
+        18891.97,
+        22296.45,
+        24297.8
+      ],
+      "single": [
+        18891.97,
+        22296.45,
+        24297.8
+      ],
+      "selected": {
+        "general": 27766.45,
+        "twin": 29406.45,
+        "single": 32776.45
+      }
+    },
+    "final_estimate": 27766.45,
+    "bucket_totals": {
+      "Room Charges": 8340,
+      "Bedside Services": 360,
+      "Procedure / OT Charges": 11000,
+      "Drug Administration Charges": 496.27250000000004,
+      "Professional Fees": 3600,
+      "Pharmacy": 3970.1800000000003,
+      "Optional Add-Ons": 0
+    },
+    "package_offer": {
+      "status": "resolved",
+      "source": "gate_match_family_label",
+      "package": {
+        "organization_cd": null,
+        "organization_name": null,
+        "tariff_code": "TR1",
+        "tariff_name": "KIMS",
+        "package_code": "CAR0122",
+        "package_name": "CORONARY ANGIOGRAM (CAG) - CAT-1",
+        "canonical_package_name": "CORONARY ANGIOGRAM (CAG) - CAT-1",
+        "package_type": "Operation Packages",
+        "department_name": "CARDIOLOGY",
+        "package_amount": "17500",
+        "package_atl_amount": "18300",
+        "pre_days": 0,
+        "post_days": 1,
+        "package_duration": 1,
+        "is_active": true,
+        "payor_bucket": "cash",
+        "documentation_available": true,
+        "documentation_status": "Complete",
+        "documentation_confidence": "High",
+        "tariff_information": "| Room / Category | Tariff / Detail |\n| --- | --- |\n| PACKAGE- I | 18,000 |\n| PACKAGE- II | 20,000 |\n| PACKAGE- III | 22,000 |",
+        "inclusions_text": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables (Guide wire, Sheath, Introducer)\n- Catheters ( TIG, JL, JR & PIGTAIL)\n- Medical Records-1 day",
+        "exclusions_text": "- Room Charges Extra\n- If Patient is shifted to PTCA / CABG, no room charges will be chargeable for CAG\n- Cath Profile\n- Beyond package days All room rents ,professional fee,investigations and pharmacy etc.\n- Additional catheter , wire & sheaths, CD Charges\n- High risk charges depend on patient condition\n- Cross consultation, non related investigations and non cardiac procedures\n- Food & Beverage (attender food and other than diet)\n- any other profiles ,CT , & other costly Investigations\n- Other Services/Attender room charges (if used)\n- HBS AG+ ve, HCV +ve, HIV +ve\n- All medications and investigations other than Procedure\n- Diabetic Management\n\n---",
+        "documentation_notes": "Documentation family resolution: CAG CAT-1 uses the Coronary Angiogram documentation. CAT/category is a tariff/variant descriptor, not a separate clinical documentation requirement.\n- Tariff/inclusion/exclusion content comes only from clean package-detail markdown.\n\nPrevious notes:\n- FC History / CORONARY ANGIOGRAM (CAG): Exact match via exact_package_code. Source code exactly equals Package Master PKGCD.\n- No package-detail documentation mapped from either markdown source.\n\n---",
+        "matched_room_category": null,
+        "room_rates_jsonb": [],
+        "fc_template_package_code": "CAR0122",
+        "fc_template_primary_package_name": "CORONARY ANGIOGRAM (CAG)",
+        "fc_case_count_total": null,
+        "readiness": {
+          "runtime_status": "Strong / Ready",
+          "can_generate_estimate": true,
+          "primary_blocker": null,
+          "warning_reason": null
+        },
+        "inclusions_text_clean": "- Hospital Stay: 1 day\n- Pharmacy: Up to ₹5,000 (includes non-ionic contrast 100ml)\n- Investigations: ECG (2)\n- OT & Procedure Charges: Cath Lab (0.5 hour)\n- Routine Consumables & Nursing: Guidewire, Sheath, Introducer, Catheters (TIG, JL, JR, Pigtail)\n- Medical Records: 1 day",
+        "exclusions_text_clean": "- Room Charges: Not included\n- Room charges for Coronary Angiogram (CAG) are waived if the patient's treatment escalates to PTCA or CABG\n- Investigations: Cath Profile\n- Any stay, services, investigations, or consumables beyond the package duration (charged as per actuals)\n- Additional consumables: Catheters, wires, sheaths, CD charges\n- High-risk charges (depend on patient condition)\n- Cross-specialty consultations, non-related investigations, and non-cardiac procedures\n- Attender food & beverages and additional patient orders\n- Any other profiles, CT scans, or costly investigations\n- Other services or attender room charges (if used)\n- HIV, HBsAg & HCV disposable kit\n- Any medications or investigations not related to the procedure\n- Diabetic management",
+        "room_amounts": {
+          "general": 18000,
+          "single": 18000,
+          "twin": 18000
+        },
+        "room_amounts_source": "service_all_matrix",
+        "inclusions_display": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables (Guide wire, Sheath, Introducer)\n- Catheters ( TIG, JL, JR & PIGTAIL)\n- Medical Records-1 day",
+        "inclusions_variants": [
+          "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables (Guide wire, Sheath, Introducer)\n- Catheters ( TIG, JL, JR & PIGTAIL)\n- Medical Records-1 day"
+        ]
+      },
+      "history": {
+        "admission_count": "157",
+        "latest_admission_at": "2026-05-19T13:08:05.000Z",
+        "min_observed_package_amount": "18000",
+        "max_observed_package_amount": "38020",
+        "sample_admissions_jsonb": [
+          {
+            "doctor_name": "BHAVANI DEEPTHI .P/ DR. SINDHU MARU",
+            "admission_no": "IPGB2425009702",
+            "package_amount": 18000,
+            "department_name": "NEONATOLOGY",
+            "date_of_admission": "2025-02-18T09:52:15+00:00"
+          },
+          {
+            "doctor_name": "DR HEMANTH KUMAR R/DR HARIKAMAL KUNAPAREDDY",
+            "admission_no": "IPGB2526006088",
+            "package_amount": 18000,
+            "department_name": "VASCULAR SURGERY",
+            "date_of_admission": "2025-10-16T08:37:59+00:00"
+          },
+          {
+            "doctor_name": "DR HEMANTH KUMAR R/DR HARIKAMAL KUNAPAREDDY",
+            "admission_no": "IPGB2526010230",
+            "package_amount": 18000,
+            "department_name": "VASCULAR SURGERY",
+            "date_of_admission": "2026-03-20T13:19:01+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425008328",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-02T10:05:46+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425008604",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-11T09:52:18+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425008721",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-17T13:16:12+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425008800",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-20T13:00:23+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425009140",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-31T17:22:44+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425009245",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-02-04T10:03:28+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425010012",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-01T10:40:43+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425010103",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-04T09:21:27+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425010381",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-12T11:23:08+00:00"
+          },
+          {
+            "doctor_name": "LALITH AGARWAL",
+            "admission_no": "IPGB2425010750",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-24T11:56:52+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2425008538",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-09T11:40:15+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2526000156",
+            "package_amount": 38000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-04-06T16:26:58+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2526002342",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-06-19T11:19:11+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2526004757",
+            "package_amount": 38020,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-09-04T12:23:09+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2526008572",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-22T01:36:29+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2526008802",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-30T11:04:47+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2526009418",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-02-20T11:40:05+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2526009420",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-02-20T12:42:56+00:00"
+          },
+          {
+            "doctor_name": "LOKRE",
+            "admission_no": "IPGB2627000619",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-04-22T12:56:37+00:00"
+          },
+          {
+            "doctor_name": "MUKTESHWAR DASARI",
+            "admission_no": "IPGB2526004954",
+            "package_amount": 18000,
+            "department_name": "SURGICAL GASTRO ENTEROLOGY\\GENERAL SURGERY",
+            "date_of_admission": "2025-09-09T17:23:07+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2425010104",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-04T09:38:20+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2425010226",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-07T13:15:14+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2425010251",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-08T13:04:09+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526000397",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-04-14T15:25:37+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526000861",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-04-30T10:53:17+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526001368",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-05-16T13:57:46+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526001461",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-05-19T11:52:21+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526002148",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-06-12T11:44:28+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526002509",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-06-25T11:44:08+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526002601",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-06-27T12:09:40+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526003164",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-15T12:53:02+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526003438",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-23T13:37:04+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526003781",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-04T12:14:26+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526003838",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-06T09:37:25+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526003853",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-06T15:48:14+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526003986",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-11T12:57:49+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526004101",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-14T15:11:01+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526004510",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-28T12:24:37+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526005193",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-09-16T10:15:42+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526005238",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-09-17T12:38:03+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526005344",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-09-20T10:14:38+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526005475",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-09-24T13:37:56+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526005540",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-09-26T12:31:03+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526005846",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-07T11:40:50+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526006100",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-16T13:12:07+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526006231",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-22T15:11:05+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526006576",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-11-03T13:49:11+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526006879",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-11-15T22:17:48+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526007103",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-11-24T12:06:21+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526007328",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-02T11:20:09+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526007479",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-08T11:19:24+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526007490",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-08T16:21:25+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526007600",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-12T20:35:14+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526007796",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-20T12:14:03+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526008295",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-09T11:28:22+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526008325",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-10T13:31:43+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526008357",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-12T10:53:45+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526008703",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-26T21:02:29+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526009120",
+            "package_amount": 38000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-02-09T15:33:08+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526009399",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-02-19T22:20:20+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526009837",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-03-06T11:43:50+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526010426",
+            "package_amount": 38020,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-03-27T12:54:55+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2526010536",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-03-31T12:15:23+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2627000047",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-04-02T10:33:40+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2627000173",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-04-06T12:59:43+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2627000348",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-04-11T12:07:19+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2627000387",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-04-13T11:45:50+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2627000754",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-04-27T10:40:42+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2627001327",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-05-15T13:20:01+00:00"
+          },
+          {
+            "doctor_name": "RANJITH KUMAR GATTU",
+            "admission_no": "IPGB2627001401",
+            "package_amount": 34900,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-05-19T13:08:05+00:00"
+          },
+          {
+            "doctor_name": "SAKET S KHETAN",
+            "admission_no": "IPGB2526001795",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-05-31T14:19:39+00:00"
+          },
+          {
+            "doctor_name": "SAKET S KHETAN",
+            "admission_no": "IPGB2526002443",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-06-23T10:29:43+00:00"
+          },
+          {
+            "doctor_name": "SAKET S KHETAN",
+            "admission_no": "IPGB2526003696",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-01T10:27:39+00:00"
+          },
+          {
+            "doctor_name": "SAKET S KHETAN",
+            "admission_no": "IPGB2526005157",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-09-15T12:33:50+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2425010064",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-03T10:09:46+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2425010113",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-04T13:22:25+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2425010301",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-10T11:06:29+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2425010711",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-22T19:10:44+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526000346",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-04-12T09:46:21+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526001392",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-05-17T10:14:46+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526002587",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-06-27T08:08:52+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526002661",
+            "package_amount": 38000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-06-29T11:38:09+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526003111",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-14T12:14:32+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526003275",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-18T09:28:32+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526003315",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-19T13:56:43+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526003365",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-21T11:47:30+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526003453",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-24T09:51:36+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526003778",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-04T10:17:14+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526004305",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-21T11:32:41+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526005680",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-01T09:24:06+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526005820",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-06T14:06:00+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526006258",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-23T14:09:16+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526006314",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-25T10:20:14+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526006365",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-27T12:54:57+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526006688",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-11-07T16:23:06+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526006851",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-11-14T15:20:42+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526007194",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-11-27T09:32:33+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526007533",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-10T12:11:09+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526007795",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-20T11:34:46+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526007803",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-20T16:11:19+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526008296",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-09T12:39:53+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526008393",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-13T12:00:36+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526008503",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-19T12:39:19+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526008719",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-27T11:07:17+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526008833",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-31T10:01:42+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526009065",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-02-07T13:19:04+00:00"
+          },
+          {
+            "doctor_name": "SRIKRISHNA SRIKAKULAPU",
+            "admission_no": "IPGB2526009359",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-02-18T17:26:25+00:00"
+          },
+          {
+            "doctor_name": "SRINIVAS ADITYA S",
+            "admission_no": "IPGB2526000324",
+            "package_amount": 18000,
+            "department_name": "INTERNAL MEDICINE/GENERAL MEDICINE",
+            "date_of_admission": "2025-04-11T12:16:30+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425008535",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-09T10:13:12+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425008799",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-20T12:34:31+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425008976",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-01-25T11:11:03+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425009244",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-02-04T09:42:38+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425009247",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-02-04T11:37:40+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425009454",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-02-10T16:22:40+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425009518",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-02-12T11:53:53+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425009598",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-02-14T12:50:40+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425009839",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-02-22T11:04:06+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425009948",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-02-26T11:42:41+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425010017",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-01T11:16:38+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425010240",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-08T10:19:42+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425010245",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-08T10:49:45+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425010383",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-12T12:01:28+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425010707",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-22T12:34:29+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2425010736",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-03-24T03:29:38+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526000024",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-04-01T17:43:48+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526000763",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-04-26T12:14:46+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526001269",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-05-13T15:28:36+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526001693",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-05-28T14:09:06+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526002302",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-06-17T16:21:12+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526003106",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-14T10:52:55+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526003479",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-07-25T07:57:36+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526003734",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-02T10:34:17+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526004413",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-25T10:20:35+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526004572",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-08-29T20:53:23+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526005918",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-09T17:13:47+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526006010",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-13T12:15:45+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526006140",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-17T11:23:01+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526006261",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-23T16:15:45+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526006454",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-10-30T19:14:32+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526006987",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-11-20T11:04:08+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526007017",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-11-21T10:42:57+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526007297",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-01T13:08:12+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526007334",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-02T16:16:10+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526007408",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2025-12-05T09:26:26+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526008627",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-23T23:01:24+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526008668",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-24T22:24:28+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526008840",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-01-31T11:48:53+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526009389",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-02-19T16:45:19+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526009641",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-02-28T12:52:06+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2526010063",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-03-14T14:22:58+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2627000721",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-04-25T22:37:00+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2627000766",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-04-27T14:25:19+00:00"
+          },
+          {
+            "doctor_name": "SRI RAMULU KADIYALA",
+            "admission_no": "IPGB2627001395",
+            "package_amount": 18000,
+            "department_name": "CARDIOLOGY",
+            "date_of_admission": "2026-05-19T09:55:17+00:00"
+          },
+          {
+            "doctor_name": "UMESH VARMA C.A",
+            "admission_no": "IPGB2526002858",
+            "package_amount": 18000,
+            "department_name": "PULMONOLOGY",
+            "date_of_admission": "2025-07-05T19:15:48+00:00"
+          }
+        ]
+      },
+      "billed_actuals": {
+        "basis": "converted package bills (excl. F&B)",
+        "this_tariff": {
+          "cases": 51,
+          "p25": 18000,
+          "p50": 18000,
+          "p75": 18000,
+          "package_amount": {
+            "p25": 18000,
+            "p50": 18000,
+            "p75": 18000
+          },
+          "exclusions_over_package": {
+            "p25": 0,
+            "p50": 0,
+            "p75": 0
+          }
+        },
+        "all_tariffs_cases": 52,
+        "bucket_extras": {
+          "payor_group": "Cash",
+          "buckets": [
+            {
+              "bucket": "Professional Fees",
+              "admissions": 49,
+              "cases": 3,
+              "presence_pct": 6,
+              "p25": 28180,
+              "p50": 50860,
+              "p75": 90225
+            },
+            {
+              "bucket": "Procedure / OT Charges",
+              "admissions": 49,
+              "cases": 5,
+              "presence_pct": 10,
+              "p25": 2000,
+              "p50": 9120,
+              "p75": 11190
+            },
+            {
+              "bucket": "Pharmacy",
+              "admissions": 49,
+              "cases": 3,
+              "presence_pct": 6,
+              "p25": 5132,
+              "p50": 7764,
+              "p75": 8430
+            },
+            {
+              "bucket": "Investigations",
+              "admissions": 49,
+              "cases": 5,
+              "presence_pct": 10,
+              "p25": 4980,
+              "p50": 6495,
+              "p75": 7375
+            },
+            {
+              "bucket": "Bedside Services",
+              "admissions": 49,
+              "cases": 5,
+              "presence_pct": 10,
+              "p25": 810,
+              "p50": 1930,
+              "p75": 2070
+            },
+            {
+              "bucket": "Room Charges",
+              "admissions": 49,
+              "cases": 9,
+              "presence_pct": 18,
+              "p25": 0,
+              "p50": 1922,
+              "p75": 8980
+            }
+          ]
+        }
+      },
+      "coverage": {
+        "rows": [
+          {
+            "index": 0,
+            "name": "BED CHARGES - DAYCARE",
+            "bucket": "Room Charges",
+            "amount": 2870,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 1,
+            "name": "Nursing - Room",
+            "bucket": "Room Charges",
+            "amount": 550,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 2,
+            "name": "Nursing - ICU",
+            "bucket": "Room Charges",
+            "amount": 0,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 3,
+            "name": "DMO",
+            "bucket": "Room Charges",
+            "amount": 1250,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 4,
+            "name": "ICU - Surgical",
+            "bucket": "Room Charges",
+            "amount": 0,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 5,
+            "name": "Bed Charges - Ward",
+            "bucket": "Room Charges",
+            "amount": 3320,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 6,
+            "name": "Medical Records - 1 Day",
+            "bucket": "Bedside Services",
+            "amount": 360,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "bedside covered by package inclusion clause"
+          },
+          {
+            "index": 7,
+            "name": "Cath Lab Charges",
+            "bucket": "Procedure / OT Charges",
+            "amount": 5500,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "ot covered by package inclusion clause"
+          },
+          {
+            "index": 8,
+            "name": "Intensivist Per Day",
+            "bucket": "Room Charges",
+            "amount": 0,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 9,
+            "name": "Assistant Intensivist Per Day",
+            "bucket": "Room Charges",
+            "amount": 0,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 10,
+            "name": "Ward Consumables",
+            "bucket": "Room Charges",
+            "amount": 350,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 11,
+            "name": "Monitor Per Day",
+            "bucket": "Room Charges",
+            "amount": 0,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "room covered by package inclusion clause"
+          },
+          {
+            "index": 12,
+            "name": "MLC Charges",
+            "bucket": "Bedside Services",
+            "amount": 0,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "bedside covered by package inclusion clause"
+          },
+          {
+            "index": 13,
+            "name": "Drug Administration Charges",
+            "bucket": "Drug Administration Charges",
+            "amount": 496.27,
+            "status": "recomputed",
+            "final_amount": 0,
+            "source": null,
+            "note": "recomputed on payable pharmacy only"
+          },
+          {
+            "index": 14,
+            "name": "Physician Fees — Daily Visits",
+            "bucket": "Professional Fees",
+            "amount": 3600,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "professional fees included in package"
+          },
+          {
+            "index": 15,
+            "name": "IP Drugs & Medications",
+            "bucket": "Pharmacy",
+            "amount": 981.06,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "pharmacy covered by package inclusion clause"
+          },
+          {
+            "index": 16,
+            "name": "IP Consumables",
+            "bucket": "Pharmacy",
+            "amount": 2989.13,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "pharmacy covered by package inclusion clause"
+          },
+          {
+            "index": 17,
+            "name": "Implants",
+            "bucket": "Pharmacy",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 18,
+            "name": "BED CHARGES - ICU",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 19,
+            "name": "HCV",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "excluded",
+            "final_amount": 0,
+            "source": "HBS AG+ ve, HCV +ve, HIV +ve",
+            "note": "excluded by package"
+          },
+          {
+            "index": 20,
+            "name": "HBSAG",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 21,
+            "name": "HIV I & II ANTIBODY",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 22,
+            "name": "VIRAL SCREENING",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 23,
+            "name": "MINOR SURGICAL PROFILE",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 24,
+            "name": "MONITOR HALF DAY",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 25,
+            "name": "2D - ECHO CARDIOGRAPH",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 26,
+            "name": "TROPONIN-I",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 27,
+            "name": "CAROTID DOPPLER / NECK VESSELS",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 28,
+            "name": "CBP (COMPLETE BLOOD PICTURE)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 29,
+            "name": "U/S OF WHOLE ABDOMEN",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 30,
+            "name": "LFT (LIVER FUNCTION TEST WITH PROTEINS)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 31,
+            "name": "BEDSIDE ECG",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 32,
+            "name": "GRBS",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 33,
+            "name": "OXYGEN PER HOUR",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 34,
+            "name": "BLOOD GROUP AND RH (D) TYPING",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 35,
+            "name": "CREATININE",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 36,
+            "name": "ECG",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 37,
+            "name": "ELECTROLYTES",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 38,
+            "name": "TSH (THYROID STIMULATING HORMONE)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 39,
+            "name": "RBS (RANDOM PLASMA GLUCOSE)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 40,
+            "name": "UREA",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 41,
+            "name": "APTT (ACTIVATED PARTIAL THROMBOPLASTIN TIME)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 42,
+            "name": "EVMS - ENHANCED VITALS MONITORING SYSTEM (DOZEE)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 43,
+            "name": "CUE (COMPLETE URINE EXAMINATION)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 44,
+            "name": "BT & CT (BLEEDING & CLOTTING TIME)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 45,
+            "name": "PT (PROTHROMBIN TIME)",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 46,
+            "name": "DIET CONSULTATION",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 47,
+            "name": "X-RAY CHEST PA VIEW",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 48,
+            "name": "ESR",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 49,
+            "name": "REGISTRATION",
+            "bucket": "Optional Add-Ons",
+            "amount": 0,
+            "status": "not_included",
+            "final_amount": 0,
+            "source": null,
+            "note": "not selected / zero"
+          },
+          {
+            "index": 50,
+            "name": "Cath Lab Hours Residual",
+            "bucket": "Procedure / OT Charges",
+            "amount": 5500,
+            "status": "fully_included",
+            "final_amount": 0,
+            "source": "- Hospital Stay - 1 day\n- Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml\n- ECG 2 Included\n- CATH LAB Charges 1/2 Hr\n- Cath Consumables …",
+            "note": "ot covered by package inclusion clause"
+          }
+        ],
+        "totals": {
+          "without_package": 27766.45,
+          "package_amount": 18000,
+          "payable_extras": 0,
+          "with_package": 18000
+        },
+        "parse": {
+          "mode": "category-clause",
+          "categories": [
+            "room",
+            "nursing",
+            "pf",
+            "ot",
+            "pharmacy",
+            "investigations",
+            "bedside"
+          ],
+          "variants": 1,
+          "stay": {
+            "ward_days": null,
+            "icu_days": null,
+            "source": null
+          },
+          "caps": {},
+          "allowances": 0,
+          "exclusions": 14,
+          "unparsed": [
+            "Hospital Stay - 1 day",
+            "Pharmacy Charges Upto Rs. 5000/- Includes Non Ionic Contrast - 100ml",
+            "ECG 2 Included",
+            "CATH LAB Charges 1/2 Hr",
+            "Cath Consumables (Guide wire, Sheath, Introducer)",
+            "Catheters ( TIG, JL, JR & PIGTAIL)",
+            "Medical Records-1 day"
+          ]
+        }
+      },
+      "conversion_check": {
+        "status": "ok",
+        "converted_total": 18000,
+        "actual_band": {
+          "p25": 18000,
+          "p50": 18000,
+          "p75": 18000,
+          "cases": 51
+        }
+      },
+      "quote": {
+        "with_package_total": 18000,
+        "package_component": 18000,
+        "package_amount_source": "room_tier",
+        "extras_component": 0,
+        "extras_basis": "coverage",
+        "billed_band": {
+          "p25": 18000,
+          "p75": 18000,
+          "cases": 51
+        },
+        "confidence": "high",
+        "blocked": false
+      }
+    },
+    "add_ons": [
+      {
+        "code": "ROM5043",
+        "name": "BED CHARGES - ICU",
+        "grouping": "Bed Charges",
+        "bucket": "Room Charges",
+        "presence": 2.083333333333333,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 10500,
+        "selected": "Exclude"
+      },
+      {
+        "code": "MIC0006",
+        "name": "HCV",
+        "grouping": "Viral Serology",
+        "bucket": "Investigations",
+        "presence": 7.291666666666667,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1102.934,
+        "selected": "Exclude"
+      },
+      {
+        "code": "MIC0066",
+        "name": "HBSAG",
+        "grouping": "Viral Serology",
+        "bucket": "Investigations",
+        "presence": 7.291666666666667,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 883.533,
+        "selected": "Exclude"
+      },
+      {
+        "code": "MIC0081",
+        "name": "HIV I & II ANTIBODY",
+        "grouping": "Viral Serology",
+        "bucket": "Investigations",
+        "presence": 7.291666666666667,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 883.533,
+        "selected": "Exclude"
+      },
+      {
+        "code": "MIC5004",
+        "name": "VIRAL SCREENING",
+        "grouping": "Viral Serology",
+        "bucket": "Investigations",
+        "presence": 5.208333333333334,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 2870,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PRO0004",
+        "name": "MINOR SURGICAL PROFILE",
+        "grouping": "Diagnostic Profiles",
+        "bucket": "Investigations",
+        "presence": 2.083333333333333,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 4570,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME5047",
+        "name": "MONITOR HALF DAY",
+        "grouping": "Patient Monitoring",
+        "bucket": "Bedside Services",
+        "presence": 22.916666666666664,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 515,
+        "selected": "Exclude"
+      },
+      {
+        "code": "CAR0017",
+        "name": "2D - ECHO CARDIOGRAPH",
+        "grouping": "2D Echo",
+        "bucket": "Investigations",
+        "presence": 2.083333333333333,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 3190,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0098",
+        "name": "TROPONIN-I",
+        "grouping": "Cardiac Marker Tests",
+        "bucket": "Investigations",
+        "presence": 2.083333333333333,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 3190,
+        "selected": "Exclude"
+      },
+      {
+        "code": "ULS007",
+        "name": "CAROTID DOPPLER / NECK VESSELS",
+        "grouping": "Ultrasound / Doppler",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 6290,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0042",
+        "name": "CBP (COMPLETE BLOOD PICTURE)",
+        "grouping": "Haematology Counts",
+        "bucket": "Investigations",
+        "presence": 4.166666666666666,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 790.4675,
+        "selected": "Exclude"
+      },
+      {
+        "code": "ULS018",
+        "name": "U/S OF WHOLE ABDOMEN",
+        "grouping": "Ultrasound / Doppler",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 2650,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0119",
+        "name": "LFT (LIVER FUNCTION TEST WITH PROTEINS)",
+        "grouping": "Liver Function Tests",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 2590,
+        "selected": "Exclude"
+      },
+      {
+        "code": "CAR5341",
+        "name": "BEDSIDE ECG",
+        "grouping": "ECG",
+        "bucket": "Bedside Services",
+        "presence": 4.166666666666666,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 480,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME0020",
+        "name": "GRBS",
+        "grouping": "GRBS Monitoring",
+        "bucket": "Bedside Services",
+        "presence": 6.25,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 210,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME0017",
+        "name": "OXYGEN PER HOUR",
+        "grouping": "Oxygen / HFNT Charges",
+        "bucket": "Bedside Services",
+        "presence": 1.0416666666666665,
+        "q25": 5,
+        "q50": 5,
+        "q75": 5,
+        "amount": 1750,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BLD0001",
+        "name": "BLOOD GROUP AND RH (D) TYPING",
+        "grouping": "Blood Bank Services",
+        "bucket": "Investigations",
+        "presence": 3.125,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 252.234,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0002",
+        "name": "CREATININE",
+        "grouping": "Renal Function / Electrolytes",
+        "bucket": "Investigations",
+        "presence": 2.083333333333333,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 165.986,
+        "selected": "Exclude"
+      },
+      {
+        "code": "CAR0080",
+        "name": "ECG",
+        "grouping": "ECG",
+        "bucket": "Investigations",
+        "presence": 3.125,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 206.961,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0003",
+        "name": "ELECTROLYTES",
+        "grouping": "Renal Function / Electrolytes",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1470,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0096",
+        "name": "TSH (THYROID STIMULATING HORMONE)",
+        "grouping": "Thyroid Tests",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1470,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0010",
+        "name": "RBS (RANDOM PLASMA GLUCOSE)",
+        "grouping": "Diabetes / Glucose Tests",
+        "bucket": "Investigations",
+        "presence": 3.125,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 174.623,
+        "selected": "Exclude"
+      },
+      {
+        "code": "BIO0001",
+        "name": "UREA",
+        "grouping": "Renal Function / Electrolytes",
+        "bucket": "Investigations",
+        "presence": 3.125,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 187.558,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0119",
+        "name": "APTT (ACTIVATED PARTIAL THROMBOPLASTIN TIME)",
+        "grouping": "Coagulation Tests",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1250,
+        "selected": "Exclude"
+      },
+      {
+        "code": "EME5045",
+        "name": "EVMS - ENHANCED VITALS MONITORING SYSTEM (DOZEE)",
+        "grouping": "Patient Monitoring",
+        "bucket": "Bedside Services",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 1250,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0041",
+        "name": "CUE (COMPLETE URINE EXAMINATION)",
+        "grouping": "Urine Tests",
+        "bucket": "Investigations",
+        "presence": 3.125,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 148.753,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0100",
+        "name": "BT & CT (BLEEDING & CLOTTING TIME)",
+        "grouping": "Coagulation Tests",
+        "bucket": "Investigations",
+        "presence": 2.083333333333333,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 171.9135,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0118",
+        "name": "PT (PROTHROMBIN TIME)",
+        "grouping": "Coagulation Tests",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 910,
+        "selected": "Exclude"
+      },
+      {
+        "code": "DIE0001",
+        "name": "DIET CONSULTATION",
+        "grouping": "Consultation Charges",
+        "bucket": "Professional Fees",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 880,
+        "selected": "Exclude"
+      },
+      {
+        "code": "XRY058",
+        "name": "X-RAY CHEST PA VIEW",
+        "grouping": "X-Ray / Fluoroscopy",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 870,
+        "selected": "Exclude"
+      },
+      {
+        "code": "PAT0007",
+        "name": "ESR",
+        "grouping": "Haematology Counts",
+        "bucket": "Investigations",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 370,
+        "selected": "Exclude"
+      },
+      {
+        "code": "REG00001",
+        "name": "REGISTRATION",
+        "grouping": "Registration Charges",
+        "bucket": "Procedure / OT Charges",
+        "presence": 1.0416666666666665,
+        "q25": 1,
+        "q50": 1,
+        "q75": 1,
+        "amount": 160,
+        "selected": "Exclude"
+      }
+    ],
+    "grouped_adjustments": [
+      {
+        "grouping": "Cath Lab Hours",
+        "bucket": "Procedure / OT Charges",
+        "presence": 100,
+        "p25Exact": 5000,
+        "p50Exact": 5500,
+        "p75Exact": 5500,
+        "captured": 0,
+        "leftOut": 5500,
+        "residualP50": 5500,
+        "optionalChildCount": 0,
+        "status": "material_gap",
+        "band": "auto",
+        "selected": "Include",
+        "why": "Auto common-case residual",
+        "insuranceExcluded": false
+      }
+    ],
+    "advanced_controls": {
+      "ot_consumables": {
+        "shortlist": [
+          {
+            "key": "Cash|INTU110|INTRODUCER NEEDLE 20G*32MM(1105040-INVENT-BIO)",
+            "name_key": "Cash|INTRODUCER NEEDLE 20G*32MM(1105040-INVENT-BIO)",
+            "basis_label": "Cash",
+            "item_code": "INTU110",
+            "item_name": "INTRODUCER NEEDLE 20G*32MM(1105040-INVENT-BIO)",
+            "case_presence_rate": 26.041666666666668,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 320,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 320,
+            "expected_contribution": 83.32799999999999,
+            "cumulative_share": 0.17098398492688183,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|PMLU33|PM LINE M/F 200CM(LIFE-O-LINE)",
+            "name_key": "Cash|PM LINE M/F 200CM(LIFE-O-LINE)",
+            "basis_label": "Cash",
+            "item_code": "PMLU33",
+            "item_name": "PM LINE M/F 200CM(LIFE-O-LINE)",
+            "case_presence_rate": 12.5,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 534,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 534,
+            "expected_contribution": 66.75,
+            "cumulative_share": 0.30795092273733404,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|ENCU14|MICROOPTIC STERILE GLOVE 7.5(ENCORE-JK ANSELL)",
+            "name_key": "Cash|MICROOPTIC STERILE GLOVE 7.5(ENCORE-JK ANSELL)",
+            "basis_label": "Cash",
+            "item_code": "ENCU14",
+            "item_name": "MICROOPTIC STERILE GLOVE 7.5(ENCORE-JK ANSELL)",
+            "case_presence_rate": 40.625,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 117,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 117.19,
+            "expected_contribution": 47.5371,
+            "cumulative_share": 0.4054941589828659,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|PUNU10|PUNTURE NEEDLES 18G(TRANSULMIA)",
+            "name_key": "Cash|PUNTURE NEEDLES 18G(TRANSULMIA)",
+            "basis_label": "Cash",
+            "item_code": "PUNU10",
+            "item_name": "PUNTURE NEEDLES 18G(TRANSULMIA)",
+            "case_presence_rate": 17.708333333333336,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 210.94,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 225,
+            "expected_contribution": 37.357474,
+            "cumulative_share": 0.48214942217557877,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|FLEA53|FLEXYPORT 2-PORT MANIFOLD MP-250PSI(110801-INVENT BIOMED)",
+            "name_key": "Cash|FLEXYPORT 2-PORT MANIFOLD MP-250PSI(110801-INVENT BIOMED)",
+            "basis_label": "Cash",
+            "item_code": "FLEA53",
+            "item_name": "FLEXYPORT 2-PORT MANIFOLD MP-250PSI(110801-INVENT BIOMED)",
+            "case_presence_rate": 3.125,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 937.5,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 937.5,
+            "expected_contribution": 29.34375,
+            "cumulative_share": 0.5423610114096681,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|SURU160|SURGICAL GLOVE 7.5(BLISTER PACK-SURGICARE-KANAM)",
+            "name_key": "Cash|SURGICAL GLOVE 7.5(BLISTER PACK-SURGICARE-KANAM)",
+            "basis_label": "Cash",
+            "item_code": "SURU160",
+            "item_name": "SURGICAL GLOVE 7.5(BLISTER PACK-SURGICARE-KANAM)",
+            "case_presence_rate": 28.125,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 102,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 102,
+            "expected_contribution": 28.6926,
+            "cumulative_share": 0.6012364804706446,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|ENCU12|MICROOPTIC STERILE GLOVE 7.0(ENCORE-JK ANSELL)",
+            "name_key": "Cash|MICROOPTIC STERILE GLOVE 7.0(ENCORE-JK ANSELL)",
+            "basis_label": "Cash",
+            "item_code": "ENCU12",
+            "item_name": "MICROOPTIC STERILE GLOVE 7.0(ENCORE-JK ANSELL)",
+            "case_presence_rate": 23.958333333333336,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 117,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 117.19,
+            "expected_contribution": 28.0332,
+            "cumulative_share": 0.6587589008605768,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|LATU73|LATEX EXAMINATION GLOVES-MEDIUM(NITRILE-SUCHIKA)",
+            "name_key": "Cash|LATEX EXAMINATION GLOVES-MEDIUM(NITRILE-SUCHIKA)",
+            "basis_label": "Cash",
+            "item_code": "LATU73",
+            "item_name": "LATEX EXAMINATION GLOVES-MEDIUM(NITRILE-SUCHIKA)",
+            "case_presence_rate": 38.54166666666667,
+            "ot_quantity_typical": 3,
+            "ot_amount_typical": 70.29,
+            "ip_quantity_typical": 4,
+            "ip_amount_typical": 93.72,
+            "overall_quantity_typical": 8,
+            "overall_amount_typical": 187.52,
+            "expected_contribution": 27.089766000000004,
+            "cumulative_share": 0.714345452096857,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|RADA25|RADIFOCUS INTRUDUCER-II 5FR*7CM(RS*A50G07SQ-TERUMO)",
+            "name_key": "Cash|RADIFOCUS INTRUDUCER-II 5FR*7CM(RS*A50G07SQ-TERUMO)",
+            "basis_label": "Cash",
+            "item_code": "RADA25",
+            "item_name": "RADIFOCUS INTRUDUCER-II 5FR*7CM(RS*A50G07SQ-TERUMO)",
+            "case_presence_rate": 2.083333333333333,
+            "ot_quantity_typical": 0.5,
+            "ot_amount_typical": 1220,
+            "ip_quantity_typical": 0.5,
+            "ip_amount_typical": 1139.5,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 2359.5,
+            "expected_contribution": 25.375999999999998,
+            "cumulative_share": 0.7664154597954043,
+            "selected": "Exclude"
+          },
+          {
+            "key": "Cash|ENCU10|MICROOPTIC STERILE GLOVE 6.5(ENCORE-JK ANSELL)",
+            "name_key": "Cash|MICROOPTIC STERILE GLOVE 6.5(ENCORE-JK ANSELL)",
+            "basis_label": "Cash",
+            "item_code": "ENCU10",
+            "item_name": "MICROOPTIC STERILE GLOVE 6.5(ENCORE-JK ANSELL)",
+            "case_presence_rate": 20.833333333333336,
+            "ot_quantity_typical": 1,
+            "ot_amount_typical": 117,
+            "ip_quantity_typical": 0,
+            "ip_amount_typical": 0,
+            "overall_quantity_typical": 1,
+            "overall_amount_typical": 117.095,
+            "expected_contribution": 24.3711,
+            "cumulative_share": 0.816423473848922,
+            "selected": "Exclude"
+          }
+        ],
+        "applied": 0,
+        "p25": 0,
+        "p50": 0,
+        "p75": 1760.725
+      },
+      "implants": {
+        "hierarchy": {
+          "families": [
+            {
+              "key": "Femoral Component",
+              "presence_rate": 0.93,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 1148,
+              "rate_p50": 1148,
+              "rate_p75": 1148,
+              "amount_p50": 1148
+            }
+          ],
+          "brands": [
+            {
+              "key": "Femoral Component|Other",
+              "presence_rate": 0.93,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 1148,
+              "rate_p50": 1148,
+              "rate_p75": 1148,
+              "amount_p50": 1148,
+              "family": "Femoral Component",
+              "brand": "Other"
+            }
+          ],
+          "items": [
+            {
+              "key": "CORA300",
+              "presence_rate": 0.93,
+              "distinct_ip_count": 1,
+              "quantity_p25": 1,
+              "quantity_p50": 1,
+              "quantity_p75": 1,
+              "rate_p25": 1148,
+              "rate_p50": 1148,
+              "rate_p75": 1148,
+              "amount_p50": 1148,
+              "name": "CORDIS AVANTI PLUS FEMORAL SHEATHS 6FR*11CM(504-606X)",
+              "family": "Femoral Component",
+              "brand": "Other",
+              "code": "CORA300"
+            }
+          ]
+        },
+        "resolved": 0,
+        "controls": {
+          "mode": "Default P50"
+        },
+        "p25": 0,
+        "p50": 0,
+        "p75": 0
+      }
+    },
+    "service_line_count": {
+      "p25": 6,
+      "p50": 6,
+      "p75": 6,
+      "base": 11,
+      "selectedAddOns": 0,
+      "current": 11,
+      "status": "above historical range"
+    },
+    "historic_metrics": {
+      "basis": "Cash",
+      "basis_confidence": "high",
+      "case_count": 96,
+      "buckets": {
+        "total_amount_excluding_food_and_beverage_and_returns_plus_drug_admin": {
+          "label": "Gross total",
+          "p25": 18225.9275,
+          "p50": 19315.225,
+          "p75": 20985.635000000002
+        },
+        "pharmacy_total": {
+          "label": "Pharmacy (total)",
+          "p25": 4523.255,
+          "p50": 5281.76,
+          "p75": 6278.2325
+        },
+        "ip_drugs": {
+          "label": "IP Drugs",
+          "p25": 87.615,
+          "p50": 981.0550000000001,
+          "p75": 1509.1775
+        },
+        "ip_consumables": {
+          "label": "IP Consumables",
+          "p25": 1745.25,
+          "p50": 2989.125,
+          "p75": 4239.975
+        },
+        "ot_drugs": {
+          "label": "OT Drugs",
+          "p25": 0,
+          "p50": 0,
+          "p75": 1255.7425
+        },
+        "ot_consumables": {
+          "label": "OT Consumables",
+          "p25": 0,
+          "p50": 0,
+          "p75": 1760.725
+        },
+        "implants": {
+          "label": "Implants",
+          "p25": 0,
+          "p50": 0,
+          "p75": 0
+        },
+        "professional_fees": {
+          "label": "Professional Fees",
+          "p25": 3600,
+          "p50": 3600,
+          "p75": 3600
+        },
+        "investigations": {
+          "label": "Investigations",
+          "p25": 0,
+          "p50": 0,
+          "p75": 0
+        },
+        "procedure_ot_charges": {
+          "label": "Procedure / OT Charges",
+          "p25": 5350,
+          "p50": 5860,
+          "p75": 5860
+        },
+        "room_charges": {
+          "label": "Room Charges",
+          "p25": 3180,
+          "p50": 3720,
+          "p75": 3770
+        },
+        "bedside_services": {
+          "label": "Bedside Services",
+          "p25": 0,
+          "p50": 0,
+          "p75": 515
+        },
+        "ot_hours": {
+          "label": "OT hours",
+          "p25": 0,
+          "p50": 0,
+          "p75": 0
+        },
+        "los_days": {
+          "label": "Length of stay (days)",
+          "p25": 0,
+          "p50": 0,
+          "p75": 0
+        }
+      }
+    },
+    "pf_analysis": {
+      "applicable": false,
+      "reason": "PF priced from the historic P50 — the insurer tariff carries token PF rates (15-Jul Q1)",
+      "pf_source": "historic_p50"
+    },
+    "warnings": [
+      "Stay defaulted to the package master's duration — 1 day for [CAR0122] (pre 0 / post 1); cohort history stays as the reference band.",
+      "Medical management — Professional Fees priced from billed physician-fee history (P50 ₹3,600, basis Cash); the visit-based fee sheet will refine this."
+    ],
+    "unresolved_items": [],
+    "daycare": {
+      "active": true,
+      "model": "stay_billing_modifier",
+      "inference": "none",
+      "confirmed": true,
+      "status": "strict_daycare",
+      "strict_daycare_upto_12h": true,
+      "routing": "exact_treatment_regimen_cohort_at_current_tariff",
+      "components": {
+        "daycare_charge": {
+          "code": "ROM0010",
+          "alt_code": "RNS0075",
+          "rule": "exactly one — never both"
+        },
+        "dmo": {
+          "included": false,
+          "reason": "excluded — only 3/1,954 daycare cases"
+        },
+        "nursing": {
+          "mode": "conditional",
+          "historical_presence": 0.339
+        },
+        "admin_msc10": {
+          "is_procedure": false,
+          "note": "MSC10 is administrative, not a procedure."
+        }
+      },
+      "inpatient_conversion": {
+        "active": false
+      },
+      "oncology_cycle": null,
+      "flags": [
+        "Daycare never uses a single generic average — price the exact treatment/regimen cohort at current tariff.",
+        "Never mix package and open-bill daycare histories."
+      ],
+      "notes": [
+        "Daycare is a stay/billing modifier — the treatment/drug drives the cost.",
+        "Daycare confirmed by the FC."
+      ]
+    },
+    "tax": {
+      "applies_to": "room_rent_only",
+      "basis": "by_service_code_not_ward_name",
+      "statutory": "CBIC 5% (2.5% CGST + 2.5% SGST), eff. 18-Jul-2022",
+      "all_payers_same_math": true,
+      "lines": [
+        {
+          "component": "patient_room_rent",
+          "code": "ROM0001",
+          "per_day": 3320,
+          "days": 1,
+          "base": 3320,
+          "category": "below_threshold_no_gst",
+          "gst_rate": 0,
+          "gst_amount": 0,
+          "note": "No GST — room rent ₹3320/day ≤ ₹5,000."
+        }
+      ],
+      "gst_on_room_rent": 0,
+      "attendant_room": null,
+      "package_rule": "tax_identifiable_room_component_only",
+      "categories": [
+        "PATIENT_ROOM_5_ABOVE_5000",
+        "CRITICAL_CARE_ROOM_EXEMPT",
+        "ATTENDANT_ACCOMMODATION_18"
+      ],
+      "note": "GST is a separate line, additive to the base estimate (not folded into the parity-pinned total)."
+    }
+  },
+  "old_engine_final": 27766.45
+}

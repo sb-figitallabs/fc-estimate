@@ -226,6 +226,27 @@ async function withCleanTexts(pkg) {
   return pkg;
 }
 
+/** GIPSA workbook (manager 23-Jul): package ward/ICU LOS split on
+ *  fc.package_master — authoritative for LOS/allocation ONLY (rates stay from
+ *  the Service-All TR matrix, via withServiceAllRooms). Fetched separately +
+ *  defensively (columns bootstrapped by scripts/load-gipsa-package-los.js);
+ *  feeds T10's per-setting ledger via buildEstimate →
+ *  packageOffer.package.pkg_defined_ward_stay / pkg_defined_icu_stay. */
+async function withPackageLos(pkg) {
+  if (!pkg?.package_code || !pkg?.tariff_code) return pkg;
+  try {
+    const { rows } = await query(
+      `SELECT pkg_defined_ward_stay, pkg_defined_icu_stay
+       FROM fc.package_master WHERE tariff_code = $1 AND package_code = $2`,
+      [pkg.tariff_code, pkg.package_code]);
+    if (rows[0]) {
+      if (rows[0].pkg_defined_ward_stay != null) pkg.pkg_defined_ward_stay = Number(rows[0].pkg_defined_ward_stay);
+      if (rows[0].pkg_defined_icu_stay != null) pkg.pkg_defined_icu_stay = Number(rows[0].pkg_defined_icu_stay);
+    }
+  } catch { /* columns not bootstrapped yet — LOS falls back to total-LOS ledger */ }
+  return pkg;
+}
+
 /** Direct lookup by code, then exact name. Returns runtime row or null. */
 export async function lookupPackage({ tariff_code, package_code, package_name, organization_cd }) {
   if (!tariff_code) return null;
@@ -235,7 +256,7 @@ export async function lookupPackage({ tariff_code, package_code, package_name, o
       `SELECT ${RUNTIME_COLS} FROM fc.v_package_runtime_lookup
        WHERE tariff_code = $1 AND package_code = $2 AND ${orgClause(organization_cd, 3)}
        LIMIT 1`, params);
-    if (rows[0]) return withServiceAllRooms(await withCleanTexts(shape(rows[0])));
+    if (rows[0]) return withServiceAllRooms(await withPackageLos(await withCleanTexts(shape(rows[0]))));
   }
   if (package_name) {
     const params = [tariff_code, package_name, ...(organization_cd ? [organization_cd] : [])];
@@ -243,7 +264,7 @@ export async function lookupPackage({ tariff_code, package_code, package_name, o
       `SELECT ${RUNTIME_COLS} FROM fc.v_package_runtime_lookup
        WHERE tariff_code = $1 AND upper(package_name) = upper($2) AND ${orgClause(organization_cd, 3)}
        LIMIT 1`, params);
-    if (rows[0]) return withServiceAllRooms(await withCleanTexts(shape(rows[0])));
+    if (rows[0]) return withServiceAllRooms(await withPackageLos(await withCleanTexts(shape(rows[0]))));
   }
   return null;
 }
