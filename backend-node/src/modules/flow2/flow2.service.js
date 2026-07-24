@@ -186,17 +186,36 @@ export async function evaluateFlow2({ treatment_text, payment, selections, mode,
       const reduce = payorGroup === 'GIPSA Insurance'
         || (payorGroup === 'Non-GIPSA Insurance' && sitting === 'same');
       const FACTORS = [1, 0.5, 0.25]; // 3rd and beyond fall through to 0.25
+      // The 100/50/25 reduction applies to the PROCEDURE-FEE component ONLY — not
+      // the whole gross. Validated on 613 historical combos (2026-07-24): the
+      // hospital halves the procedure/package price line (which bundles the surgeon
+      // PF), but bills each secondary procedure's implants / pharmacy / room / other
+      // at FULL (a bilateral uses two implant sets, both billed full). Factoring the
+      // whole gross under-quoted comparable-value combos by ~16% (bilateral TKR real
+      // 1.78x single vs the old 1.50x). Split each path into fee + extras; factor the
+      // fee, keep extras whole. Fee = package_amount when known (package path), else a
+      // ~0.60 gross proxy (measured hospital-wide fee share for combos). Order by fee
+      // desc so the highest-fee procedure keeps 100%.
+      const FEE_SHARE = 0.6;
+      const parts = paths.map((p) => {
+        const gross = p.numbers.gross.approximate_bill.p50;
+        const pkgAmt = p.numbers?.package?.package_amount;
+        const fee = (pkgAmt != null && pkgAmt > 0 && pkgAmt <= gross) ? pkgAmt : gross * FEE_SHARE;
+        return { gross, fee, extras: gross - fee };
+      });
+      const orderedByFee = [...parts].sort((a, b) => b.fee - a.fee);
       const adjusted = reduce
-        ? [...p50s].sort((a, b) => b - a).reduce((t, v, i) => t + v * (FACTORS[i] ?? 0.25), 0)
+        ? orderedByFee.reduce((t, part, i) => t + part.fee * (FACTORS[i] ?? 0.25) + part.extras, 0)
         : unadjusted;
       return {
         gross_p50_sum: Math.round(adjusted),
         unadjusted_reference: Math.round(unadjusted),
         reduction_applied: reduce,
-        reduction_factors: reduce ? '100/50/25' : 'none',
+        reduction_factors: reduce ? '100/50/25 (procedure fee only)' : 'none',
+        reduction_basis: reduce ? 'procedure_fee_only' : undefined,
         sitting: payorGroup === 'Non-GIPSA Insurance' ? sitting : undefined,
         note: reduce
-          ? 'multi-treatment factors applied (highest 100%, second 50%, third+ 25%); unadjusted_reference is the old 100% sum. Shared LOS/OT overlap still not modeled.'
+          ? 'multi-treatment factors applied to the PROCEDURE FEE only (highest 100%, second 50%, third+ 25%); each secondary procedure’s implants / pharmacy / room stay at FULL price (validated on 613 historical combos). unadjusted_reference is the old 100% sum. Shared LOS/OT overlap still not modeled.'
           : 'sum of per-path historic P50s (no reduction for this payer/sitting) — combo interactions (shared LOS/OT, package overlaps) are NOT modeled; upper-bound reference',
       };
     })()
